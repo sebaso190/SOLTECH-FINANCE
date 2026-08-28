@@ -1,8 +1,9 @@
-const CACHE_NAME = 'soltech-pwa-v1';
+// Cambiamos a v2 para que el iPhone separe este nuevo caché del anterior
+const CACHE_NAME = 'soltech-pwa-v2'; 
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
+  './',
+  './index.html',
+  './manifest.json',
   'https://cdn.tailwindcss.com',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
 ];
