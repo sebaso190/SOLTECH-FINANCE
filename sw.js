@@ -1,5 +1,5 @@
 // Cambiamos a v2 para que el iPhone separe este nuevo caché del anterior
-const CACHE_NAME = 'soltech-pwa-v2'; 
+const CACHE_NAME = 'soltech-pwa-v3'; 
 const ASSETS = [
   './',
   './index.html',
