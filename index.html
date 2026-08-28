@@ -3,199 +3,141 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Control Financiero</title>
-  <link rel="manifest" href="manifest.json">
+  <title>App Financiera</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans pb-20">
+<body class="bg-slate-900 text-slate-100 font-sans pb-20 overflow-x-hidden">
+
+  <!-- PANTALLA DE AUTENTICACIÓN -->
+  <div id="auth-screen" class="fixed inset-0 z-[100] bg-slate-900 flex flex-col justify-center items-center p-6">
+    <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-sm">
+      <h1 class="text-3xl font-black text-center text-blue-400 mb-2">SOLTECH</h1>
+      <p class="text-center text-slate-400 text-sm mb-6">Gestión Empresarial</p>
+      <input type="email" id="auth-email" placeholder="Correo electrónico" class="w-full bg-slate-700 p-3 rounded-lg mb-3 text-white outline-none focus:border-blue-500 border border-transparent">
+      <input type="password" id="auth-pass" placeholder="Contraseña" class="w-full bg-slate-700 p-3 rounded-lg mb-6 text-white outline-none focus:border-blue-500 border border-transparent">
+      <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg mb-3 transition">Iniciar Sesión</button>
+      <button onclick="register()" class="w-full bg-slate-700 hover:bg-slate-600 text-blue-400 font-bold py-3 rounded-lg transition border border-slate-600">Crear Cuenta</button>
+    </div>
+  </div>
 
   <header class="p-4 bg-slate-800 border-b border-slate-700 sticky top-0 z-10 flex justify-between items-center">
     <h1 class="font-bold text-lg text-blue-400">Control Financiero</h1>
-    <span class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full">PWA Lista</span>
+    <button onclick="logout()" class="text-xs bg-rose-600 hover:bg-rose-500 px-3 py-1.5 rounded-lg font-bold shadow">Cerrar Sesión</button>
   </header>
 
-  <main class="p-4 max-w-lg mx-auto relative">
+  <main class="p-4 max-w-lg mx-auto relative hidden" id="main-app">
+    
+    <!-- ================= INICIO ================= -->
+    <section id="view-inicio" class="vista-seccion space-y-5">
+      <section class="grid grid-cols-2 gap-3">
+        <button onclick="prepararFormulario('venta-prod')" class="bg-blue-600 p-4 rounded-xl font-bold text-sm shadow flex flex-col items-center col-span-2">📦 Registrar Venta Producto</button>
+        <button onclick="prepararFormulario('venta-libre')" class="bg-cyan-600 p-3 rounded-xl font-bold text-sm shadow flex flex-col items-center">⚡ Venta Libre</button>
+        <button onclick="prepararFormulario('gasto')" class="bg-rose-600 p-3 rounded-xl font-bold text-sm shadow flex flex-col items-center">💸 Registrar Gasto</button>
+      </section>
+      <section class="grid grid-cols-2 gap-3 border-t border-slate-700 pt-4">
+        <button onclick="cambiarVista('clientes')" class="bg-slate-800 p-3 rounded-xl border border-slate-600 font-bold text-sm flex justify-center items-center gap-2">👥 Clientes</button>
+        <button onclick="cambiarVista('proveedores')" class="bg-slate-800 p-3 rounded-xl border border-slate-600 font-bold text-sm flex justify-center items-center gap-2">🏢 Proveedores</button>
+      </section>
+    </section>
 
-    <!-- ================= VISTA: INICIO ================= -->
-    <section id="view-inicio" class="vista-seccion space-y-6">
-      
-      <section class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg">
-        <h2 class="text-xs uppercase font-semibold text-slate-400 mb-3">Resumen Financiero Global</h2>
+    <!-- ================= BALANCE REAL (FLUJO DE CAJA) ================= -->
+    <section id="view-balance" class="vista-seccion space-y-4 hidden">
+      <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xs font-bold text-slate-400 uppercase">Flujo de Caja Real</h2>
+          <input type="date" id="filtro-balance" onchange="cargarBalance()" class="bg-slate-700 text-xs p-1.5 rounded text-white border border-slate-600">
+        </div>
         <div class="grid grid-cols-2 gap-3 mb-4">
           <div class="bg-emerald-950/40 p-3 rounded-lg border border-emerald-800/50">
-            <p class="text-xs text-emerald-400">Ingresos Totales</p>
-            <p id="total-ingresos" class="text-xl font-bold text-emerald-300">0</p>
+            <p class="text-xs text-emerald-400">Dinero Entrante</p>
+            <p id="bal-ingresos" class="text-xl font-bold text-emerald-300">0</p>
           </div>
           <div class="bg-rose-950/40 p-3 rounded-lg border border-rose-800/50">
-            <p class="text-xs text-rose-400">Egresos Totales</p>
-            <p id="total-egresos" class="text-xl font-bold text-rose-300">0</p>
+            <p class="text-xs text-rose-400">Dinero Saliente</p>
+            <p id="bal-egresos" class="text-xl font-bold text-rose-300">0</p>
           </div>
         </div>
-        <div class="pt-2 border-t border-slate-700 flex justify-between items-center">
-          <span class="text-sm font-medium">Balance Neto:</span>
-          <span id="balance-neto" class="text-lg font-bold text-blue-400">0</span>
-        </div>
-      </section>
-
-      <!-- BOTONES PRINCIPALES -->
-      <section class="grid grid-cols-2 gap-3">
-        <button onclick="mostrarForm('venta-prod')" class="bg-blue-600 hover:bg-blue-500 p-3 rounded-xl font-semibold text-sm shadow flex flex-col items-center gap-1 col-span-2">
-          <span>📦 Registrar Nueva Venta</span>
-        </button>
-        <button onclick="mostrarForm('venta-libre')" class="bg-cyan-600 hover:bg-cyan-500 p-3 rounded-xl font-semibold text-sm shadow flex flex-col items-center gap-1">
-          <span>⚡ Venta Libre</span>
-        </button>
-        <button onclick="mostrarForm('gasto')" class="bg-rose-600 hover:bg-rose-500 p-3 rounded-xl font-semibold text-sm shadow flex flex-col items-center gap-1">
-          <span>💸 Registrar Gasto</span>
-        </button>
-      </section>
-
-      <!-- ACCESOS A DIRECTORIOS -->
-      <section class="grid grid-cols-2 gap-3 border-t border-slate-700 pt-4">
-        <button onclick="cambiarVista('clientes')" class="bg-slate-800 hover:bg-slate-700 p-3 rounded-xl border border-slate-600 font-semibold text-sm flex justify-center items-center gap-2">
-          <span>👥 Directorio Clientes</span>
-        </button>
-        <button onclick="cambiarVista('proveedores')" class="bg-slate-800 hover:bg-slate-700 p-3 rounded-xl border border-slate-600 font-semibold text-sm flex justify-center items-center gap-2">
-          <span>🏢 Proveedores</span>
-        </button>
-      </section>
-    </section>
-
-    <!-- ================= VISTA: BALANCE (DETALLE POR FECHA) ================= -->
-    <section id="view-balance" class="vista-seccion space-y-4 hidden">
-      <div class="flex justify-between items-center bg-slate-800 p-3 rounded-lg border border-slate-700">
-        <h2 class="font-bold text-slate-200">Balance Detallado</h2>
-        <input type="date" id="balance-fecha" onchange="cargarBalanceDetallado()" class="bg-slate-700 text-sm p-1.5 rounded text-white border border-slate-600 outline-none">
+        <div class="flex justify-between items-center pt-2 border-t border-slate-700"><span class="font-bold">Total en Caja:</span><span id="bal-neto" class="text-lg font-bold text-blue-400">0</span></div>
       </div>
-      
-      <div class="space-y-4">
-        <div>
-          <h3 class="text-xs font-bold text-emerald-400 mb-2 uppercase border-b border-emerald-900 pb-1">Ingresos (Ventas)</h3>
-          <div id="lista-balance-ingresos" class="space-y-2"></div>
-        </div>
-        <div>
-          <h3 class="text-xs font-bold text-rose-400 mb-2 uppercase border-b border-rose-900 pb-1">Egresos (Gastos)</h3>
-          <div id="lista-balance-egresos" class="space-y-2"></div>
-        </div>
+      <div id="lista-transacciones-balance" class="space-y-2"></div>
+    </section>
+
+    <!-- ================= DEUDAS AGRUPADAS ================= -->
+    <section id="view-deudas" class="vista-seccion space-y-4 hidden">
+      <div class="flex gap-2">
+        <button onclick="cambiarPestanaDeudas('cobrar')" id="btn-cobrar" class="flex-1 py-2 rounded-lg font-bold text-sm bg-amber-600">Por Cobrar</button>
+        <button onclick="cambiarPestanaDeudas('pagar')" id="btn-pagar" class="flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400">Por Pagar</button>
       </div>
+      <div id="lista-deudas-cobrar" class="space-y-4"></div>
+      <div id="lista-deudas-pagar" class="space-y-4 hidden"></div>
     </section>
 
-    <!-- ================= VISTA: DEUDAS ================= -->
-    <section id="view-deudas" class="vista-seccion space-y-6 hidden">
-      <!-- DEUDAS POR COBRAR -->
-      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="font-bold text-amber-400">Deudas por Cobrar</h3>
-          <span id="resumen-cobrar" class="text-sm font-bold bg-amber-900/50 px-2 py-1 rounded">0</span>
-        </div>
-        <div id="lista-deudas-cobrar" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
-      </div>
+    <!-- ================= DIRECTORIOS ================= -->
+    <section id="view-clientes" class="vista-seccion space-y-4 hidden"><div class="flex justify-between items-center"><h2 class="font-bold text-emerald-400">Clientes</h2><button onclick="prepararFormulario('cliente')" class="bg-emerald-600 px-3 py-1 rounded text-sm">+ Nuevo</button></div><div id="lista-clientes" class="space-y-3"></div></section>
+    <section id="view-proveedores" class="vista-seccion space-y-4 hidden"><div class="flex justify-between items-center"><h2 class="font-bold text-purple-400">Proveedores</h2><button onclick="prepararFormulario('proveedor')" class="bg-purple-600 px-3 py-1 rounded text-sm">+ Nuevo</button></div><div id="lista-proveedores" class="space-y-3"></div></section>
+    <section id="view-inventario" class="vista-seccion space-y-4 hidden"><div class="flex justify-between items-center"><h2 class="font-bold text-amber-400">Inventario</h2><button onclick="prepararFormulario('producto')" class="bg-amber-600 px-3 py-1 rounded text-sm">+ Nuevo</button></div><div id="lista-inventario" class="space-y-3"></div></section>
 
-      <!-- DEUDAS POR PAGAR -->
-      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="font-bold text-purple-400">Deudas por Pagar</h3>
-          <span id="resumen-pagar" class="text-sm font-bold bg-purple-900/50 px-2 py-1 rounded">0</span>
-        </div>
-        <div id="lista-deudas-pagar" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
-      </div>
-    </section>
-
-    <!-- ================= VISTAS: DIRECTORIOS E INVENTARIO ================= -->
-    <section id="view-clientes" class="vista-seccion space-y-4 hidden">
-      <div class="flex justify-between items-center"><h2 class="font-bold text-emerald-400">Clientes</h2><button onclick="prepararFormulario('cliente')" class="bg-emerald-600 px-3 py-1 rounded text-sm">+ Nuevo</button></div>
-      <div id="lista-clientes" class="space-y-3"></div>
-    </section>
-
-    <section id="view-proveedores" class="vista-seccion space-y-4 hidden">
-      <div class="flex justify-between items-center"><h2 class="font-bold text-purple-400">Proveedores</h2><button onclick="prepararFormulario('proveedor')" class="bg-purple-600 px-3 py-1 rounded text-sm">+ Nuevo</button></div>
-      <div id="lista-proveedores" class="space-y-3"></div>
-    </section>
-
-    <section id="view-inventario" class="vista-seccion space-y-4 hidden">
-      <div class="flex justify-between items-center"><h2 class="font-bold text-amber-400">Inventario</h2><button onclick="prepararFormulario('producto')" class="bg-amber-600 px-3 py-1 rounded text-sm">+ Nuevo</button></div>
-      <div id="lista-inventario" class="space-y-3"></div>
-    </section>
-
-    <!-- ================= MODAL FORMULARIOS ================= -->
-    <section id="form-container" class="hidden fixed inset-0 z-50 bg-slate-900/95 flex justify-center items-center p-4">
+    <!-- ================= MODALES FORMULARIOS ================= -->
+    <div id="form-container" class="hidden fixed inset-0 z-50 bg-slate-900/95 flex justify-center items-center p-4">
       <div class="bg-slate-800 p-5 rounded-xl border border-slate-600 shadow-2xl w-full max-w-sm relative max-h-[90vh] overflow-y-auto">
-        <button onclick="ocultarForm()" class="absolute top-3 right-4 text-xl text-slate-400 hover:text-white">&times;</button>
+        <button onclick="ocultarForm()" class="absolute top-3 right-4 text-xl text-slate-400">&times;</button>
         
-        <form id="form-venta-prod" class="space-y-3 hidden">
-          <h3 class="font-bold text-blue-400">Nueva Venta</h3>
+        <!-- VENTA PRODUCTO -->
+        <form id="form-venta-prod" class="space-y-3 hidden"><h3 class="font-bold text-blue-400">Vender Producto</h3>
           <input type="datetime-local" id="vp-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
           <select id="vp-cliente" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select>
           <select id="vp-producto" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select>
           <div class="grid grid-cols-2 gap-2">
-            <div><label class="text-xs text-slate-400">Precio de Venta</label><input type="number" id="vp-precio" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></div>
-            <div><label class="text-xs text-slate-400">Descuento</label><input type="number" id="vp-descuento" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></div>
+            <div><label class="text-xs text-slate-400">Cant.</label><input type="number" id="vp-cantidad" value="1" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></div>
+            <div><label class="text-xs text-slate-400">Precio Und.</label><input type="number" id="vp-precio" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></div>
           </div>
-          <div class="flex items-center gap-2"><input type="checkbox" id="vp-es-deuda" onchange="toggleAbono('vp')"><label class="text-sm">¿Es a Crédito?</label></div>
+          <div class="flex gap-2 items-center"><input type="checkbox" id="vp-es-deuda" onchange="toggleAbono('vp')"><label class="text-sm">¿A Crédito?</label></div>
           <input type="number" id="vp-abono" placeholder="Abono Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden">
-          <textarea id="vp-detalles" placeholder="Detalles..." class="w-full bg-slate-700 p-2 rounded text-sm text-white"></textarea>
-          <button type="button" onclick="guardarVentaProducto()" class="w-full bg-blue-600 py-2 rounded font-bold">Guardar</button>
+          <button type="button" onclick="guardarVentaProducto()" class="w-full bg-blue-600 py-2 rounded font-bold">Vender</button>
         </form>
 
-        <form id="form-venta-libre" class="space-y-3 hidden">
-          <h3 class="font-bold text-cyan-400">Venta Libre</h3>
+        <!-- VENTA LIBRE -->
+        <form id="form-venta-libre" class="space-y-3 hidden"><h3 class="font-bold text-cyan-400">Venta Libre</h3>
           <input type="datetime-local" id="vl-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
           <select id="vl-cliente" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select>
-          <input type="number" id="vl-valor" placeholder="Valor" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
-          <div class="flex items-center gap-2"><input type="checkbox" id="vl-es-deuda" onchange="toggleAbono('vl')"><label class="text-sm">¿Es a Crédito?</label></div>
+          <input type="number" id="vl-valor" placeholder="Monto Total" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <div class="flex gap-2 items-center"><input type="checkbox" id="vl-es-deuda" onchange="toggleAbono('vl')"><label class="text-sm">¿A Crédito?</label></div>
           <input type="number" id="vl-abono" placeholder="Abono Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden">
-          <textarea id="vl-detalles" placeholder="Detalles..." class="w-full bg-slate-700 p-2 rounded text-sm text-white"></textarea>
-          <button type="button" onclick="guardarVentaLibre()" class="w-full bg-cyan-600 py-2 rounded font-bold">Guardar</button>
+          <input type="text" id="vl-detalles" placeholder="Concepto..." class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <button type="button" onclick="guardarVentaLibre()" class="w-full bg-cyan-600 py-2 rounded font-bold">Guardar Venta</button>
         </form>
 
-        <form id="form-gasto" class="space-y-3 hidden">
-          <h3 class="font-bold text-rose-400">Registrar Gasto</h3>
+        <!-- GASTO CON INVENTARIO -->
+        <form id="form-gasto" class="space-y-3 hidden"><h3 class="font-bold text-rose-400">Registrar Gasto o Compra</h3>
           <input type="datetime-local" id="g-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
           <select id="g-proveedor" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select>
-          <input type="number" id="g-valor" placeholder="Valor del gasto" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
-          <div class="flex items-center gap-2"><input type="checkbox" id="g-es-deuda" onchange="toggleAbono('g')"><label class="text-sm">¿Deuda por Pagar?</label></div>
+          <input type="number" id="g-valor" placeholder="Valor Total ($)" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <div class="p-2 border border-slate-700 rounded bg-slate-800">
+            <label class="text-xs text-amber-400 font-bold block mb-1">Sumar al Inventario (Opcional)</label>
+            <select id="g-producto" class="w-full bg-slate-700 p-2 rounded text-sm text-white mb-2"><option value="">-- No aplica --</option></select>
+            <input type="number" id="g-cantidad" placeholder="Cantidad que entra" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          </div>
+          <div class="flex gap-2 items-center"><input type="checkbox" id="g-es-deuda" onchange="toggleAbono('g')"><label class="text-sm">¿Queda debiendo?</label></div>
           <input type="number" id="g-abono" placeholder="Abono Realizado" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden">
-          <textarea id="g-detalles" placeholder="Detalles..." class="w-full bg-slate-700 p-2 rounded text-sm text-white"></textarea>
-          <button type="button" onclick="guardarGasto()" class="w-full bg-rose-600 py-2 rounded font-bold">Guardar</button>
+          <input type="text" id="g-detalles" placeholder="Detalles..." class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <button type="button" onclick="guardarGasto()" class="w-full bg-rose-600 py-2 rounded font-bold">Guardar Gasto</button>
         </form>
-
-        <form id="form-producto" class="space-y-3 hidden">
-          <h3 id="p-titulo" class="font-bold text-amber-400">Producto</h3>
-          <input type="hidden" id="p-id">
-          <input type="text" id="p-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
-          <div class="grid grid-cols-2 gap-2"><input type="number" id="p-compra" placeholder="P. Compra" class="bg-slate-700 p-2 rounded text-sm text-white"><input type="number" id="p-venta" placeholder="P. Venta" class="bg-slate-700 p-2 rounded text-sm text-white"></div>
-          <input type="number" id="p-stock" placeholder="Cantidad" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
-          <div><label class="text-xs text-slate-400">Imagen (Opcional)</label><input type="file" id="p-imagen" accept="image/*" class="w-full text-xs text-slate-300"></div>
-          <button type="button" onclick="guardarProducto()" class="w-full bg-amber-600 py-2 rounded font-bold">Guardar</button>
-        </form>
-
-        <form id="form-cliente" class="space-y-3 hidden">
-          <h3 id="c-titulo" class="font-bold text-emerald-400">Cliente</h3>
-          <input type="hidden" id="c-id">
-          <input type="text" id="c-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
-          <input type="tel" id="c-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
-          <button type="button" onclick="guardarCliente()" class="w-full bg-emerald-600 py-2 rounded font-bold">Guardar</button>
-        </form>
-
-        <form id="form-proveedor" class="space-y-3 hidden">
-          <h3 id="prov-titulo" class="font-bold text-purple-400">Proveedor</h3>
-          <input type="hidden" id="prov-id">
-          <input type="text" id="prov-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
-          <input type="tel" id="prov-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
-          <button type="button" onclick="guardarProveedor()" class="w-full bg-purple-600 py-2 rounded font-bold">Guardar</button>
-        </form>
+        
+        <!-- Otros Formularios Básicos -->
+        <form id="form-producto" class="space-y-3 hidden"><h3 id="p-titulo" class="font-bold text-amber-400">Producto</h3><input type="hidden" id="p-id"><input type="text" id="p-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm"><div class="grid grid-cols-2 gap-2"><input type="number" id="p-compra" placeholder="P. Compra" class="bg-slate-700 p-2 rounded text-sm"><input type="number" id="p-venta" placeholder="P. Venta" class="bg-slate-700 p-2 rounded text-sm"></div><input type="number" id="p-stock" placeholder="Cantidad" class="w-full bg-slate-700 p-2 rounded text-sm"><div><label class="text-xs text-slate-400">Imagen (Opcional)</label><input type="file" id="p-imagen" accept="image/*" class="w-full text-xs text-slate-300"></div><button type="button" onclick="guardarProducto()" class="w-full bg-amber-600 py-2 rounded font-bold">Guardar</button></form>
+        <form id="form-cliente" class="space-y-3 hidden"><h3 id="c-titulo" class="font-bold text-emerald-400">Cliente</h3><input type="hidden" id="c-id"><input type="text" id="c-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm"><input type="tel" id="c-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm"><button type="button" onclick="guardarCliente()" class="w-full bg-emerald-600 py-2 rounded font-bold">Guardar</button></form>
+        <form id="form-proveedor" class="space-y-3 hidden"><h3 id="prov-titulo" class="font-bold text-purple-400">Proveedor</h3><input type="hidden" id="prov-id"><input type="text" id="prov-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm"><input type="tel" id="prov-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm"><button type="button" onclick="guardarProveedor()" class="w-full bg-purple-600 py-2 rounded font-bold">Guardar</button></form>
       </div>
-    </section>
+    </div>
   </main>
 
-  <!-- ================= NAVEGACIÓN INFERIOR PRINCIPAL ================= -->
-  <nav class="fixed bottom-0 w-full bg-slate-800 border-t border-slate-700 flex justify-around p-3 pb-6 text-xs shadow-2xl z-10">
+  <nav class="fixed bottom-0 w-full bg-slate-800 border-t border-slate-700 flex justify-around p-2 pb-6 text-xs shadow-2xl z-10 hidden" id="main-nav">
     <button onclick="cambiarVista('inicio')" id="nav-inicio" class="nav-btn text-blue-400 flex flex-col items-center gap-1"><span class="text-lg">📊</span><span>Inicio</span></button>
     <button onclick="cambiarVista('inventario')" id="nav-inventario" class="nav-btn text-slate-400 flex flex-col items-center gap-1"><span class="text-lg">📦</span><span>Inventario</span></button>
-    <button onclick="cambiarVista('balance')" id="nav-balance" class="nav-btn text-slate-400 flex flex-col items-center gap-1"><span class="text-lg">📅</span><span>Balance</span></button>
+    <button onclick="cambiarVista('balance')" id="nav-balance" class="nav-btn text-slate-400 flex flex-col items-center gap-1"><span class="text-lg">💰</span><span>Caja</span></button>
     <button onclick="cambiarVista('deudas')" id="nav-deudas" class="nav-btn text-slate-400 flex flex-col items-center gap-1"><span class="text-lg">💳</span><span>Deudas</span></button>
   </nav>
 
@@ -206,300 +148,248 @@
     const supabaseKey = 'sb_publishable_7rrvQ2yvzVaiYLEqtgoa_w_GbrCRoAi';
     const db = createClient(supabaseUrl, supabaseKey);
 
-    // FORMATO DE MONEDA COLOMBIANA (COP)
-    const fmtMoneda = (valor) => new Intl.NumberFormat('es-CO').format(valor || 0);
-    // FECHA LOCAL
-    const getFechaLocal = (fechaUTC) => {
-      const f = new Date(fechaUTC);
-      return new Date(f.getTime() - (f.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-    };
+    const fmtMoneda = (v) => new Intl.NumberFormat('es-CO').format(v || 0);
+    const gFecha = (fUTC) => { const d = new Date(fUTC); return new Date(d.getTime() - (d.getTimezoneOffset()*60000)).toISOString().split('T')[0]; };
+
+    // 2. AUTENTICACIÓN
+    async function checkSession() {
+      const { data: { session } } = await db.auth.getSession();
+      if (session) {
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        document.getElementById('main-nav').classList.remove('hidden');
+        iniciarApp();
+      } else {
+        document.getElementById('auth-screen').classList.remove('hidden');
+        document.getElementById('main-app').classList.add('hidden');
+        document.getElementById('main-nav').classList.add('hidden');
+      }
+    }
+    
+    async function login() {
+      const e = document.getElementById('auth-email').value; const p = document.getElementById('auth-pass').value;
+      const { error } = await db.auth.signInWithPassword({ email: e, password: p });
+      if(error) alert('Error: ' + error.message); else checkSession();
+    }
+    
+    async function register() {
+      const e = document.getElementById('auth-email').value; const p = document.getElementById('auth-pass').value;
+      const { error } = await db.auth.signUp({ email: e, password: p });
+      if(error) alert('Error: ' + error.message); else alert('Registro exitoso. Inicia sesión.');
+    }
+    
+    async function logout() { await db.auth.signOut(); checkSession(); }
+
+    window.onload = checkSession;
+
+    // 3. INICIALIZAR DATOS
+    function iniciarApp() {
+      document.getElementById('filtro-balance').value = new Date().toISOString().split('T')[0];
+      cargarDropdowns();
+      cambiarVista('inicio');
+    }
 
     function cambiarVista(vista) {
       document.querySelectorAll('.vista-seccion').forEach(el => el.classList.add('hidden'));
       document.getElementById(`view-${vista}`).classList.remove('hidden');
-      document.querySelectorAll('.nav-btn').forEach(btn => { btn.classList.remove('text-blue-400'); btn.classList.add('text-slate-400'); });
-      if(document.getElementById(`nav-${vista}`)) {
-        document.getElementById(`nav-${vista}`).classList.remove('text-slate-400');
-        document.getElementById(`nav-${vista}`).classList.add('text-blue-400');
-      }
-      ocultarForm();
+      document.querySelectorAll('.nav-btn').forEach(btn => { btn.classList.replace('text-blue-400', 'text-slate-400'); });
+      if(document.getElementById(`nav-${vista}`)) document.getElementById(`nav-${vista}`).classList.replace('text-slate-400', 'text-blue-400');
+      if(vista === 'balance') cargarBalance();
+      if(vista === 'deudas') cargarDeudas();
+      if(vista === 'inventario') cargarInventario();
       if(vista === 'clientes') cargarListaClientes();
       if(vista === 'proveedores') cargarListaProveedores();
-      if(vista === 'inventario') cargarInventario();
-      if(vista === 'balance') cargarBalanceDetallado();
-      if(vista === 'deudas') cargarDeudas();
     }
 
-    // 2. ACTUALIZAR DASHBOARD INICIO
-    async function actualizarDashboard() {
-      const { data: ventas } = await db.from('ventas').select('monto_final');
-      const ingresos = ventas ? ventas.reduce((s, v) => s + Number(v.monto_final), 0) : 0;
+    // 4. BALANCE REAL (CASH-BASIS)
+    async function cargarBalance() {
+      const filtro = document.getElementById('filtro-balance').value;
       
-      const { data: gastos } = await db.from('gastos').select('valor');
-      const egresos = gastos ? gastos.reduce((s, g) => s + Number(g.valor), 0) : 0;
-      
-      document.getElementById('total-ingresos').innerText = fmtMoneda(ingresos);
-      document.getElementById('total-egresos').innerText = fmtMoneda(egresos);
-      document.getElementById('balance-neto').innerText = fmtMoneda(ingresos - egresos);
-    }
+      // Consultas directas sumando dinero movido
+      const { data: vts } = await db.from('ventas').select('*, clientes(nombre)').order('fecha', {ascending:false});
+      const { data: gts } = await db.from('gastos').select('*, proveedores(nombre)').order('fecha', {ascending:false});
+      const { data: abs } = await db.from('pagos_abonos').select('*').order('fecha', {ascending:false});
 
-    // 3. VISTA: BALANCE DETALLADO
-    async function cargarBalanceDetallado() {
-      const fechaFiltro = document.getElementById('balance-fecha').value;
-      
-      // Ingresos
-      const { data: ventas } = await db.from('ventas').select('*, clientes(nombre), productos(nombre)').order('fecha', { ascending: false });
-      let htmlIngresos = '';
-      if (ventas) {
-        ventas.forEach(v => {
-          if (!fechaFiltro || getFechaLocal(v.fecha) === fechaFiltro) {
-            htmlIngresos += `<div class="bg-slate-700/40 p-2 rounded border border-emerald-900/50 flex justify-between">
-              <div><p class="text-sm font-bold">${v.clientes?.nombre || 'Venta Libre'}</p><p class="text-xs text-slate-400">${v.productos?.nombre || v.detalles || 'Sin detalle'}</p></div>
-              <div class="text-right text-emerald-400 text-sm font-bold">+ ${fmtMoneda(v.monto_final)}</div>
-            </div>`;
+      let inTotal=0; let outTotal=0; let html='';
+
+      // Recorrer ventas al contado o abonos iniciales de deuda
+      vts?.forEach(v => {
+        if(!filtro || gFecha(v.fecha) === filtro) {
+          const efectivo = v.es_deuda ? Number(v.abono) : Number(v.monto_final);
+          if(efectivo > 0) {
+            inTotal += efectivo;
+            html += `<div class="bg-slate-700/40 p-2 rounded border border-emerald-900/50 flex justify-between items-center"><div class="flex-1"><p class="text-sm font-bold">${v.clientes?.nombre||'Venta Libre'}</p><p class="text-[10px] text-slate-400">Venta / Abono Inicial</p></div><div class="text-emerald-400 font-bold">+${fmtMoneda(efectivo)}</div><button onclick="eliminarRegistro('ventas', '${v.id}')" class="ml-2 text-rose-500">🗑️</button></div>`;
           }
-        });
-      }
-      document.getElementById('lista-balance-ingresos').innerHTML = htmlIngresos || '<p class="text-xs text-slate-500">No hay ingresos registrados.</p>';
-
-      // Egresos
-      const { data: gastos } = await db.from('gastos').select('*, proveedores(nombre)').order('fecha', { ascending: false });
-      let htmlEgresos = '';
-      if (gastos) {
-        gastos.forEach(g => {
-          if (!fechaFiltro || getFechaLocal(g.fecha) === fechaFiltro) {
-            htmlEgresos += `<div class="bg-slate-700/40 p-2 rounded border border-rose-900/50 flex justify-between">
-              <div><p class="text-sm font-bold">${g.proveedores?.nombre || 'Gasto General'}</p><p class="text-xs text-slate-400">${g.detalles || ''}</p></div>
-              <div class="text-right text-rose-400 text-sm font-bold">- ${fmtMoneda(g.valor)}</div>
-            </div>`;
+        }
+      });
+      // Recorrer pagos posteriores
+      abs?.forEach(a => {
+        if(!filtro || gFecha(a.fecha) === filtro) {
+          if(a.tipo === 'COBRO_VENTA') {
+            inTotal += Number(a.monto);
+            html += `<div class="bg-slate-700/40 p-2 rounded border border-emerald-900/50 flex justify-between items-center"><div class="flex-1"><p class="text-sm font-bold text-amber-300">Pago a Deuda Recibido</p></div><div class="text-emerald-400 font-bold">+${fmtMoneda(a.monto)}</div><button onclick="eliminarRegistro('pagos_abonos', '${a.id}')" class="ml-2 text-rose-500">🗑️</button></div>`;
+          } else {
+            outTotal += Number(a.monto);
+            html += `<div class="bg-slate-700/40 p-2 rounded border border-rose-900/50 flex justify-between items-center"><div class="flex-1"><p class="text-sm font-bold text-amber-300">Abono a Proveedor Pagado</p></div><div class="text-rose-400 font-bold">-${fmtMoneda(a.monto)}</div><button onclick="eliminarRegistro('pagos_abonos', '${a.id}')" class="ml-2 text-rose-500">🗑️</button></div>`;
           }
-        });
-      }
-      document.getElementById('lista-balance-egresos').innerHTML = htmlEgresos || '<p class="text-xs text-slate-500">No hay gastos registrados.</p>';
+        }
+      });
+      // Recorrer gastos al contado o abonos iniciales a proveedor
+      gts?.forEach(g => {
+        if(!filtro || gFecha(g.fecha) === filtro) {
+          const efectivo = g.es_deuda ? Number(g.abono) : Number(g.valor);
+          if(efectivo > 0) {
+            outTotal += efectivo;
+            html += `<div class="bg-slate-700/40 p-2 rounded border border-rose-900/50 flex justify-between items-center"><div class="flex-1"><p class="text-sm font-bold">${g.proveedores?.nombre||'Gasto General'}</p><p class="text-[10px] text-slate-400">Gasto / Abono Inic.</p></div><div class="text-rose-400 font-bold">-${fmtMoneda(efectivo)}</div><button onclick="eliminarRegistro('gastos', '${g.id}')" class="ml-2 text-rose-500">🗑️</button></div>`;
+          }
+        }
+      });
+
+      document.getElementById('bal-ingresos').innerText = fmtMoneda(inTotal);
+      document.getElementById('bal-egresos').innerText = fmtMoneda(outTotal);
+      document.getElementById('bal-neto').innerText = fmtMoneda(inTotal - outTotal);
+      document.getElementById('lista-transacciones-balance').innerHTML = html || '<p class="text-xs text-slate-500 text-center">Sin flujos de caja en esta fecha.</p>';
     }
 
-    // 4. VISTA: DEUDAS
+    // 5. DEUDAS AGRUPADAS Y ABONOS
+    function cambiarPestanaDeudas(tipo) {
+      document.getElementById('btn-cobrar').classList.replace('bg-amber-600', 'bg-slate-800');
+      document.getElementById('btn-pagar').classList.replace('bg-purple-600', 'bg-slate-800');
+      document.getElementById('lista-deudas-cobrar').classList.add('hidden');
+      document.getElementById('lista-deudas-pagar').classList.add('hidden');
+      
+      document.getElementById(`btn-${tipo}`).classList.replace('bg-slate-800', tipo==='cobrar'?'bg-amber-600':'bg-purple-600');
+      document.getElementById(`lista-deudas-${tipo}`).classList.remove('hidden');
+    }
+
     async function cargarDeudas() {
-      // Por Cobrar
-      const { data: ventas } = await db.from('ventas').select('*, clientes(nombre)').gt('saldo_pendiente', 0);
-      let htmlCobrar = ''; let tCobrar = 0;
-      if (ventas) {
-        ventas.forEach(v => {
-          tCobrar += Number(v.saldo_pendiente);
-          htmlCobrar += `<div class="bg-slate-700/50 p-2 rounded border border-amber-800/50 mb-2">
-            <div class="flex justify-between items-start"><p class="text-sm font-bold text-white">${v.clientes?.nombre || 'Desconocido'}</p><p class="text-amber-400 font-bold">${fmtMoneda(v.saldo_pendiente)}</p></div>
-            <p class="text-xs text-slate-400">Fecha: ${getFechaLocal(v.fecha)} | Total orig: ${fmtMoneda(v.monto_final)}</p>
-          </div>`;
+      // Agrupar Por Cobrar
+      const { data: vts } = await db.from('ventas').select('*, clientes(nombre)').gt('saldo_pendiente', 0);
+      let htmlC='';
+      if(vts) {
+        const porCliente = vts.reduce((acc, v) => { const n = v.clientes?.nombre || 'Venta Libre'; acc[n] = acc[n] || []; acc[n].push(v); return acc; }, {});
+        Object.keys(porCliente).forEach(c => {
+          let cTotal = 0; let mHtml = '';
+          porCliente[c].forEach(v => {
+            cTotal += Number(v.saldo_pendiente);
+            mHtml += `<div class="pl-2 border-l-2 border-slate-600 mt-2"><div class="flex justify-between items-center"><p class="text-xs text-slate-300">Venta ${gFecha(v.fecha)}</p><p class="text-amber-400 font-bold text-sm">${fmtMoneda(v.saldo_pendiente)}</p></div><button onclick="pagarDeuda('ventas', '${v.id}', ${v.saldo_pendiente})" class="text-[10px] bg-amber-700/50 px-2 py-1 rounded mt-1">Hacer Abono</button></div>`;
+          });
+          htmlC += `<div class="bg-slate-700/30 p-3 rounded-lg border border-slate-700"><div class="flex justify-between items-center border-b border-slate-600 pb-1"><h3 class="font-bold text-white">${c}</h3><span class="font-black text-amber-500">${fmtMoneda(cTotal)}</span></div>${mHtml}</div>`;
         });
       }
-      document.getElementById('resumen-cobrar').innerText = fmtMoneda(tCobrar);
-      document.getElementById('lista-deudas-cobrar').innerHTML = htmlCobrar || '<p class="text-xs text-slate-500">No hay deudas por cobrar.</p>';
+      document.getElementById('lista-deudas-cobrar').innerHTML = htmlC || '<p>No hay deudas por cobrar.</p>';
 
-      // Por Pagar
-      const { data: gastos } = await db.from('gastos').select('*, proveedores(nombre)').gt('saldo_pendiente', 0);
-      let htmlPagar = ''; let tPagar = 0;
-      if (gastos) {
-        gastos.forEach(g => {
-          tPagar += Number(g.saldo_pendiente);
-          htmlPagar += `<div class="bg-slate-700/50 p-2 rounded border border-purple-800/50 mb-2">
-            <div class="flex justify-between items-start"><p class="text-sm font-bold text-white">${g.proveedores?.nombre || 'Desconocido'}</p><p class="text-purple-400 font-bold">${fmtMoneda(g.saldo_pendiente)}</p></div>
-            <p class="text-xs text-slate-400">Ref: ${g.detalles || 'Sin detalle'}</p>
-          </div>`;
+      // Agrupar Por Pagar
+      const { data: gts } = await db.from('gastos').select('*, proveedores(nombre)').gt('saldo_pendiente', 0);
+      let htmlP='';
+      if(gts) {
+        const porProv = gts.reduce((acc, g) => { const n = g.proveedores?.nombre || 'General'; acc[n] = acc[n] || []; acc[n].push(g); return acc; }, {});
+        Object.keys(porProv).forEach(p => {
+          let pTotal = 0; let mHtml = '';
+          porProv[p].forEach(g => {
+            pTotal += Number(g.saldo_pendiente);
+            mHtml += `<div class="pl-2 border-l-2 border-slate-600 mt-2"><div class="flex justify-between items-center"><p class="text-xs text-slate-300">Gasto ${gFecha(g.fecha)}</p><p class="text-purple-400 font-bold text-sm">${fmtMoneda(g.saldo_pendiente)}</p></div><button onclick="pagarDeuda('gastos', '${g.id}', ${g.saldo_pendiente})" class="text-[10px] bg-purple-700/50 px-2 py-1 rounded mt-1">Hacer Abono</button></div>`;
+          });
+          htmlP += `<div class="bg-slate-700/30 p-3 rounded-lg border border-slate-700"><div class="flex justify-between items-center border-b border-slate-600 pb-1"><h3 class="font-bold text-white">${p}</h3><span class="font-black text-purple-500">${fmtMoneda(pTotal)}</span></div>${mHtml}</div>`;
         });
       }
-      document.getElementById('resumen-pagar').innerText = fmtMoneda(tPagar);
-      document.getElementById('lista-deudas-pagar').innerHTML = htmlPagar || '<p class="text-xs text-slate-500">No hay deudas por pagar.</p>';
+      document.getElementById('lista-deudas-pagar').innerHTML = htmlP || '<p>No hay deudas por pagar.</p>';
     }
 
-    // 5. LISTAS Y EDICIÓN (CLIENTES, PROVEEDORES, INVENTARIO)
-    async function cargarListaClientes() {
-      const { data } = await db.from('clientes').select('*').order('creado_en', { ascending: false });
-      let html = '';
-      if(data) data.forEach(c => {
-        html += `<div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600 flex justify-between items-center">
-                   <div><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400">📞 ${c.telefono || '-'}</p></div>
-                   <button onclick="editarCliente('${c.id}', '${c.nombre}', '${c.telefono}')" class="text-xs bg-slate-600 px-2 py-1 rounded">Editar</button>
-                 </div>`;
-      });
-      document.getElementById('lista-clientes').innerHTML = html;
+    async function pagarDeuda(tabla, id, maxMonto) {
+      const p = prompt(`Ingrese valor a abonar (Máx: $${fmtMoneda(maxMonto)}):`);
+      if(!p || isNaN(p) || p <= 0) return;
+      const monto = Math.min(Number(p), maxMonto);
+
+      // 1. Registrar pago en historial (esto suma al Balance Real)
+      const payload = { monto, tipo: tabla==='ventas' ? 'COBRO_VENTA' : 'PAGO_GASTO' };
+      if(tabla==='ventas') payload.venta_id = id; else payload.gasto_id = id;
+      await db.from('pagos_abonos').insert([payload]);
+
+      // 2. Traer el abono actual y sumarle
+      const { data } = await db.from(tabla).select('abono').eq('id', id).single();
+      await db.from(tabla).update({ abono: Number(data.abono) + monto }).eq('id', id);
+
+      cargarDeudas(); cargarBalance(); alert('Abono registrado con éxito');
     }
 
-    async function cargarListaProveedores() {
-      const { data } = await db.from('proveedores').select('*').order('creado_en', { ascending: false });
-      let html = '';
-      if(data) data.forEach(p => {
-        html += `<div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600 flex justify-between items-center">
-                   <div><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400">📞 ${p.telefono || '-'}</p></div>
-                   <button onclick="editarProveedor('${p.id}', '${p.nombre}', '${p.telefono}')" class="text-xs bg-slate-600 px-2 py-1 rounded">Editar</button>
-                 </div>`;
-      });
-      document.getElementById('lista-proveedores').innerHTML = html;
-    }
-
-    async function cargarInventario() {
-      const { data } = await db.from('productos').select('*').order('nombre', { ascending: true });
-      let html = '';
-      if(data) data.forEach(p => {
-        const imgTag = p.imagen_url ? `<img src="${p.imagen_url}" class="w-10 h-10 object-cover rounded">` : `<div class="w-10 h-10 bg-slate-600 rounded flex items-center justify-center text-xs">📦</div>`;
-        html += `<div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600 flex justify-between items-center gap-3">
-                   ${imgTag}
-                   <div class="flex-1"><p class="font-bold text-sm text-white">${p.nombre}</p><p class="text-xs text-slate-400">Stock: ${p.cantidad_disponible}</p></div>
-                   <div class="text-right"><p class="text-emerald-400 text-sm font-bold">${fmtMoneda(p.precio_venta)}</p>
-                   <button onclick="editarProducto('${p.id}', '${p.nombre}', ${p.precio_compra}, ${p.precio_venta}, ${p.cantidad_disponible})" class="text-xs bg-slate-600 px-2 py-1 rounded mt-1">Editar</button></div>
-                 </div>`;
-      });
-      document.getElementById('lista-inventario').innerHTML = html;
-    }
-
-    // 6. LÓGICA DE PRECIO AUTOMÁTICO EN VENTA
-    document.getElementById('vp-producto').addEventListener('change', (e) => {
-      const prod = window.listaProductos.find(p => p.id === e.target.value);
-      document.getElementById('vp-precio').value = prod ? prod.precio_venta : '';
-    });
-
-    // 7. GUARDAR / EDITAR FUNCIONES
-    async function guardarCliente() {
-      const id = document.getElementById('c-id').value;
-      const nombre = document.getElementById('c-nombre').value;
-      const telefono = document.getElementById('c-telefono').value;
-      if (!nombre) return;
-      if (id) await db.from('clientes').update({ nombre, telefono }).eq('id', id);
-      else await db.from('clientes').insert([{ nombre, telefono }]);
-      ocultarForm(); cargarListaClientes(); cargarDropdowns();
-    }
-
-    async function guardarProveedor() {
-      const id = document.getElementById('prov-id').value;
-      const nombre = document.getElementById('prov-nombre').value;
-      const telefono = document.getElementById('prov-telefono').value;
-      if (!nombre) return;
-      if (id) await db.from('proveedores').update({ nombre, telefono }).eq('id', id);
-      else await db.from('proveedores').insert([{ nombre, telefono }]);
-      ocultarForm(); cargarListaProveedores(); cargarDropdowns();
-    }
-
-    async function guardarProducto() {
-      const id = document.getElementById('p-id').value;
-      const nombre = document.getElementById('p-nombre').value;
-      const compra = document.getElementById('p-compra').value || 0;
-      const venta = document.getElementById('p-venta').value || 0;
-      const stock = document.getElementById('p-stock').value || 0;
-      const fileInput = document.getElementById('p-imagen');
-      let imgBase64 = null;
-
-      if (!nombre || !venta) return alert('Nombre y precio de venta obligatorios');
-
-      if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        imgBase64 = await new Promise(resolve => {
-          const reader = new FileReader();
-          reader.onload = e => resolve(e.target.result);
-          reader.readAsDataURL(file);
-        });
-      }
-
-      const payload = { nombre, precio_compra: compra, precio_venta: venta, cantidad_disponible: stock };
-      if (imgBase64) payload.imagen_url = imgBase64; // Solo actualiza si hay imagen nueva
-
-      if (id) await db.from('productos').update(payload).eq('id', id);
-      else await db.from('productos').insert([payload]);
-      
-      ocultarForm(); cargarInventario(); cargarDropdowns();
-    }
-
+    // 6. VENTAS Y GASTOS CON INVENTARIO
     async function guardarVentaProducto() {
-      const fecha = document.getElementById('vp-fecha').value || new Date().toISOString();
       const cliente_id = document.getElementById('vp-cliente').value;
       const producto_id = document.getElementById('vp-producto').value;
-      const monto_bruto = document.getElementById('vp-precio').value; // Precio editable
-      const descuento = document.getElementById('vp-descuento').value || 0;
+      const cant = Number(document.getElementById('vp-cantidad').value);
+      const precioUnd = Number(document.getElementById('vp-precio').value);
+      const mBruto = cant * precioUnd;
       const es_deuda = document.getElementById('vp-es-deuda').checked;
-      const abono = document.getElementById('vp-abono').value || 0;
-      const detalles = document.getElementById('vp-detalles').value;
+      const abono = Number(document.getElementById('vp-abono').value||0);
       
-      if (!cliente_id || !producto_id || !monto_bruto) return alert('Datos incompletos');
+      if (!cliente_id || !producto_id || !mBruto || cant < 1) return alert('Verifica datos y cantidades');
 
-      await db.from('ventas').insert([{ tipo_venta: 'PRODUCTO', fecha, cliente_id, producto_id, monto_bruto, descuento, es_deuda, abono: es_deuda ? abono : 0, detalles }]);
-      ocultarForm(); actualizarDashboard(); toggleAbono('vp');
+      // Restar Inventario
+      const prod = window.listaProductos.find(x => x.id === producto_id);
+      await db.from('productos').update({ cantidad_disponible: Number(prod.cantidad_disponible) - cant }).eq('id', producto_id);
+
+      await db.from('ventas').insert([{ tipo_venta: 'PRODUCTO', cliente_id, producto_id, cantidad: cant, monto_bruto: mBruto, es_deuda, abono: es_deuda?abono:0 }]);
+      document.getElementById('form-venta-prod').reset(); ocultarForm(); cargarDropdowns();
     }
 
-    // Funciones base de Venta Libre y Gasto
     async function guardarVentaLibre() {
-      const fecha = document.getElementById('vl-fecha').value || new Date().toISOString();
       const cliente_id = document.getElementById('vl-cliente').value;
-      const valor = document.getElementById('vl-valor').value;
-      const descuento = document.getElementById('vl-descuento').value || 0;
+      const valor = document.getElementById('vl-valor').value; // FIX: Capturar bien el valor
       const es_deuda = document.getElementById('vl-es-deuda').checked;
-      const abono = document.getElementById('vl-abono').value || 0;
-      await db.from('ventas').insert([{ tipo_venta: 'LIBRE', fecha, cliente_id, monto_bruto: valor, descuento, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('vl-detalles').value }]);
-      ocultarForm(); actualizarDashboard();
+      
+      if (!cliente_id || !valor) return alert('Cliente y valor son obligatorios');
+
+      await db.from('ventas').insert([{ tipo_venta: 'LIBRE', cliente_id, monto_bruto: valor, es_deuda, abono: es_deuda?document.getElementById('vl-abono').value:0, detalles: document.getElementById('vl-detalles').value }]);
+      document.getElementById('form-venta-libre').reset(); ocultarForm();
     }
-    
+
     async function guardarGasto() {
-      const fecha = document.getElementById('g-fecha').value || new Date().toISOString();
-      const prov_id = document.getElementById('g-proveedor').value;
+      const prov = document.getElementById('g-proveedor').value;
       const valor = document.getElementById('g-valor').value;
+      const prod_id = document.getElementById('g-producto').value;
+      const cant = Number(document.getElementById('g-cantidad').value||0);
       const es_deuda = document.getElementById('g-es-deuda').checked;
-      const abono = document.getElementById('g-abono').value || 0;
-      await db.from('gastos').insert([{ fecha, proveedor_id: prov_id||null, valor, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('g-detalles').value }]);
-      ocultarForm(); actualizarDashboard();
+
+      if (!valor) return alert('Agrega el valor del gasto');
+
+      // Si seleccionó un producto para sumar al inventario
+      if(prod_id && cant > 0) {
+        const prod = window.listaProductos.find(x => x.id === prod_id);
+        await db.from('productos').update({ cantidad_disponible: Number(prod.cantidad_disponible) + cant }).eq('id', prod_id);
+      }
+
+      await db.from('gastos').insert([{ proveedor_id: prov||null, valor, producto_id: prod_id||null, cantidad: cant, es_deuda, abono: es_deuda?document.getElementById('g-abono').value:0, detalles: document.getElementById('g-detalles').value }]);
+      document.getElementById('form-gasto').reset(); ocultarForm(); cargarDropdowns();
     }
 
-    // 8. HELPERS DE INTERFAZ
-    function prepararFormulario(tipo) {
-      document.getElementById(`form-${tipo}`).reset();
-      document.getElementById(`${tipo === 'proveedor' ? 'prov' : tipo.charAt(0)}-id`).value = '';
-      document.getElementById(`${tipo === 'proveedor' ? 'prov' : tipo.charAt(0)}-titulo`).innerText = `Nuevo ${tipo}`;
-      mostrarForm(tipo);
+    async function eliminarRegistro(tabla, id) {
+      if(confirm('¿Eliminar este registro permanentemente? (No revierte inventario automáticamente)')) {
+        await db.from(tabla).delete().eq('id', id);
+        cargarBalance(); cargarDeudas();
+      }
     }
 
-    function editarCliente(id, nom, tel) {
-      document.getElementById('c-id').value = id; document.getElementById('c-nombre').value = nom;
-      document.getElementById('c-telefono').value = tel !== 'null' ? tel : '';
-      document.getElementById('c-titulo').innerText = 'Editar Cliente'; mostrarForm('cliente');
-    }
+    // LISTAS AUXILIARES
+    document.getElementById('vp-producto').addEventListener('change', (e) => {
+      const p = window.listaProductos.find(x => x.id === e.target.value);
+      if(p) document.getElementById('vp-precio').value = p.precio_venta;
+    });
 
-    function editarProveedor(id, nom, tel) {
-      document.getElementById('prov-id').value = id; document.getElementById('prov-nombre').value = nom;
-      document.getElementById('prov-telefono').value = tel !== 'null' ? tel : '';
-      document.getElementById('prov-titulo').innerText = 'Editar Proveedor'; mostrarForm('proveedor');
-    }
+    async function cargarListaClientes() { const {data} = await db.from('clientes').select('*'); document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700 p-2 rounded flex justify-between"><p>${c.nombre}</p><button class="text-rose-400" onclick="eliminarRegistro('clientes','${c.id}'); setTimeout(cargarListaClientes,500)">🗑️</button></div>`).join(''); }
+    async function cargarListaProveedores() { const {data} = await db.from('proveedores').select('*'); document.getElementById('lista-proveedores').innerHTML = data.map(p=>`<div class="bg-slate-700 p-2 rounded flex justify-between"><p>${p.nombre}</p><button class="text-rose-400" onclick="eliminarRegistro('proveedores','${p.id}'); setTimeout(cargarListaProveedores,500)">🗑️</button></div>`).join(''); }
+    async function cargarInventario() { const {data} = await db.from('productos').select('*'); document.getElementById('lista-inventario').innerHTML = data.map(p=>`<div class="bg-slate-700 p-2 rounded flex justify-between"><div><p class="font-bold">${p.nombre}</p><p class="text-xs">Stock: ${p.cantidad_disponible}</p></div></div>`).join(''); }
 
-    function editarProducto(id, nom, comp, vent, stock) {
-      document.getElementById('p-id').value = id; document.getElementById('p-nombre').value = nom;
-      document.getElementById('p-compra').value = comp; document.getElementById('p-venta').value = vent;
-      document.getElementById('p-stock').value = stock; document.getElementById('p-titulo').innerText = 'Editar Producto';
-      mostrarForm('producto');
-    }
-
-    function mostrarForm(tipo) {
-      document.getElementById('form-container').classList.remove('hidden');
-      ['venta-prod', 'venta-libre', 'gasto', 'producto', 'cliente', 'proveedor'].forEach(f => document.getElementById(`form-${f}`).classList.add('hidden'));
-      document.getElementById(`form-${tipo}`).classList.remove('hidden');
-    }
-
+    // Helpers
+    function prepararFormulario(tipo) { document.getElementById(`form-${tipo}`).reset(); document.getElementById('form-container').classList.remove('hidden'); ['venta-prod','venta-libre','gasto','producto','cliente','proveedor'].forEach(f=>document.getElementById(`form-${f}`).classList.add('hidden')); document.getElementById(`form-${tipo}`).classList.remove('hidden'); }
     function ocultarForm() { document.getElementById('form-container').classList.add('hidden'); }
     function toggleAbono(px) { document.getElementById(`${px}-abono`).classList.toggle('hidden', !document.getElementById(`${px}-es-deuda`).checked); }
     
     async function cargarDropdowns() {
-      const { data: c } = await db.from('clientes').select('id, nombre');
-      let cHTML = '<option value="">Seleccionar Cliente</option>'; c?.forEach(x => cHTML += `<option value="${x.id}">${x.nombre}</option>`);
-      document.getElementById('vp-cliente').innerHTML = cHTML; document.getElementById('vl-cliente').innerHTML = cHTML;
-
-      const { data: p } = await db.from('productos').select('id, nombre, precio_venta');
-      window.listaProductos = p || [];
-      let pHTML = '<option value="">Seleccionar Producto</option>'; p?.forEach(x => pHTML += `<option value="${x.id}">${x.nombre}</option>`);
-      document.getElementById('vp-producto').innerHTML = pHTML;
-
-      const { data: pr } = await db.from('proveedores').select('id, nombre');
-      let prHTML = '<option value="">Seleccionar Proveedor</option>'; pr?.forEach(x => prHTML += `<option value="${x.id}">${x.nombre}</option>`);
-      document.getElementById('g-proveedor').innerHTML = prHTML;
+      const { data: c } = await db.from('clientes').select('*'); let cHTML = '<option value="">Cliente...</option>'; c?.forEach(x => cHTML += `<option value="${x.id}">${x.nombre}</option>`); document.getElementById('vp-cliente').innerHTML = cHTML; document.getElementById('vl-cliente').innerHTML = cHTML;
+      const { data: p } = await db.from('productos').select('*'); window.listaProductos = p || []; let pHTML = '<option value="">Producto...</option>'; p?.forEach(x => pHTML += `<option value="${x.id}">${x.nombre} (Stock: ${x.cantidad_disponible})</option>`); document.getElementById('vp-producto').innerHTML = pHTML; document.getElementById('g-producto').innerHTML = '<option value="">-- No aplica --</option>' + pHTML;
+      const { data: pr } = await db.from('proveedores').select('*'); let prHTML = '<option value="">Proveedor...</option>'; pr?.forEach(x => prHTML += `<option value="${x.id}">${x.nombre}</option>`); document.getElementById('g-proveedor').innerHTML = prHTML;
     }
-
-    window.onload = () => {
-      cargarDropdowns(); actualizarDashboard();
-      document.getElementById('balance-fecha').value = new Date().toISOString().split('T')[0]; // Fecha de hoy por defecto
-    };
   </script>
 </body>
 </html>
