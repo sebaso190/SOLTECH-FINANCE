@@ -50,6 +50,12 @@
       <button onclick="mostrarForm('producto')" class="bg-amber-600 hover:bg-amber-500 p-3 rounded-xl font-semibold text-sm shadow flex flex-col items-center gap-1">
         <span>🏷️ Nuevo Producto</span>
       </button>
+      <button onclick="mostrarForm('cliente')" class="bg-emerald-600 hover:bg-emerald-500 p-3 rounded-xl font-semibold text-sm shadow flex flex-col items-center gap-1">
+        <span>👤 Nuevo Cliente</span>
+      </button>
+      <button onclick="mostrarForm('proveedor')" class="bg-purple-600 hover:bg-purple-500 p-3 rounded-xl font-semibold text-sm shadow flex flex-col items-center gap-1">
+        <span>🏢 Nuevo Proveedor</span>
+      </button>
     </section>
 
     <section id="form-container" class="hidden bg-slate-800 p-4 rounded-xl border border-slate-700 relative shadow-xl">
@@ -110,6 +116,21 @@
         <input type="file" id="p-imagen" accept="image/*" class="w-full bg-slate-700 p-2 rounded text-sm text-slate-300">
         <button type="button" onclick="guardarProducto()" class="w-full bg-amber-600 py-2 rounded font-bold text-sm">Crear Producto</button>
       </form>
+      <!-- Formulario Crear Cliente -->
+      <form id="form-cliente" class="space-y-3 hidden">
+        <h3 class="font-bold text-emerald-400 text-sm">Crear Nuevo Cliente</h3>
+        <input type="text" id="c-nombre" placeholder="Nombre del Cliente" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+        <input type="tel" id="c-telefono" placeholder="Teléfono / WhatsApp" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+        <button type="button" onclick="guardarCliente()" class="w-full bg-emerald-600 py-2 rounded font-bold text-sm">Guardar Cliente</button>
+      </form>
+
+      <!-- Formulario Crear Proveedor -->
+      <form id="form-proveedor" class="space-y-3 hidden">
+        <h3 class="font-bold text-purple-400 text-sm">Crear Nuevo Proveedor</h3>
+        <input type="text" id="prov-nombre" placeholder="Nombre del Proveedor" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+        <input type="tel" id="prov-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+        <button type="button" onclick="guardarProveedor()" class="w-full bg-purple-600 py-2 rounded font-bold text-sm">Guardar Proveedor</button>
+      </form>
     </section>
 
     <section class="grid grid-cols-2 gap-3">
@@ -152,7 +173,7 @@
 
     function mostrarForm(tipo) {
       document.getElementById('form-container').classList.remove('hidden');
-      ['venta-prod', 'venta-libre', 'gasto', 'producto'].forEach(f => {
+      ['venta-prod', 'venta-libre', 'gasto', 'producto', 'cliente', 'proveedor'].forEach(f => {
         document.getElementById(`form-${f}`).classList.add('hidden');
       });
       document.getElementById(`form-${tipo}`).classList.remove('hidden');
@@ -362,6 +383,42 @@
       }
     }
 
+    // 8. GUARDAR CLIENTE
+    async function guardarCliente() {
+      const nombre = document.getElementById('c-nombre').value;
+      const telefono = document.getElementById('c-telefono').value;
+
+      if (!nombre) return alert('El nombre es obligatorio');
+
+      const { error } = await db.from('clientes').insert([{ nombre, telefono }]);
+
+      if (error) alert('Error: ' + error.message);
+      else {
+        alert('Cliente guardado');
+        document.getElementById('form-cliente').reset();
+        ocultarForm();
+        cargarDropdowns(); // Esto actualiza la lista para que puedas venderle de inmediato
+      }
+    }
+
+    // 9. GUARDAR PROVEEDOR
+    async function guardarProveedor() {
+      const nombre = document.getElementById('prov-nombre').value;
+      const telefono = document.getElementById('prov-telefono').value;
+
+      if (!nombre) return alert('El nombre es obligatorio');
+
+      const { error } = await db.from('proveedores').insert([{ nombre, telefono }]);
+
+      if (error) alert('Error: ' + error.message);
+      else {
+        alert('Proveedor guardado');
+        document.getElementById('form-proveedor').reset();
+        ocultarForm();
+        cargarDropdowns();
+      }
+    }
+    
     // INICIALIZACIÓN (Se ejecuta al abrir la app)
     window.onload = () => {
       cargarDropdowns();
@@ -371,7 +428,7 @@
     // FUNCIONES VISUALES (INTERFAZ)
     function mostrarForm(tipo) {
       document.getElementById('form-container').classList.remove('hidden');
-      ['venta-prod', 'venta-libre', 'gasto', 'producto'].forEach(f => {
+      ['venta-prod', 'venta-libre', 'gasto', 'producto', 'cliente', 'proveedor'].forEach(f => {
         document.getElementById(`form-${f}`).classList.add('hidden');
       });
       document.getElementById(`form-${tipo}`).classList.remove('hidden');
