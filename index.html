@@ -10,49 +10,40 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans">
+<body class="bg-slate-900 text-slate-100 font-sans pb-20">
 
-  <!-- ENCABEZADO -->
   <header class="p-4 bg-slate-800 border-b border-slate-700 sticky top-0 z-10 flex justify-between items-center">
     <h1 class="font-bold text-lg text-blue-400">Control Financiero</h1>
-    <span id="pwa-status" class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full">PWA Lista</span>
+    <span class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full">PWA Lista</span>
   </header>
 
-  <!-- CONTENEDOR PRINCIPAL (Margen inferior para que el nav no tape contenido) -->
-  <main class="p-4 max-w-lg mx-auto mb-20 relative">
+  <main class="p-4 max-w-lg mx-auto relative">
 
     <!-- ================= VISTA: INICIO ================= -->
     <section id="view-inicio" class="vista-seccion space-y-6">
-      <!-- BALANCE GENERAL Y FILTRO -->
+      
       <section class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg">
-        <div class="flex justify-between items-center mb-3">
-          <h2 class="text-xs uppercase font-semibold text-slate-400">Resumen Financiero</h2>
-          <div class="flex gap-2">
-            <input type="date" id="filtro-fecha" onchange="actualizarDashboard()" class="bg-slate-700 text-xs p-1.5 rounded text-white border border-slate-600 outline-none focus:border-blue-500">
-            <button onclick="document.getElementById('filtro-fecha').value=''; actualizarDashboard();" class="text-xs bg-slate-700 hover:bg-slate-600 px-2 rounded text-slate-300 border border-slate-600">Limpiar</button>
-          </div>
-        </div>
-        
+        <h2 class="text-xs uppercase font-semibold text-slate-400 mb-3">Resumen Financiero Global</h2>
         <div class="grid grid-cols-2 gap-3 mb-4">
           <div class="bg-emerald-950/40 p-3 rounded-lg border border-emerald-800/50">
             <p class="text-xs text-emerald-400">Ingresos Totales</p>
-            <p id="total-ingresos" class="text-xl font-bold text-emerald-300">$0.00</p>
+            <p id="total-ingresos" class="text-xl font-bold text-emerald-300">0</p>
           </div>
           <div class="bg-rose-950/40 p-3 rounded-lg border border-rose-800/50">
             <p class="text-xs text-rose-400">Egresos Totales</p>
-            <p id="total-egresos" class="text-xl font-bold text-rose-300">$0.00</p>
+            <p id="total-egresos" class="text-xl font-bold text-rose-300">0</p>
           </div>
         </div>
         <div class="pt-2 border-t border-slate-700 flex justify-between items-center">
           <span class="text-sm font-medium">Balance Neto:</span>
-          <span id="balance-neto" class="text-lg font-bold text-blue-400">$0.00</span>
+          <span id="balance-neto" class="text-lg font-bold text-blue-400">0</span>
         </div>
       </section>
 
-      <!-- BOTONES DE TRANSACCIÓN RÁPIDA -->
+      <!-- BOTONES PRINCIPALES -->
       <section class="grid grid-cols-2 gap-3">
         <button onclick="mostrarForm('venta-prod')" class="bg-blue-600 hover:bg-blue-500 p-3 rounded-xl font-semibold text-sm shadow flex flex-col items-center gap-1 col-span-2">
-          <span>📦 Registrar Nueva Venta de Producto</span>
+          <span>📦 Registrar Nueva Venta</span>
         </button>
         <button onclick="mostrarForm('venta-libre')" class="bg-cyan-600 hover:bg-cyan-500 p-3 rounded-xl font-semibold text-sm shadow flex flex-col items-center gap-1">
           <span>⚡ Venta Libre</span>
@@ -62,259 +53,377 @@
         </button>
       </section>
 
-      <!-- DEUDAS -->
-      <section class="grid grid-cols-2 gap-3">
-        <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
-          <h3 class="text-xs font-semibold text-amber-400 mb-1">Deudas por Cobrar</h3>
-          <p id="deudas-cobrar" class="text-lg font-bold text-slate-200">$0.00</p>
-        </div>
-        <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
-          <h3 class="text-xs font-semibold text-purple-400 mb-1">Deudas por Pagar</h3>
-          <p id="deudas-pagar" class="text-lg font-bold text-slate-200">$0.00</p>
-        </div>
+      <!-- ACCESOS A DIRECTORIOS -->
+      <section class="grid grid-cols-2 gap-3 border-t border-slate-700 pt-4">
+        <button onclick="cambiarVista('clientes')" class="bg-slate-800 hover:bg-slate-700 p-3 rounded-xl border border-slate-600 font-semibold text-sm flex justify-center items-center gap-2">
+          <span>👥 Directorio Clientes</span>
+        </button>
+        <button onclick="cambiarVista('proveedores')" class="bg-slate-800 hover:bg-slate-700 p-3 rounded-xl border border-slate-600 font-semibold text-sm flex justify-center items-center gap-2">
+          <span>🏢 Proveedores</span>
+        </button>
       </section>
     </section>
 
-    <!-- ================= VISTA: CLIENTES ================= -->
+    <!-- ================= VISTA: BALANCE (DETALLE POR FECHA) ================= -->
+    <section id="view-balance" class="vista-seccion space-y-4 hidden">
+      <div class="flex justify-between items-center bg-slate-800 p-3 rounded-lg border border-slate-700">
+        <h2 class="font-bold text-slate-200">Balance Detallado</h2>
+        <input type="date" id="balance-fecha" onchange="cargarBalanceDetallado()" class="bg-slate-700 text-sm p-1.5 rounded text-white border border-slate-600 outline-none">
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <h3 class="text-xs font-bold text-emerald-400 mb-2 uppercase border-b border-emerald-900 pb-1">Ingresos (Ventas)</h3>
+          <div id="lista-balance-ingresos" class="space-y-2"></div>
+        </div>
+        <div>
+          <h3 class="text-xs font-bold text-rose-400 mb-2 uppercase border-b border-rose-900 pb-1">Egresos (Gastos)</h3>
+          <div id="lista-balance-egresos" class="space-y-2"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VISTA: DEUDAS ================= -->
+    <section id="view-deudas" class="vista-seccion space-y-6 hidden">
+      <!-- DEUDAS POR COBRAR -->
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-bold text-amber-400">Deudas por Cobrar</h3>
+          <span id="resumen-cobrar" class="text-sm font-bold bg-amber-900/50 px-2 py-1 rounded">0</span>
+        </div>
+        <div id="lista-deudas-cobrar" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+      </div>
+
+      <!-- DEUDAS POR PAGAR -->
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-bold text-purple-400">Deudas por Pagar</h3>
+          <span id="resumen-pagar" class="text-sm font-bold bg-purple-900/50 px-2 py-1 rounded">0</span>
+        </div>
+        <div id="lista-deudas-pagar" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+      </div>
+    </section>
+
+    <!-- ================= VISTAS: DIRECTORIOS E INVENTARIO ================= -->
     <section id="view-clientes" class="vista-seccion space-y-4 hidden">
-      <div class="flex justify-between items-center">
-        <h2 class="font-bold text-lg text-emerald-400">Directorio de Clientes</h2>
-        <button onclick="mostrarForm('cliente')" class="bg-emerald-600 px-3 py-1.5 rounded-lg text-sm font-bold shadow">+ Nuevo</button>
-      </div>
-      <div id="lista-clientes" class="space-y-3 mt-4">
-        <!-- JS llenará esta lista -->
-        <p class="text-slate-400 text-sm text-center">Cargando clientes...</p>
-      </div>
+      <div class="flex justify-between items-center"><h2 class="font-bold text-emerald-400">Clientes</h2><button onclick="prepararFormulario('cliente')" class="bg-emerald-600 px-3 py-1 rounded text-sm">+ Nuevo</button></div>
+      <div id="lista-clientes" class="space-y-3"></div>
     </section>
 
-    <!-- ================= VISTA: PROVEEDORES ================= -->
     <section id="view-proveedores" class="vista-seccion space-y-4 hidden">
-      <div class="flex justify-between items-center">
-        <h2 class="font-bold text-lg text-purple-400">Proveedores</h2>
-        <button onclick="mostrarForm('proveedor')" class="bg-purple-600 px-3 py-1.5 rounded-lg text-sm font-bold shadow">+ Nuevo</button>
-      </div>
-      <div id="lista-proveedores" class="space-y-3 mt-4">
-        <p class="text-slate-400 text-sm text-center">Cargando proveedores...</p>
-      </div>
+      <div class="flex justify-between items-center"><h2 class="font-bold text-purple-400">Proveedores</h2><button onclick="prepararFormulario('proveedor')" class="bg-purple-600 px-3 py-1 rounded text-sm">+ Nuevo</button></div>
+      <div id="lista-proveedores" class="space-y-3"></div>
     </section>
 
-    <!-- ================= VISTA: INVENTARIO ================= -->
     <section id="view-inventario" class="vista-seccion space-y-4 hidden">
-      <div class="flex justify-between items-center">
-        <h2 class="font-bold text-lg text-amber-400">Inventario</h2>
-        <button onclick="mostrarForm('producto')" class="bg-amber-600 px-3 py-1.5 rounded-lg text-sm font-bold shadow">+ Nuevo</button>
-      </div>
-      <div id="lista-inventario" class="space-y-3 mt-4">
-        <p class="text-slate-400 text-sm text-center">Cargando inventario...</p>
-      </div>
+      <div class="flex justify-between items-center"><h2 class="font-bold text-amber-400">Inventario</h2><button onclick="prepararFormulario('producto')" class="bg-amber-600 px-3 py-1 rounded text-sm">+ Nuevo</button></div>
+      <div id="lista-inventario" class="space-y-3"></div>
     </section>
 
-    <!-- ================= MODAL DE FORMULARIOS ================= -->
-    <section id="form-container" class="hidden absolute top-4 left-4 right-4 z-20 bg-slate-800 p-5 rounded-xl border border-slate-600 shadow-2xl">
-      <button onclick="ocultarForm()" class="absolute top-3 right-4 text-xl text-slate-400 hover:text-white">&times;</button>
-      
-      <!-- Formularios (Ventas y Gastos) -->
-      <form id="form-venta-prod" class="space-y-3 hidden"><h3 class="font-bold text-blue-400">Nueva Venta</h3><input type="datetime-local" id="vp-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><select id="vp-cliente" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select><select id="vp-producto" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select><input type="number" id="vp-descuento" placeholder="Descuento ($)" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><div class="flex items-center gap-2"><input type="checkbox" id="vp-es-deuda" onchange="toggleAbono('vp')"><label for="vp-es-deuda" class="text-sm">¿Es Venta a Crédito?</label></div><input type="number" id="vp-abono" placeholder="Abono Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden"><textarea id="vp-detalles" placeholder="Detalles..." class="w-full bg-slate-700 p-2 rounded text-sm text-white"></textarea><button type="button" onclick="guardarVentaProducto()" class="w-full bg-blue-600 py-2 rounded font-bold text-sm">Guardar Venta</button></form>
-      <form id="form-venta-libre" class="space-y-3 hidden"><h3 class="font-bold text-cyan-400">Venta Libre</h3><input type="datetime-local" id="vl-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><select id="vl-cliente" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select><input type="number" id="vl-valor" placeholder="Valor ($)" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><input type="number" id="vl-descuento" placeholder="Descuento ($)" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><div class="flex items-center gap-2"><input type="checkbox" id="vl-es-deuda" onchange="toggleAbono('vl')"><label for="vl-es-deuda" class="text-sm">¿Es a Crédito?</label></div><input type="number" id="vl-abono" placeholder="Abono Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden"><textarea id="vl-detalles" placeholder="Detalles..." class="w-full bg-slate-700 p-2 rounded text-sm text-white"></textarea><button type="button" onclick="guardarVentaLibre()" class="w-full bg-cyan-600 py-2 rounded font-bold text-sm">Guardar Venta Libre</button></form>
-      <form id="form-gasto" class="space-y-3 hidden"><h3 class="font-bold text-rose-400">Registrar Gasto</h3><input type="datetime-local" id="g-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><select id="g-proveedor" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select><input type="number" id="g-valor" placeholder="Valor ($)" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><div class="flex items-center gap-2"><input type="checkbox" id="g-es-deuda" onchange="toggleAbono('g')"><label for="g-es-deuda" class="text-sm">¿Deuda por Pagar?</label></div><input type="number" id="g-abono" placeholder="Abono Realizado" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden"><textarea id="g-detalles" placeholder="Detalles..." class="w-full bg-slate-700 p-2 rounded text-sm text-white"></textarea><button type="button" onclick="guardarGasto()" class="w-full bg-rose-600 py-2 rounded font-bold text-sm">Guardar Gasto</button></form>
-      
-      <!-- Formularios (Creación) -->
-      <form id="form-producto" class="space-y-3 hidden"><h3 class="font-bold text-amber-400">Nuevo Producto</h3><input type="text" id="p-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><div class="grid grid-cols-2 gap-2"><input type="number" id="p-compra" placeholder="P. Compra ($)" class="bg-slate-700 p-2 rounded text-sm text-white"><input type="number" id="p-venta" placeholder="P. Venta ($)" class="bg-slate-700 p-2 rounded text-sm text-white"></div><input type="number" id="p-stock" placeholder="Cantidad Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><button type="button" onclick="guardarProducto()" class="w-full bg-amber-600 py-2 rounded font-bold text-sm">Guardar Producto</button></form>
-      <form id="form-cliente" class="space-y-3 hidden"><h3 class="font-bold text-emerald-400">Nuevo Cliente</h3><input type="text" id="c-nombre" placeholder="Nombre del Cliente" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><input type="tel" id="c-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><button type="button" onclick="guardarCliente()" class="w-full bg-emerald-600 py-2 rounded font-bold text-sm">Guardar Cliente</button></form>
-      <form id="form-proveedor" class="space-y-3 hidden"><h3 class="font-bold text-purple-400">Nuevo Proveedor</h3><input type="text" id="prov-nombre" placeholder="Nombre del Proveedor" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><input type="tel" id="prov-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><button type="button" onclick="guardarProveedor()" class="w-full bg-purple-600 py-2 rounded font-bold text-sm">Guardar Proveedor</button></form>
-    </section>
+    <!-- ================= MODAL FORMULARIOS ================= -->
+    <section id="form-container" class="hidden fixed inset-0 z-50 bg-slate-900/95 flex justify-center items-center p-4">
+      <div class="bg-slate-800 p-5 rounded-xl border border-slate-600 shadow-2xl w-full max-w-sm relative max-h-[90vh] overflow-y-auto">
+        <button onclick="ocultarForm()" class="absolute top-3 right-4 text-xl text-slate-400 hover:text-white">&times;</button>
+        
+        <form id="form-venta-prod" class="space-y-3 hidden">
+          <h3 class="font-bold text-blue-400">Nueva Venta</h3>
+          <input type="datetime-local" id="vp-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <select id="vp-cliente" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select>
+          <select id="vp-producto" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select>
+          <div class="grid grid-cols-2 gap-2">
+            <div><label class="text-xs text-slate-400">Precio de Venta</label><input type="number" id="vp-precio" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></div>
+            <div><label class="text-xs text-slate-400">Descuento</label><input type="number" id="vp-descuento" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></div>
+          </div>
+          <div class="flex items-center gap-2"><input type="checkbox" id="vp-es-deuda" onchange="toggleAbono('vp')"><label class="text-sm">¿Es a Crédito?</label></div>
+          <input type="number" id="vp-abono" placeholder="Abono Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden">
+          <textarea id="vp-detalles" placeholder="Detalles..." class="w-full bg-slate-700 p-2 rounded text-sm text-white"></textarea>
+          <button type="button" onclick="guardarVentaProducto()" class="w-full bg-blue-600 py-2 rounded font-bold">Guardar</button>
+        </form>
 
+        <form id="form-venta-libre" class="space-y-3 hidden">
+          <h3 class="font-bold text-cyan-400">Venta Libre</h3>
+          <input type="datetime-local" id="vl-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <select id="vl-cliente" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select>
+          <input type="number" id="vl-valor" placeholder="Valor" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <div class="flex items-center gap-2"><input type="checkbox" id="vl-es-deuda" onchange="toggleAbono('vl')"><label class="text-sm">¿Es a Crédito?</label></div>
+          <input type="number" id="vl-abono" placeholder="Abono Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden">
+          <textarea id="vl-detalles" placeholder="Detalles..." class="w-full bg-slate-700 p-2 rounded text-sm text-white"></textarea>
+          <button type="button" onclick="guardarVentaLibre()" class="w-full bg-cyan-600 py-2 rounded font-bold">Guardar</button>
+        </form>
+
+        <form id="form-gasto" class="space-y-3 hidden">
+          <h3 class="font-bold text-rose-400">Registrar Gasto</h3>
+          <input type="datetime-local" id="g-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <select id="g-proveedor" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select>
+          <input type="number" id="g-valor" placeholder="Valor del gasto" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <div class="flex items-center gap-2"><input type="checkbox" id="g-es-deuda" onchange="toggleAbono('g')"><label class="text-sm">¿Deuda por Pagar?</label></div>
+          <input type="number" id="g-abono" placeholder="Abono Realizado" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden">
+          <textarea id="g-detalles" placeholder="Detalles..." class="w-full bg-slate-700 p-2 rounded text-sm text-white"></textarea>
+          <button type="button" onclick="guardarGasto()" class="w-full bg-rose-600 py-2 rounded font-bold">Guardar</button>
+        </form>
+
+        <form id="form-producto" class="space-y-3 hidden">
+          <h3 id="p-titulo" class="font-bold text-amber-400">Producto</h3>
+          <input type="hidden" id="p-id">
+          <input type="text" id="p-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <div class="grid grid-cols-2 gap-2"><input type="number" id="p-compra" placeholder="P. Compra" class="bg-slate-700 p-2 rounded text-sm text-white"><input type="number" id="p-venta" placeholder="P. Venta" class="bg-slate-700 p-2 rounded text-sm text-white"></div>
+          <input type="number" id="p-stock" placeholder="Cantidad" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <div><label class="text-xs text-slate-400">Imagen (Opcional)</label><input type="file" id="p-imagen" accept="image/*" class="w-full text-xs text-slate-300"></div>
+          <button type="button" onclick="guardarProducto()" class="w-full bg-amber-600 py-2 rounded font-bold">Guardar</button>
+        </form>
+
+        <form id="form-cliente" class="space-y-3 hidden">
+          <h3 id="c-titulo" class="font-bold text-emerald-400">Cliente</h3>
+          <input type="hidden" id="c-id">
+          <input type="text" id="c-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <input type="tel" id="c-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <button type="button" onclick="guardarCliente()" class="w-full bg-emerald-600 py-2 rounded font-bold">Guardar</button>
+        </form>
+
+        <form id="form-proveedor" class="space-y-3 hidden">
+          <h3 id="prov-titulo" class="font-bold text-purple-400">Proveedor</h3>
+          <input type="hidden" id="prov-id">
+          <input type="text" id="prov-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <input type="tel" id="prov-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <button type="button" onclick="guardarProveedor()" class="w-full bg-purple-600 py-2 rounded font-bold">Guardar</button>
+        </form>
+      </div>
+    </section>
   </main>
 
-  <!-- ================= NAVEGACIÓN INFERIOR ================= -->
+  <!-- ================= NAVEGACIÓN INFERIOR PRINCIPAL ================= -->
   <nav class="fixed bottom-0 w-full bg-slate-800 border-t border-slate-700 flex justify-around p-3 pb-6 text-xs shadow-2xl z-10">
-    <button onclick="cambiarVista('inicio')" id="nav-inicio" class="nav-btn text-blue-400 flex flex-col items-center gap-1 transition-colors">
-      <span class="text-lg">📊</span><span>Inicio</span>
-    </button>
-    <button onclick="cambiarVista('clientes')" id="nav-clientes" class="nav-btn text-slate-400 flex flex-col items-center gap-1 transition-colors">
-      <span class="text-lg">👥</span><span>Clientes</span>
-    </button>
-    <button onclick="cambiarVista('proveedores')" id="nav-proveedores" class="nav-btn text-slate-400 flex flex-col items-center gap-1 transition-colors">
-      <span class="text-lg">🚚</span><span>Proveedores</span>
-    </button>
-    <button onclick="cambiarVista('inventario')" id="nav-inventario" class="nav-btn text-slate-400 flex flex-col items-center gap-1 transition-colors">
-      <span class="text-lg">📦</span><span>Inventario</span>
-    </button>
+    <button onclick="cambiarVista('inicio')" id="nav-inicio" class="nav-btn text-blue-400 flex flex-col items-center gap-1"><span class="text-lg">📊</span><span>Inicio</span></button>
+    <button onclick="cambiarVista('inventario')" id="nav-inventario" class="nav-btn text-slate-400 flex flex-col items-center gap-1"><span class="text-lg">📦</span><span>Inventario</span></button>
+    <button onclick="cambiarVista('balance')" id="nav-balance" class="nav-btn text-slate-400 flex flex-col items-center gap-1"><span class="text-lg">📅</span><span>Balance</span></button>
+    <button onclick="cambiarVista('deudas')" id="nav-deudas" class="nav-btn text-slate-400 flex flex-col items-center gap-1"><span class="text-lg">💳</span><span>Deudas</span></button>
   </nav>
 
-  <!-- ================= LÓGICA JAVASCRIPT ================= -->
   <script>
-    // 1. CREDENCIALES SUPABASE
+    // 1. CREDENCIALES
     const { createClient } = supabase;
     const supabaseUrl = 'https://jmidlrztyzzmauroxuuf.supabase.co'; 
     const supabaseKey = 'sb_publishable_7rrvQ2yvzVaiYLEqtgoa_w_GbrCRoAi';
     const db = createClient(supabaseUrl, supabaseKey);
 
-    // 2. NAVEGACIÓN ENTRE VISTAS
+    // FORMATO DE MONEDA COLOMBIANA (COP)
+    const fmtMoneda = (valor) => new Intl.NumberFormat('es-CO').format(valor || 0);
+    // FECHA LOCAL
+    const getFechaLocal = (fechaUTC) => {
+      const f = new Date(fechaUTC);
+      return new Date(f.getTime() - (f.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    };
+
     function cambiarVista(vista) {
       document.querySelectorAll('.vista-seccion').forEach(el => el.classList.add('hidden'));
       document.getElementById(`view-${vista}`).classList.remove('hidden');
-
-      document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('text-blue-400');
-        btn.classList.add('text-slate-400');
-      });
-      document.getElementById(`nav-${vista}`).classList.remove('text-slate-400');
-      document.getElementById(`nav-${vista}`).classList.add('text-blue-400');
-      
-      ocultarForm(); // Cierra formularios abiertos al cambiar de pestaña
-
+      document.querySelectorAll('.nav-btn').forEach(btn => { btn.classList.remove('text-blue-400'); btn.classList.add('text-slate-400'); });
+      if(document.getElementById(`nav-${vista}`)) {
+        document.getElementById(`nav-${vista}`).classList.remove('text-slate-400');
+        document.getElementById(`nav-${vista}`).classList.add('text-blue-400');
+      }
+      ocultarForm();
       if(vista === 'clientes') cargarListaClientes();
       if(vista === 'proveedores') cargarListaProveedores();
       if(vista === 'inventario') cargarInventario();
+      if(vista === 'balance') cargarBalanceDetallado();
+      if(vista === 'deudas') cargarDeudas();
     }
 
-    // 3. ACTUALIZAR DASHBOARD (Con filtro de fechas local)
+    // 2. ACTUALIZAR DASHBOARD INICIO
     async function actualizarDashboard() {
-      const fechaFiltro = document.getElementById('filtro-fecha').value;
+      const { data: ventas } = await db.from('ventas').select('monto_final');
+      const ingresos = ventas ? ventas.reduce((s, v) => s + Number(v.monto_final), 0) : 0;
+      
+      const { data: gastos } = await db.from('gastos').select('valor');
+      const egresos = gastos ? gastos.reduce((s, g) => s + Number(g.valor), 0) : 0;
+      
+      document.getElementById('total-ingresos').innerText = fmtMoneda(ingresos);
+      document.getElementById('total-egresos').innerText = fmtMoneda(egresos);
+      document.getElementById('balance-neto').innerText = fmtMoneda(ingresos - egresos);
+    }
 
-      const { data: ventas } = await db.from('ventas').select('monto_final, saldo_pendiente, fecha');
-      let ingresos = 0; let deudasCobrar = 0;
+    // 3. VISTA: BALANCE DETALLADO
+    async function cargarBalanceDetallado() {
+      const fechaFiltro = document.getElementById('balance-fecha').value;
+      
+      // Ingresos
+      const { data: ventas } = await db.from('ventas').select('*, clientes(nombre), productos(nombre)').order('fecha', { ascending: false });
+      let htmlIngresos = '';
       if (ventas) {
         ventas.forEach(v => {
-          // Convertir UTC de la BD a fecha local para comparar correctamente
-          const fechaLocal = new Date(v.fecha);
-          const fechaISO = new Date(fechaLocal.getTime() - (fechaLocal.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-          
-          if (!fechaFiltro || fechaISO === fechaFiltro) {
-            ingresos += Number(v.monto_final);
-            deudasCobrar += Number(v.saldo_pendiente || 0);
+          if (!fechaFiltro || getFechaLocal(v.fecha) === fechaFiltro) {
+            htmlIngresos += `<div class="bg-slate-700/40 p-2 rounded border border-emerald-900/50 flex justify-between">
+              <div><p class="text-sm font-bold">${v.clientes?.nombre || 'Venta Libre'}</p><p class="text-xs text-slate-400">${v.productos?.nombre || v.detalles || 'Sin detalle'}</p></div>
+              <div class="text-right text-emerald-400 text-sm font-bold">+ ${fmtMoneda(v.monto_final)}</div>
+            </div>`;
           }
         });
       }
-      document.getElementById('total-ingresos').innerText = `$${ingresos.toFixed(2)}`;
-      document.getElementById('deudas-cobrar').innerText = `$${deudasCobrar.toFixed(2)}`;
+      document.getElementById('lista-balance-ingresos').innerHTML = htmlIngresos || '<p class="text-xs text-slate-500">No hay ingresos registrados.</p>';
 
-      const { data: gastos } = await db.from('gastos').select('valor, saldo_pendiente, fecha');
-      let egresos = 0; let deudasPagar = 0;
+      // Egresos
+      const { data: gastos } = await db.from('gastos').select('*, proveedores(nombre)').order('fecha', { ascending: false });
+      let htmlEgresos = '';
       if (gastos) {
         gastos.forEach(g => {
-          const fechaLocal = new Date(g.fecha);
-          const fechaISO = new Date(fechaLocal.getTime() - (fechaLocal.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-          
-          if (!fechaFiltro || fechaISO === fechaFiltro) {
-            egresos += Number(g.valor);
-            deudasPagar += Number(g.saldo_pendiente || 0);
+          if (!fechaFiltro || getFechaLocal(g.fecha) === fechaFiltro) {
+            htmlEgresos += `<div class="bg-slate-700/40 p-2 rounded border border-rose-900/50 flex justify-between">
+              <div><p class="text-sm font-bold">${g.proveedores?.nombre || 'Gasto General'}</p><p class="text-xs text-slate-400">${g.detalles || ''}</p></div>
+              <div class="text-right text-rose-400 text-sm font-bold">- ${fmtMoneda(g.valor)}</div>
+            </div>`;
           }
         });
       }
-      document.getElementById('total-egresos').innerText = `$${egresos.toFixed(2)}`;
-      document.getElementById('deudas-pagar').innerText = `$${deudasPagar.toFixed(2)}`;
-
-      const balanceNeto = ingresos - egresos;
-      document.getElementById('balance-neto').innerText = `$${balanceNeto.toFixed(2)}`;
+      document.getElementById('lista-balance-egresos').innerHTML = htmlEgresos || '<p class="text-xs text-slate-500">No hay gastos registrados.</p>';
     }
 
-    // 4. CARGAR LISTAS Y DIRECTORIOS
-    async function cargarListaClientes() {
-      const { data: clientes } = await db.from('clientes').select('*').order('creado_en', { ascending: false });
-      let html = '';
-      if(clientes && clientes.length > 0) {
-        clientes.forEach(c => {
-          html += `<div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600 flex justify-between items-center">
-                      <div><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400">📞 ${c.telefono || 'Sin registro'}</p></div>
-                   </div>`;
+    // 4. VISTA: DEUDAS
+    async function cargarDeudas() {
+      // Por Cobrar
+      const { data: ventas } = await db.from('ventas').select('*, clientes(nombre)').gt('saldo_pendiente', 0);
+      let htmlCobrar = ''; let tCobrar = 0;
+      if (ventas) {
+        ventas.forEach(v => {
+          tCobrar += Number(v.saldo_pendiente);
+          htmlCobrar += `<div class="bg-slate-700/50 p-2 rounded border border-amber-800/50 mb-2">
+            <div class="flex justify-between items-start"><p class="text-sm font-bold text-white">${v.clientes?.nombre || 'Desconocido'}</p><p class="text-amber-400 font-bold">${fmtMoneda(v.saldo_pendiente)}</p></div>
+            <p class="text-xs text-slate-400">Fecha: ${getFechaLocal(v.fecha)} | Total orig: ${fmtMoneda(v.monto_final)}</p>
+          </div>`;
         });
-      } else { html = '<p class="text-slate-400 text-sm">No hay clientes registrados.</p>'; }
+      }
+      document.getElementById('resumen-cobrar').innerText = fmtMoneda(tCobrar);
+      document.getElementById('lista-deudas-cobrar').innerHTML = htmlCobrar || '<p class="text-xs text-slate-500">No hay deudas por cobrar.</p>';
+
+      // Por Pagar
+      const { data: gastos } = await db.from('gastos').select('*, proveedores(nombre)').gt('saldo_pendiente', 0);
+      let htmlPagar = ''; let tPagar = 0;
+      if (gastos) {
+        gastos.forEach(g => {
+          tPagar += Number(g.saldo_pendiente);
+          htmlPagar += `<div class="bg-slate-700/50 p-2 rounded border border-purple-800/50 mb-2">
+            <div class="flex justify-between items-start"><p class="text-sm font-bold text-white">${g.proveedores?.nombre || 'Desconocido'}</p><p class="text-purple-400 font-bold">${fmtMoneda(g.saldo_pendiente)}</p></div>
+            <p class="text-xs text-slate-400">Ref: ${g.detalles || 'Sin detalle'}</p>
+          </div>`;
+        });
+      }
+      document.getElementById('resumen-pagar').innerText = fmtMoneda(tPagar);
+      document.getElementById('lista-deudas-pagar').innerHTML = htmlPagar || '<p class="text-xs text-slate-500">No hay deudas por pagar.</p>';
+    }
+
+    // 5. LISTAS Y EDICIÓN (CLIENTES, PROVEEDORES, INVENTARIO)
+    async function cargarListaClientes() {
+      const { data } = await db.from('clientes').select('*').order('creado_en', { ascending: false });
+      let html = '';
+      if(data) data.forEach(c => {
+        html += `<div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600 flex justify-between items-center">
+                   <div><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400">📞 ${c.telefono || '-'}</p></div>
+                   <button onclick="editarCliente('${c.id}', '${c.nombre}', '${c.telefono}')" class="text-xs bg-slate-600 px-2 py-1 rounded">Editar</button>
+                 </div>`;
+      });
       document.getElementById('lista-clientes').innerHTML = html;
     }
 
     async function cargarListaProveedores() {
-      const { data: prov } = await db.from('proveedores').select('*').order('creado_en', { ascending: false });
+      const { data } = await db.from('proveedores').select('*').order('creado_en', { ascending: false });
       let html = '';
-      if(prov && prov.length > 0) {
-        prov.forEach(p => {
-          html += `<div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600">
-                      <p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400">📞 ${p.telefono || 'Sin registro'}</p>
-                   </div>`;
-        });
-      } else { html = '<p class="text-slate-400 text-sm">No hay proveedores registrados.</p>'; }
+      if(data) data.forEach(p => {
+        html += `<div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600 flex justify-between items-center">
+                   <div><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400">📞 ${p.telefono || '-'}</p></div>
+                   <button onclick="editarProveedor('${p.id}', '${p.nombre}', '${p.telefono}')" class="text-xs bg-slate-600 px-2 py-1 rounded">Editar</button>
+                 </div>`;
+      });
       document.getElementById('lista-proveedores').innerHTML = html;
     }
 
     async function cargarInventario() {
-      const { data: prod } = await db.from('productos').select('*').order('nombre', { ascending: true });
+      const { data } = await db.from('productos').select('*').order('nombre', { ascending: true });
       let html = '';
-      if(prod && prod.length > 0) {
-        prod.forEach(p => {
-          html += `<div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600 flex justify-between items-center">
-                      <div><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400">Stock: ${p.cantidad_disponible}</p></div>
-                      <div class="text-right"><p class="text-emerald-400 font-bold">$${p.precio_venta}</p></div>
-                   </div>`;
-        });
-      } else { html = '<p class="text-slate-400 text-sm">No hay productos registrados.</p>'; }
+      if(data) data.forEach(p => {
+        const imgTag = p.imagen_url ? `<img src="${p.imagen_url}" class="w-10 h-10 object-cover rounded">` : `<div class="w-10 h-10 bg-slate-600 rounded flex items-center justify-center text-xs">📦</div>`;
+        html += `<div class="bg-slate-700/50 p-3 rounded-lg border border-slate-600 flex justify-between items-center gap-3">
+                   ${imgTag}
+                   <div class="flex-1"><p class="font-bold text-sm text-white">${p.nombre}</p><p class="text-xs text-slate-400">Stock: ${p.cantidad_disponible}</p></div>
+                   <div class="text-right"><p class="text-emerald-400 text-sm font-bold">${fmtMoneda(p.precio_venta)}</p>
+                   <button onclick="editarProducto('${p.id}', '${p.nombre}', ${p.precio_compra}, ${p.precio_venta}, ${p.cantidad_disponible})" class="text-xs bg-slate-600 px-2 py-1 rounded mt-1">Editar</button></div>
+                 </div>`;
+      });
       document.getElementById('lista-inventario').innerHTML = html;
     }
 
-    // 5. LLENAR DROPDOWNS PARA LOS FORMULARIOS DE VENTA
-    async function cargarDropdowns() {
-      const { data: clientes } = await db.from('clientes').select('id, nombre');
-      let clientesHTML = '<option value="">Seleccionar Cliente</option>';
-      if (clientes) clientes.forEach(c => clientesHTML += `<option value="${c.id}">${c.nombre}</option>`);
-      document.getElementById('vp-cliente').innerHTML = clientesHTML;
-      document.getElementById('vl-cliente').innerHTML = clientesHTML;
+    // 6. LÓGICA DE PRECIO AUTOMÁTICO EN VENTA
+    document.getElementById('vp-producto').addEventListener('change', (e) => {
+      const prod = window.listaProductos.find(p => p.id === e.target.value);
+      document.getElementById('vp-precio').value = prod ? prod.precio_venta : '';
+    });
 
-      const { data: productos } = await db.from('productos').select('id, nombre, precio_venta');
-      let prodHTML = '<option value="">Seleccionar Producto</option>';
-      window.listaProductos = productos || [];
-      if (productos) productos.forEach(p => prodHTML += `<option value="${p.id}">${p.nombre} - $${p.precio_venta}</option>`);
-      document.getElementById('vp-producto').innerHTML = prodHTML;
-
-      const { data: proveedores } = await db.from('proveedores').select('id, nombre');
-      let provHTML = '<option value="">Seleccionar Proveedor</option>';
-      if (proveedores) proveedores.forEach(p => provHTML += `<option value="${p.id}">${p.nombre}</option>`);
-      document.getElementById('g-proveedor').innerHTML = provHTML;
-    }
-
-    // 6. FUNCIONES DE GUARDADO A BASE DE DATOS
+    // 7. GUARDAR / EDITAR FUNCIONES
     async function guardarCliente() {
+      const id = document.getElementById('c-id').value;
       const nombre = document.getElementById('c-nombre').value;
       const telefono = document.getElementById('c-telefono').value;
-      if (!nombre) return alert('El nombre es obligatorio');
-      await db.from('clientes').insert([{ nombre, telefono }]);
-      document.getElementById('form-cliente').reset(); ocultarForm(); cargarListaClientes(); cargarDropdowns();
+      if (!nombre) return;
+      if (id) await db.from('clientes').update({ nombre, telefono }).eq('id', id);
+      else await db.from('clientes').insert([{ nombre, telefono }]);
+      ocultarForm(); cargarListaClientes(); cargarDropdowns();
     }
 
     async function guardarProveedor() {
+      const id = document.getElementById('prov-id').value;
       const nombre = document.getElementById('prov-nombre').value;
       const telefono = document.getElementById('prov-telefono').value;
-      if (!nombre) return alert('El nombre es obligatorio');
-      await db.from('proveedores').insert([{ nombre, telefono }]);
-      document.getElementById('form-proveedor').reset(); ocultarForm(); cargarListaProveedores(); cargarDropdowns();
+      if (!nombre) return;
+      if (id) await db.from('proveedores').update({ nombre, telefono }).eq('id', id);
+      else await db.from('proveedores').insert([{ nombre, telefono }]);
+      ocultarForm(); cargarListaProveedores(); cargarDropdowns();
     }
 
     async function guardarProducto() {
+      const id = document.getElementById('p-id').value;
       const nombre = document.getElementById('p-nombre').value;
-      const compra = document.getElementById('p-compra').value;
-      const venta = document.getElementById('p-venta').value;
-      const stock = document.getElementById('p-stock').value;
+      const compra = document.getElementById('p-compra').value || 0;
+      const venta = document.getElementById('p-venta').value || 0;
+      const stock = document.getElementById('p-stock').value || 0;
+      const fileInput = document.getElementById('p-imagen');
+      let imgBase64 = null;
+
       if (!nombre || !venta) return alert('Nombre y precio de venta obligatorios');
-      await db.from('productos').insert([{ nombre, precio_compra: compra||0, precio_venta: venta||0, cantidad_disponible: stock||0 }]);
-      document.getElementById('form-producto').reset(); ocultarForm(); cargarInventario(); cargarDropdowns();
+
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        imgBase64 = await new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.readAsDataURL(file);
+        });
+      }
+
+      const payload = { nombre, precio_compra: compra, precio_venta: venta, cantidad_disponible: stock };
+      if (imgBase64) payload.imagen_url = imgBase64; // Solo actualiza si hay imagen nueva
+
+      if (id) await db.from('productos').update(payload).eq('id', id);
+      else await db.from('productos').insert([payload]);
+      
+      ocultarForm(); cargarInventario(); cargarDropdowns();
     }
 
     async function guardarVentaProducto() {
       const fecha = document.getElementById('vp-fecha').value || new Date().toISOString();
       const cliente_id = document.getElementById('vp-cliente').value;
       const producto_id = document.getElementById('vp-producto').value;
+      const monto_bruto = document.getElementById('vp-precio').value; // Precio editable
       const descuento = document.getElementById('vp-descuento').value || 0;
       const es_deuda = document.getElementById('vp-es-deuda').checked;
       const abono = document.getElementById('vp-abono').value || 0;
       const detalles = document.getElementById('vp-detalles').value;
-      if (!cliente_id || !producto_id) return alert('Selecciona cliente y producto');
       
-      const producto = window.listaProductos.find(p => p.id === producto_id);
-      const monto_bruto = producto ? producto.precio_venta : 0;
+      if (!cliente_id || !producto_id || !monto_bruto) return alert('Datos incompletos');
 
       await db.from('ventas').insert([{ tipo_venta: 'PRODUCTO', fecha, cliente_id, producto_id, monto_bruto, descuento, es_deuda, abono: es_deuda ? abono : 0, detalles }]);
-      document.getElementById('form-venta-prod').reset(); toggleAbono('vp'); ocultarForm(); actualizarDashboard();
+      ocultarForm(); actualizarDashboard(); toggleAbono('vp');
     }
 
+    // Funciones base de Venta Libre y Gasto
     async function guardarVentaLibre() {
       const fecha = document.getElementById('vl-fecha').value || new Date().toISOString();
       const cliente_id = document.getElementById('vl-cliente').value;
@@ -322,27 +431,47 @@
       const descuento = document.getElementById('vl-descuento').value || 0;
       const es_deuda = document.getElementById('vl-es-deuda').checked;
       const abono = document.getElementById('vl-abono').value || 0;
-      const detalles = document.getElementById('vl-detalles').value;
-      if (!cliente_id || !valor) return alert('Cliente y valor son obligatorios');
-      
-      await db.from('ventas').insert([{ tipo_venta: 'LIBRE', fecha, cliente_id, monto_bruto: valor, descuento, es_deuda, abono: es_deuda ? abono : 0, detalles }]);
-      document.getElementById('form-venta-libre').reset(); toggleAbono('vl'); ocultarForm(); actualizarDashboard();
+      await db.from('ventas').insert([{ tipo_venta: 'LIBRE', fecha, cliente_id, monto_bruto: valor, descuento, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('vl-detalles').value }]);
+      ocultarForm(); actualizarDashboard();
     }
-
+    
     async function guardarGasto() {
       const fecha = document.getElementById('g-fecha').value || new Date().toISOString();
-      const proveedor_id = document.getElementById('g-proveedor').value;
+      const prov_id = document.getElementById('g-proveedor').value;
       const valor = document.getElementById('g-valor').value;
       const es_deuda = document.getElementById('g-es-deuda').checked;
       const abono = document.getElementById('g-abono').value || 0;
-      const detalles = document.getElementById('g-detalles').value;
-      if (!valor) return alert('El valor del gasto es obligatorio');
-      
-      await db.from('gastos').insert([{ fecha, proveedor_id: proveedor_id || null, valor, es_deuda, abono: es_deuda ? abono : 0, detalles }]);
-      document.getElementById('form-gasto').reset(); toggleAbono('g'); ocultarForm(); actualizarDashboard();
+      await db.from('gastos').insert([{ fecha, proveedor_id: prov_id||null, valor, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('g-detalles').value }]);
+      ocultarForm(); actualizarDashboard();
     }
 
-    // 7. INTERFAZ Y ARRANQUE
+    // 8. HELPERS DE INTERFAZ
+    function prepararFormulario(tipo) {
+      document.getElementById(`form-${tipo}`).reset();
+      document.getElementById(`${tipo === 'proveedor' ? 'prov' : tipo.charAt(0)}-id`).value = '';
+      document.getElementById(`${tipo === 'proveedor' ? 'prov' : tipo.charAt(0)}-titulo`).innerText = `Nuevo ${tipo}`;
+      mostrarForm(tipo);
+    }
+
+    function editarCliente(id, nom, tel) {
+      document.getElementById('c-id').value = id; document.getElementById('c-nombre').value = nom;
+      document.getElementById('c-telefono').value = tel !== 'null' ? tel : '';
+      document.getElementById('c-titulo').innerText = 'Editar Cliente'; mostrarForm('cliente');
+    }
+
+    function editarProveedor(id, nom, tel) {
+      document.getElementById('prov-id').value = id; document.getElementById('prov-nombre').value = nom;
+      document.getElementById('prov-telefono').value = tel !== 'null' ? tel : '';
+      document.getElementById('prov-titulo').innerText = 'Editar Proveedor'; mostrarForm('proveedor');
+    }
+
+    function editarProducto(id, nom, comp, vent, stock) {
+      document.getElementById('p-id').value = id; document.getElementById('p-nombre').value = nom;
+      document.getElementById('p-compra').value = comp; document.getElementById('p-venta').value = vent;
+      document.getElementById('p-stock').value = stock; document.getElementById('p-titulo').innerText = 'Editar Producto';
+      mostrarForm('producto');
+    }
+
     function mostrarForm(tipo) {
       document.getElementById('form-container').classList.remove('hidden');
       ['venta-prod', 'venta-libre', 'gasto', 'producto', 'cliente', 'proveedor'].forEach(f => document.getElementById(`form-${f}`).classList.add('hidden'));
@@ -350,16 +479,26 @@
     }
 
     function ocultarForm() { document.getElementById('form-container').classList.add('hidden'); }
+    function toggleAbono(px) { document.getElementById(`${px}-abono`).classList.toggle('hidden', !document.getElementById(`${px}-es-deuda`).checked); }
+    
+    async function cargarDropdowns() {
+      const { data: c } = await db.from('clientes').select('id, nombre');
+      let cHTML = '<option value="">Seleccionar Cliente</option>'; c?.forEach(x => cHTML += `<option value="${x.id}">${x.nombre}</option>`);
+      document.getElementById('vp-cliente').innerHTML = cHTML; document.getElementById('vl-cliente').innerHTML = cHTML;
 
-    function toggleAbono(prefix) {
-      const check = document.getElementById(`${prefix}-es-deuda`);
-      const inputAbono = document.getElementById(`${prefix}-abono`);
-      check.checked ? inputAbono.classList.remove('hidden') : inputAbono.classList.add('hidden');
+      const { data: p } = await db.from('productos').select('id, nombre, precio_venta');
+      window.listaProductos = p || [];
+      let pHTML = '<option value="">Seleccionar Producto</option>'; p?.forEach(x => pHTML += `<option value="${x.id}">${x.nombre}</option>`);
+      document.getElementById('vp-producto').innerHTML = pHTML;
+
+      const { data: pr } = await db.from('proveedores').select('id, nombre');
+      let prHTML = '<option value="">Seleccionar Proveedor</option>'; pr?.forEach(x => prHTML += `<option value="${x.id}">${x.nombre}</option>`);
+      document.getElementById('g-proveedor').innerHTML = prHTML;
     }
 
     window.onload = () => {
-      cargarDropdowns();
-      actualizarDashboard();
+      cargarDropdowns(); actualizarDashboard();
+      document.getElementById('balance-fecha').value = new Date().toISOString().split('T')[0]; // Fecha de hoy por defecto
     };
   </script>
 </body>
