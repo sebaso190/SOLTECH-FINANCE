@@ -174,42 +174,222 @@
   </script>
 
   <script>
-  // 1. INICIALIZAR SUPABASE
-  const { createClient } = supabase;
-  const supabaseUrl = 'https://jmidlrztyzzmauroxuuf.supabase.co/rest/v1/';
-  const supabaseKey = 'sb_publishable_7rrvQ2yvzVaiYLEqtgoa_w_GbrCRoAi';
-  const db = createClient(supabaseUrl, supabaseKey);
+    // 1. INICIALIZAR SUPABASE
+    const { createClient } = supabase;
+    const supabaseUrl = 'https://jmidlrztyzzmauroxuuf.supabase.co/rest/v1/';
+    const supabaseKey = 'sb_publishable_7rrvQ2yvzVaiYLEqtgoa_w_GbrCRoAi';
+    const db = createClient(supabaseUrl, supabaseKey);
 
-  // Ejemplo de función para guardar un cliente en la base de datos
-  async function guardarCliente(nombre, telefono) {
-    const { data, error } = await db
-      .from('clientes')
-      .insert([{ nombre: nombre, telefono: telefono }]);
-    
-    if (error) {
-      alert('Error al guardar: ' + error.message);
-    } else {
-      alert('Cliente guardado con éxito');
+    // 2. ACTUALIZAR DASHBOARD (Cálculo de Finanzas)
+    async function actualizarDashboard() {
+      // Calcular Ingresos y Deudas por Cobrar
+      const { data: ventas } = await db.from('ventas').select('monto_final, saldo_pendiente');
+      let ingresos = 0;
+      let deudasCobrar = 0;
+      if (ventas) {
+        ventas.forEach(v => {
+          ingresos += Number(v.monto_final);
+          deudasCobrar += Number(v.saldo_pendiente || 0);
+        });
+      }
+      document.getElementById('total-ingresos').innerText = `$${ingresos.toFixed(2)}`;
+      document.getElementById('deudas-cobrar').innerText = `$${deudasCobrar.toFixed(2)}`;
+
+      // Calcular Egresos y Deudas por Pagar
+      const { data: gastos } = await db.from('gastos').select('valor, saldo_pendiente');
+      let egresos = 0;
+      let deudasPagar = 0;
+      if (gastos) {
+        gastos.forEach(g => {
+          egresos += Number(g.valor);
+          deudasPagar += Number(g.saldo_pendiente || 0);
+        });
+      }
+      document.getElementById('total-egresos').innerText = `$${egresos.toFixed(2)}`;
+      document.getElementById('deudas-pagar').innerText = `$${deudasPagar.toFixed(2)}`;
+
+      // Balance Neto
+      const balanceNeto = ingresos - egresos;
+      document.getElementById('balance-neto').innerText = `$${balanceNeto.toFixed(2)}`;
     }
-  }
 
-  // Ejemplo de función para consultar el Balance de Ingresos
-  async function cargarIngresos() {
-    const { data, error } = await db
-      .from('ventas')
-      .select('monto_final');
-    
-    if (!error) {
-      const total = data.reduce((sum, venta) => sum + venta.monto_final, 0);
-      document.getElementById('total-ingresos').innerText = `$${total.toFixed(2)}`;
+    // 3. CARGAR LISTAS (Llenar los selectores desplegables)
+    async function cargarDropdowns() {
+      // Cargar Clientes
+      const { data: clientes } = await db.from('clientes').select('id, nombre');
+      let clientesHTML = '<option value="">Seleccionar Cliente</option>';
+      if (clientes) clientes.forEach(c => clientesHTML += `<option value="${c.id}">${c.nombre}</option>`);
+      document.getElementById('vp-cliente').innerHTML = clientesHTML;
+      document.getElementById('vl-cliente').innerHTML = clientesHTML;
+
+      // Cargar Productos 
+      const { data: productos } = await db.from('productos').select('id, nombre, precio_venta');
+      let prodHTML = '<option value="">Seleccionar Producto</option>';
+      window.listaProductos = productos || []; // Se guarda para consultar el precio al vender
+      if (productos) productos.forEach(p => prodHTML += `<option value="${p.id}">${p.nombre} - $${p.precio_venta}</option>`);
+      document.getElementById('vp-producto').innerHTML = prodHTML;
+
+      // Cargar Proveedores
+      const { data: proveedores } = await db.from('proveedores').select('id, nombre');
+      let provHTML = '<option value="">Seleccionar Proveedor</option>';
+      if (proveedores) proveedores.forEach(p => provHTML += `<option value="${p.id}">${p.nombre}</option>`);
+      document.getElementById('g-proveedor').innerHTML = provHTML;
     }
-  }
 
-  // Cargar datos al iniciar la app
-  window.onload = () => {
-    cargarIngresos();
-  };
-</script>
+    // 4. GUARDAR NUEVO PRODUCTO
+    async function guardarProducto() {
+      const nombre = document.getElementById('p-nombre').value;
+      const compra = document.getElementById('p-compra').value;
+      const venta = document.getElementById('p-venta').value;
+      const stock = document.getElementById('p-stock').value;
 
+      if (!nombre || !venta) return alert('El nombre y precio de venta son obligatorios');
+
+      const { error } = await db.from('productos').insert([{
+        nombre: nombre,
+        precio_compra: compra || 0,
+        precio_venta: venta || 0,
+        cantidad_disponible: stock || 0
+      }]);
+
+      if (error) alert('Error: ' + error.message);
+      else {
+        alert('Producto guardado exitosamente');
+        document.getElementById('form-producto').reset();
+        ocultarForm();
+        cargarDropdowns(); // Refresca la lista para poder venderlo de inmediato
+      }
+    }
+
+    // 5. GUARDAR VENTA DE PRODUCTO
+    async function guardarVentaProducto() {
+      const fecha = document.getElementById('vp-fecha').value || new Date().toISOString();
+      const cliente_id = document.getElementById('vp-cliente').value;
+      const producto_id = document.getElementById('vp-producto').value;
+      const descuento = document.getElementById('vp-descuento').value || 0;
+      const es_deuda = document.getElementById('vp-es-deuda').checked;
+      const abono = document.getElementById('vp-abono').value || 0;
+      const detalles = document.getElementById('vp-detalles').value;
+
+      if (!cliente_id || !producto_id) return alert('Selecciona cliente y producto');
+
+      // Obtener el precio configurado del producto
+      const producto = window.listaProductos.find(p => p.id === producto_id);
+      const monto_bruto = producto ? producto.precio_venta : 0;
+
+      const { error } = await db.from('ventas').insert([{
+        tipo_venta: 'PRODUCTO',
+        fecha: fecha,
+        cliente_id: cliente_id,
+        producto_id: producto_id,
+        monto_bruto: monto_bruto,
+        descuento: descuento,
+        es_deuda: es_deuda,
+        abono: es_deuda ? abono : 0,
+        detalles: detalles
+      }]);
+
+      if (error) alert('Error: ' + error.message);
+      else {
+        alert('Venta registrada');
+        document.getElementById('form-venta-prod').reset();
+        toggleAbono('vp'); 
+        ocultarForm();
+        actualizarDashboard();
+      }
+    }
+
+    // 6. GUARDAR VENTA LIBRE
+    async function guardarVentaLibre() {
+      const fecha = document.getElementById('vl-fecha').value || new Date().toISOString();
+      const cliente_id = document.getElementById('vl-cliente').value;
+      const valor = document.getElementById('vl-valor').value;
+      const descuento = document.getElementById('vl-descuento').value || 0;
+      const es_deuda = document.getElementById('vl-es-deuda').checked;
+      const abono = document.getElementById('vl-abono').value || 0;
+      const detalles = document.getElementById('vl-detalles').value;
+
+      if (!cliente_id || !valor) return alert('Cliente y valor son obligatorios');
+
+      const { error } = await db.from('ventas').insert([{
+        tipo_venta: 'LIBRE',
+        fecha: fecha,
+        cliente_id: cliente_id,
+        monto_bruto: valor,
+        descuento: descuento,
+        es_deuda: es_deuda,
+        abono: es_deuda ? abono : 0,
+        detalles: detalles
+      }]);
+
+      if (error) alert('Error: ' + error.message);
+      else {
+        alert('Venta libre registrada');
+        document.getElementById('form-venta-libre').reset();
+        toggleAbono('vl');
+        ocultarForm();
+        actualizarDashboard();
+      }
+    }
+
+    // 7. GUARDAR GASTO
+    async function guardarGasto() {
+      const fecha = document.getElementById('g-fecha').value || new Date().toISOString();
+      const proveedor_id = document.getElementById('g-proveedor').value;
+      const valor = document.getElementById('g-valor').value;
+      const es_deuda = document.getElementById('g-es-deuda').checked;
+      const abono = document.getElementById('g-abono').value || 0;
+      const detalles = document.getElementById('g-detalles').value;
+
+      if (!valor) return alert('El valor del gasto es obligatorio');
+
+      const { error } = await db.from('gastos').insert([{
+        fecha: fecha,
+        proveedor_id: proveedor_id || null,
+        valor: valor,
+        es_deuda: es_deuda,
+        abono: es_deuda ? abono : 0,
+        detalles: detalles
+      }]);
+
+      if (error) alert('Error: ' + error.message);
+      else {
+        alert('Gasto registrado');
+        document.getElementById('form-gasto').reset();
+        toggleAbono('g');
+        ocultarForm();
+        actualizarDashboard();
+      }
+    }
+
+    // INICIALIZACIÓN (Se ejecuta al abrir la app)
+    window.onload = () => {
+      cargarDropdowns();
+      actualizarDashboard();
+    };
+
+    // FUNCIONES VISUALES (INTERFAZ)
+    function mostrarForm(tipo) {
+      document.getElementById('form-container').classList.remove('hidden');
+      ['venta-prod', 'venta-libre', 'gasto', 'producto'].forEach(f => {
+        document.getElementById(`form-${f}`).classList.add('hidden');
+      });
+      document.getElementById(`form-${tipo}`).classList.remove('hidden');
+    }
+
+    function ocultarForm() {
+      document.getElementById('form-container').classList.add('hidden');
+    }
+
+    function toggleAbono(prefix) {
+      const check = document.getElementById(`${prefix}-es-deuda`);
+      const inputAbono = document.getElementById(`${prefix}-abono`);
+      if (check.checked) {
+        inputAbono.classList.remove('hidden');
+      } else {
+        inputAbono.classList.add('hidden');
+      }
+    }
+  </script>
 </body>
 </html>
