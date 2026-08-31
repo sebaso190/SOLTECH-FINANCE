@@ -62,16 +62,24 @@
       </section>
     </section>
 
-    <!-- ================= CAJA / BALANCE DETALLADO (DISEÑO MEJORADO) ================= -->
+    <!-- ================= CAJA / BALANCE DETALLADO ================= -->
     <section id="view-balance" class="vista-seccion space-y-4 hidden">
       <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg space-y-3">
         <div class="flex justify-between items-center">
           <h2 class="text-xs font-bold text-slate-400 uppercase">Flujo de Caja Real</h2>
           <button onclick="limpiarFiltroCaja()" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded text-slate-300 shadow">Ver Todo</button>
         </div>
-        <div>
+        
+        <!-- Doble Filtro: Fecha y Tipo de Movimiento -->
+        <div class="grid grid-cols-2 gap-2">
           <input type="date" id="filtro-balance" onchange="cargarBalance()" class="w-full bg-slate-700 text-xs p-2 rounded text-white border border-slate-600 outline-none focus:border-blue-500">
+          <select id="filtro-tipo-caja" onchange="cargarBalance()" class="w-full bg-slate-700 text-xs p-2 rounded text-white border border-slate-600 outline-none focus:border-blue-500">
+            <option value="todos">Todos los tipos</option>
+            <option value="ENTRADA">Solo Entradas</option>
+            <option value="SALIDA">Solo Salidas</option>
+          </select>
         </div>
+
         <div class="grid grid-cols-2 gap-3 pt-1">
           <div class="bg-emerald-950/40 p-2.5 rounded-lg border border-emerald-800/50">
             <p class="text-[10px] text-emerald-400">Entradas</p>
@@ -88,7 +96,7 @@
         </div>
       </div>
 
-      <!-- Historial Unificado de Movimientos -->
+      <!-- Historial Filtrado de Movimientos -->
       <div id="lista-caja-movimientos" class="space-y-2"></div>
     </section>
 
@@ -238,7 +246,7 @@
       if(vista === 'proveedores') cargarListaProveedores();
     }
 
-    // 4. LÓGICA DE BALANCE Y CAJA (HISTORIAL UNIFICADO)
+    // 4. LÓGICA DE BALANCE Y CAJA CON DOBLE FILTRO (FECHA + TIPO)
     async function procesarFlujoCaja(filtroFecha) {
       const { data: vts } = await db.from('ventas').select('*, clientes(nombre)');
       const { data: gts } = await db.from('gastos').select('*, proveedores(nombre)');
@@ -296,8 +304,34 @@
       // Ordenar por fecha descendiente (más reciente primero)
       movimientos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
+      return { inTotal, outTotal, movimientos };
+    }
+
+    async function actualizarDashboard() {
+      const f = document.getElementById('filtro-inicio').value;
+      const res = await procesarFlujoCaja(f);
+      document.getElementById('inicio-ingresos').innerText = fmtMoneda(res.inTotal);
+      document.getElementById('inicio-egresos').innerText = fmtMoneda(res.outTotal);
+      document.getElementById('inicio-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
+    }
+
+    async function cargarBalance() {
+      const f = document.getElementById('filtro-balance').value;
+      const tipoFiltro = document.getElementById('filtro-tipo-caja').value;
+      const res = await procesarFlujoCaja(f);
+      
+      document.getElementById('bal-ingresos').innerText = fmtMoneda(res.inTotal);
+      document.getElementById('bal-egresos').innerText = fmtMoneda(res.outTotal);
+      document.getElementById('bal-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
+
+      // Filtrar la lista visual según el selector de tipo (Todos, ENTRADA, SALIDA)
+      let movsFiltrados = res.movimientos;
+      if (tipoFiltro !== 'todos') {
+        movsFiltrados = res.movimientos.filter(m => m.tipo === tipoFiltro);
+      }
+
       let html = '';
-      movimientos.forEach(m => {
+      movsFiltrados.forEach(m => {
         const isEntrada = m.tipo === 'ENTRADA';
         const colorCls = isEntrada ? 'border-emerald-900/50' : 'border-rose-900/50';
         const signo = isEntrada ? '+' : '-';
@@ -316,28 +350,12 @@
         </div>`;
       });
 
-      return { inTotal, outTotal, html };
-    }
-
-    async function actualizarDashboard() {
-      const f = document.getElementById('filtro-inicio').value;
-      const res = await procesarFlujoCaja(f);
-      document.getElementById('inicio-ingresos').innerText = fmtMoneda(res.inTotal);
-      document.getElementById('inicio-egresos').innerText = fmtMoneda(res.outTotal);
-      document.getElementById('inicio-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
-    }
-
-    async function cargarBalance() {
-      const f = document.getElementById('filtro-balance').value;
-      const res = await procesarFlujoCaja(f);
-      document.getElementById('bal-ingresos').innerText = fmtMoneda(res.inTotal);
-      document.getElementById('bal-egresos').innerText = fmtMoneda(res.outTotal);
-      document.getElementById('bal-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
-      document.getElementById('lista-caja-movimientos').innerHTML = res.html || '<div class="text-center p-6 bg-slate-800 rounded-xl border border-slate-700"><p class="text-sm text-slate-400">No hay movimientos de caja en esta fecha.</p></div>';
+      document.getElementById('lista-caja-movimientos').innerHTML = html || '<div class="text-center p-6 bg-slate-800 rounded-xl border border-slate-700"><p class="text-sm text-slate-400">No hay movimientos con este filtro.</p></div>';
     }
 
     function limpiarFiltroCaja() {
       document.getElementById('filtro-balance').value = '';
+      document.getElementById('filtro-tipo-caja').value = 'todos';
       cargarBalance();
     }
 
