@@ -18,12 +18,12 @@
       <p class="text-center text-slate-400 text-sm mb-6">Gestión Empresarial</p>
       <input type="email" id="auth-email" placeholder="Correo electrónico" class="w-full bg-slate-700 p-3 rounded-lg mb-3 text-white outline-none focus:border-blue-500 border border-transparent">
       <input type="password" id="auth-pass" placeholder="Contraseña" class="w-full bg-slate-700 p-3 rounded-lg mb-6 text-white outline-none focus:border-blue-500 border border-transparent">
-      <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg mb-3 transition">Iniciar Sesión</button>
+      <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg mb-3 transition shadow-lg">Iniciar Sesión</button>
       <button onclick="register()" class="w-full bg-slate-700 hover:bg-slate-600 text-blue-400 font-bold py-3 rounded-lg transition border border-slate-600">Crear Cuenta</button>
     </div>
   </div>
 
-  <header class="p-4 bg-slate-800 border-b border-slate-700 sticky top-0 z-10 flex justify-between items-center">
+  <header class="p-4 bg-slate-800 border-b border-slate-700 sticky top-0 z-10 flex justify-between items-center shadow-md">
     <h1 class="font-bold text-lg text-blue-400">Control Financiero</h1>
     <button onclick="logout()" class="text-xs bg-rose-600 hover:bg-rose-500 px-3 py-1.5 rounded-lg font-bold shadow">Cerrar Sesión</button>
   </header>
@@ -35,14 +35,14 @@
       <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xs font-bold text-slate-400 uppercase">Resumen del Día</h2>
-          <input type="date" id="filtro-inicio" onchange="actualizarDashboard()" class="bg-slate-700 text-xs p-1.5 rounded text-white border border-slate-600 outline-none">
+          <input type="date" id="filtro-inicio" onchange="actualizarDashboard()" class="bg-slate-700 text-xs p-1.5 rounded text-white border border-slate-600 outline-none focus:border-blue-500">
         </div>
         <div class="grid grid-cols-2 gap-3 mb-4">
-          <div class="bg-emerald-950/40 p-3 rounded-lg border border-emerald-800/50">
+          <div class="bg-emerald-950/40 p-3 rounded-lg border border-emerald-800/50 shadow-inner">
             <p class="text-xs text-emerald-400">Entradas</p>
             <p id="inicio-ingresos" class="text-xl font-bold text-emerald-300">0</p>
           </div>
-          <div class="bg-rose-950/40 p-3 rounded-lg border border-rose-800/50">
+          <div class="bg-rose-950/40 p-3 rounded-lg border border-rose-800/50 shadow-inner">
             <p class="text-xs text-rose-400">Salidas</p>
             <p id="inicio-egresos" class="text-xl font-bold text-rose-300">0</p>
           </div>
@@ -51,14 +51,14 @@
       </div>
 
       <section class="grid grid-cols-2 gap-3">
-        <button onclick="prepararFormulario('venta-prod')" class="bg-blue-600 p-4 rounded-xl font-bold text-sm shadow flex flex-col items-center col-span-2">📦 Registrar Venta Producto</button>
-        <button onclick="prepararFormulario('venta-libre')" class="bg-cyan-600 p-3 rounded-xl font-bold text-sm shadow flex flex-col items-center">⚡ Venta Libre</button>
-        <button onclick="prepararFormulario('gasto')" class="bg-rose-600 p-3 rounded-xl font-bold text-sm shadow flex flex-col items-center">💸 Registrar Gasto</button>
+        <button onclick="prepararFormulario('venta-prod')" class="bg-blue-600 p-4 rounded-xl font-bold text-sm shadow-lg flex flex-col items-center col-span-2 hover:bg-blue-500 transition">📦 Registrar Venta Producto</button>
+        <button onclick="prepararFormulario('venta-libre')" class="bg-cyan-600 p-3 rounded-xl font-bold text-sm shadow-lg flex flex-col items-center hover:bg-cyan-500 transition">⚡ Venta Libre</button>
+        <button onclick="prepararFormulario('gasto')" class="bg-rose-600 p-3 rounded-xl font-bold text-sm shadow-lg flex flex-col items-center hover:bg-rose-500 transition">💸 Registrar Gasto</button>
       </section>
       
       <section class="grid grid-cols-2 gap-3 border-t border-slate-700 pt-4">
-        <button onclick="cambiarVista('clientes')" class="bg-slate-800 p-3 rounded-xl border border-slate-600 font-bold text-sm flex justify-center items-center gap-2">👥 Clientes</button>
-        <button onclick="cambiarVista('proveedores')" class="bg-slate-800 p-3 rounded-xl border border-slate-600 font-bold text-sm flex justify-center items-center gap-2">🏢 Proveedores</button>
+        <button onclick="cambiarVista('clientes')" class="bg-slate-800 p-3 rounded-xl border border-slate-600 font-bold text-sm flex justify-center items-center gap-2 hover:bg-slate-700 transition">👥 Clientes</button>
+        <button onclick="cambiarVista('proveedores')" class="bg-slate-800 p-3 rounded-xl border border-slate-600 font-bold text-sm flex justify-center items-center gap-2 hover:bg-slate-700 transition">🏢 Proveedores</button>
       </section>
     </section>
 
@@ -67,101 +67,103 @@
       <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg mb-4">
         <div class="flex justify-between items-center">
           <h2 class="text-xs font-bold text-slate-400 uppercase">Flujo de Caja Real</h2>
-          <input type="date" id="filtro-balance" onchange="cargarBalance()" class="bg-slate-700 text-xs p-1.5 rounded text-white border border-slate-600 outline-none">
+          <input type="date" id="filtro-balance" onchange="cargarBalance()" class="bg-slate-700 text-xs p-1.5 rounded text-white border border-slate-600 outline-none focus:border-blue-500">
         </div>
       </div>
       
       <div class="flex gap-2 mb-2">
-        <button onclick="cambiarPestanaCaja('ingresos')" id="btn-caja-ingresos" class="flex-1 py-2 rounded-lg font-bold text-sm bg-emerald-600">Entradas</button>
-        <button onclick="cambiarPestanaCaja('egresos')" id="btn-caja-egresos" class="flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400">Salidas</button>
+        <button onclick="cambiarPestanaCaja('ingresos')" id="btn-caja-ingresos" class="flex-1 py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white shadow-lg transition-all">Entradas</button>
+        <button onclick="cambiarPestanaCaja('egresos')" id="btn-caja-egresos" class="flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400 transition-all">Salidas</button>
       </div>
 
-      <div id="lista-caja-ingresos" class="space-y-2 block"></div>
+      <!-- Contenedores sin clases conflictivas, manejados 100% por JS -->
+      <div id="lista-caja-ingresos" class="space-y-2"></div>
       <div id="lista-caja-egresos" class="space-y-2 hidden"></div>
     </section>
 
     <!-- ================= DEUDAS AGRUPADAS ================= -->
     <section id="view-deudas" class="vista-seccion space-y-4 hidden">
       <div class="flex gap-2">
-        <button onclick="cambiarPestanaDeudas('cobrar')" id="btn-cobrar" class="flex-1 py-2 rounded-lg font-bold text-sm bg-amber-600">Por Cobrar</button>
-        <button onclick="cambiarPestanaDeudas('pagar')" id="btn-pagar" class="flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400">Por Pagar</button>
+        <button onclick="cambiarPestanaDeudas('cobrar')" id="btn-cobrar" class="flex-1 py-2 rounded-lg font-bold text-sm bg-amber-600 text-white shadow-lg transition-all">Por Cobrar</button>
+        <button onclick="cambiarPestanaDeudas('pagar')" id="btn-pagar" class="flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400 transition-all">Por Pagar</button>
       </div>
-      <div id="lista-deudas-cobrar" class="space-y-4 block"></div>
+      <div id="lista-deudas-cobrar" class="space-y-4"></div>
       <div id="lista-deudas-pagar" class="space-y-4 hidden"></div>
     </section>
 
     <!-- ================= DIRECTORIOS ================= -->
-    <section id="view-clientes" class="vista-seccion space-y-4 hidden"><div class="flex justify-between items-center"><h2 class="font-bold text-emerald-400">Clientes</h2><button onclick="prepararFormulario('cliente')" class="bg-emerald-600 px-3 py-1 rounded text-sm">+ Nuevo</button></div><div id="lista-clientes" class="space-y-3"></div></section>
-    <section id="view-proveedores" class="vista-seccion space-y-4 hidden"><div class="flex justify-between items-center"><h2 class="font-bold text-purple-400">Proveedores</h2><button onclick="prepararFormulario('proveedor')" class="bg-purple-600 px-3 py-1 rounded text-sm">+ Nuevo</button></div><div id="lista-proveedores" class="space-y-3"></div></section>
-    <section id="view-inventario" class="vista-seccion space-y-4 hidden"><div class="flex justify-between items-center"><h2 class="font-bold text-amber-400">Inventario</h2><button onclick="prepararFormulario('producto')" class="bg-amber-600 px-3 py-1 rounded text-sm">+ Nuevo</button></div><div id="lista-inventario" class="space-y-3"></div></section>
+    <section id="view-clientes" class="vista-seccion space-y-4 hidden"><div class="flex justify-between items-center"><h2 class="font-bold text-emerald-400">Clientes</h2><button onclick="prepararFormulario('cliente')" class="bg-emerald-600 px-3 py-1 rounded text-sm shadow">+ Nuevo</button></div><div id="lista-clientes" class="space-y-3"></div></section>
+    <section id="view-proveedores" class="vista-seccion space-y-4 hidden"><div class="flex justify-between items-center"><h2 class="font-bold text-purple-400">Proveedores</h2><button onclick="prepararFormulario('proveedor')" class="bg-purple-600 px-3 py-1 rounded text-sm shadow">+ Nuevo</button></div><div id="lista-proveedores" class="space-y-3"></div></section>
+    <section id="view-inventario" class="vista-seccion space-y-4 hidden"><div class="flex justify-between items-center"><h2 class="font-bold text-amber-400">Inventario</h2><button onclick="prepararFormulario('producto')" class="bg-amber-600 px-3 py-1 rounded text-sm shadow">+ Nuevo</button></div><div id="lista-inventario" class="space-y-3"></div></section>
 
     <!-- ================= MODALES FORMULARIOS ================= -->
     <div id="form-container" class="hidden fixed inset-0 z-50 bg-slate-900/95 flex justify-center items-center p-4">
       <div class="bg-slate-800 p-5 rounded-xl border border-slate-600 shadow-2xl w-full max-w-sm relative max-h-[90vh] overflow-y-auto">
-        <button onclick="ocultarForm()" class="absolute top-3 right-4 text-xl text-slate-400">&times;</button>
+        <button onclick="ocultarForm()" class="absolute top-3 right-4 text-xl text-slate-400 hover:text-white">&times;</button>
         
         <!-- VENTA PRODUCTO -->
         <form id="form-venta-prod" class="space-y-3 hidden"><h3 class="font-bold text-blue-400">Vender Producto</h3>
-          <input type="datetime-local" id="vp-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <input type="datetime-local" id="vp-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-blue-500">
           <select id="vp-cliente" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><option value="">Cliente (Opcional al contado)</option></select>
           <select id="vp-producto" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select>
           <div class="grid grid-cols-2 gap-2">
-            <div><label class="text-xs text-slate-400">Cant.</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="vp-cantidad" value="1" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></div>
-            <div><label class="text-xs text-slate-400">Precio Und.</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="vp-precio" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></div>
+            <div><label class="text-xs text-slate-400">Cant.</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="vp-cantidad" value="1" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"></div>
+            <div><label class="text-xs text-slate-400">Precio Und.</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="vp-precio" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"></div>
           </div>
           <div class="flex gap-2 items-center"><input type="checkbox" id="vp-es-deuda" onchange="toggleAbono('vp')"><label class="text-sm">¿A Crédito?</label></div>
-          <input type="number" inputmode="decimal" pattern="[0-9]*" id="vp-abono" placeholder="Abono Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden">
-          <button type="button" onclick="guardarVentaProducto()" class="w-full bg-blue-600 py-2 rounded font-bold">Vender</button>
+          <input type="number" inputmode="decimal" pattern="[0-9]*" id="vp-abono" placeholder="Abono Inicial (Si aplica)" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none hidden">
+          <button type="button" onclick="guardarVentaProducto()" class="w-full bg-blue-600 py-2 rounded font-bold shadow-lg">Vender</button>
         </form>
 
         <!-- VENTA LIBRE -->
         <form id="form-venta-libre" class="space-y-3 hidden"><h3 class="font-bold text-cyan-400">Venta Libre</h3>
-          <input type="datetime-local" id="vl-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <input type="datetime-local" id="vl-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-cyan-500">
           <select id="vl-cliente" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><option value="">Cliente (Opcional al contado)</option></select>
-          <input type="number" inputmode="decimal" pattern="[0-9]*" id="vl-valor" placeholder="Monto Total" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <input type="number" inputmode="decimal" pattern="[0-9]*" id="vl-valor" placeholder="Monto Total" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none">
           <div class="flex gap-2 items-center"><input type="checkbox" id="vl-es-deuda" onchange="toggleAbono('vl')"><label class="text-sm">¿A Crédito?</label></div>
-          <input type="number" inputmode="decimal" pattern="[0-9]*" id="vl-abono" placeholder="Abono Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden">
-          <input type="text" id="vl-detalles" placeholder="Concepto..." class="w-full bg-slate-700 p-2 rounded text-sm text-white">
-          <button type="button" onclick="guardarVentaLibre()" class="w-full bg-cyan-600 py-2 rounded font-bold">Guardar Venta</button>
+          <input type="number" inputmode="decimal" pattern="[0-9]*" id="vl-abono" placeholder="Abono Inicial (Si aplica)" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none hidden">
+          <input type="text" id="vl-detalles" placeholder="Concepto..." class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none">
+          <button type="button" onclick="guardarVentaLibre()" class="w-full bg-cyan-600 py-2 rounded font-bold shadow-lg">Guardar Venta</button>
         </form>
 
         <!-- GASTO -->
         <form id="form-gasto" class="space-y-3 hidden"><h3 class="font-bold text-rose-400">Registrar Gasto o Compra</h3>
-          <input type="datetime-local" id="g-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <input type="datetime-local" id="g-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-rose-500">
           <select id="g-proveedor" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select>
           
           <div class="p-2 border border-slate-700 rounded bg-slate-800">
             <label class="text-xs text-amber-400 font-bold block mb-1">Sumar al Inventario (Opcional)</label>
             <select id="g-producto" class="w-full bg-slate-700 p-2 rounded text-sm text-white mb-2"><option value="">-- No aplica --</option></select>
             <div class="grid grid-cols-2 gap-2">
-              <div><label class="text-xs text-slate-400">Cantidad</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="g-cantidad" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></div>
-              <div><label class="text-xs text-slate-400">Total Compra</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="g-valor" class="w-full bg-slate-700 p-2 rounded text-sm text-white font-bold text-amber-300"></div>
+              <div><label class="text-xs text-slate-400">Cantidad</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="g-cantidad" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"></div>
+              <div><label class="text-xs text-slate-400">Total Compra</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="g-valor" class="w-full bg-slate-700 p-2 rounded text-sm text-white font-bold text-amber-300 outline-none"></div>
             </div>
           </div>
           
           <div class="flex gap-2 items-center mt-3"><input type="checkbox" id="g-es-deuda" onchange="toggleAbono('g')"><label class="text-sm">¿Queda debiendo?</label></div>
-          <input type="number" inputmode="decimal" pattern="[0-9]*" id="g-abono" placeholder="Abono Realizado" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden">
-          <input type="text" id="g-detalles" placeholder="Detalles..." class="w-full bg-slate-700 p-2 rounded text-sm text-white mt-2">
-          <button type="button" onclick="guardarGasto()" class="w-full bg-rose-600 py-2 rounded font-bold mt-3">Guardar Gasto</button>
+          <input type="number" inputmode="decimal" pattern="[0-9]*" id="g-abono" placeholder="Abono Realizado" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none hidden">
+          <input type="text" id="g-detalles" placeholder="Detalles..." class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none mt-2">
+          <button type="button" onclick="guardarGasto()" class="w-full bg-rose-600 py-2 rounded font-bold mt-3 shadow-lg">Guardar Gasto</button>
         </form>
         
         <!-- EDICIÓN Y CREACIÓN -->
-        <form id="form-producto" class="space-y-3 hidden"><h3 id="p-titulo" class="font-bold text-amber-400">Producto</h3><input type="hidden" id="p-id"><input type="text" id="p-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><div class="grid grid-cols-2 gap-2"><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-compra" placeholder="P. Compra" class="bg-slate-700 p-2 rounded text-sm text-white"><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-venta" placeholder="P. Venta" class="bg-slate-700 p-2 rounded text-sm text-white"></div><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-stock" placeholder="Cantidad Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><div><label class="text-xs text-slate-400">Imagen (Opcional)</label><input type="file" id="p-imagen" accept="image/*" class="w-full text-xs text-slate-300"></div><button type="button" onclick="guardarProducto()" class="w-full bg-amber-600 py-2 rounded font-bold">Guardar</button></form>
-        <form id="form-cliente" class="space-y-3 hidden"><h3 id="c-titulo" class="font-bold text-emerald-400">Cliente</h3><input type="hidden" id="c-id"><input type="text" id="c-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><input type="tel" id="c-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><button type="button" onclick="guardarCliente()" class="w-full bg-emerald-600 py-2 rounded font-bold">Guardar</button></form>
-        <form id="form-proveedor" class="space-y-3 hidden"><h3 id="prov-titulo" class="font-bold text-purple-400">Proveedor</h3><input type="hidden" id="prov-id"><input type="text" id="prov-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><input type="tel" id="prov-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><button type="button" onclick="guardarProveedor()" class="w-full bg-purple-600 py-2 rounded font-bold">Guardar</button></form>
+        <form id="form-producto" class="space-y-3 hidden"><h3 id="p-titulo" class="font-bold text-amber-400">Producto</h3><input type="hidden" id="p-id"><input type="text" id="p-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><div class="grid grid-cols-2 gap-2"><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-compra" placeholder="P. Compra" class="bg-slate-700 p-2 rounded text-sm text-white outline-none"><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-venta" placeholder="P. Venta" class="bg-slate-700 p-2 rounded text-sm text-white outline-none"></div><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-stock" placeholder="Cantidad Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><div><label class="text-xs text-slate-400">Imagen (Opcional)</label><input type="file" id="p-imagen" accept="image/*" class="w-full text-xs text-slate-300"></div><button type="button" onclick="guardarProducto()" class="w-full bg-amber-600 py-2 rounded font-bold shadow-lg">Guardar</button></form>
+        <form id="form-cliente" class="space-y-3 hidden"><h3 id="c-titulo" class="font-bold text-emerald-400">Cliente</h3><input type="hidden" id="c-id"><input type="text" id="c-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><input type="tel" id="c-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><button type="button" onclick="guardarCliente()" class="w-full bg-emerald-600 py-2 rounded font-bold shadow-lg">Guardar</button></form>
+        <form id="form-proveedor" class="space-y-3 hidden"><h3 id="prov-titulo" class="font-bold text-purple-400">Proveedor</h3><input type="hidden" id="prov-id"><input type="text" id="prov-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><input type="tel" id="prov-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><button type="button" onclick="guardarProveedor()" class="w-full bg-purple-600 py-2 rounded font-bold shadow-lg">Guardar</button></form>
       </div>
     </div>
   </main>
 
+  <!-- Navegación Inferior -->
   <nav class="fixed bottom-0 w-full bg-slate-800 border-t border-slate-700 flex justify-around p-2 pb-6 text-xs shadow-2xl z-10 hidden" id="main-nav">
-    <button onclick="cambiarVista('inicio')" id="nav-inicio" class="nav-btn text-blue-400 flex flex-col items-center gap-1"><span class="text-lg">📊</span><span>Inicio</span></button>
-    <button onclick="cambiarVista('inventario')" id="nav-inventario" class="nav-btn text-slate-400 flex flex-col items-center gap-1"><span class="text-lg">📦</span><span>Inventario</span></button>
-    <button onclick="cambiarVista('balance')" id="nav-balance" class="nav-btn text-slate-400 flex flex-col items-center gap-1"><span class="text-lg">💰</span><span>Caja</span></button>
-    <button onclick="cambiarVista('deudas')" id="nav-deudas" class="nav-btn text-slate-400 flex flex-col items-center gap-1"><span class="text-lg">💳</span><span>Deudas</span></button>
+    <button onclick="cambiarVista('inicio')" id="nav-inicio" class="nav-btn text-blue-400 flex flex-col items-center gap-1 transition-colors"><span class="text-lg">📊</span><span>Inicio</span></button>
+    <button onclick="cambiarVista('inventario')" id="nav-inventario" class="nav-btn text-slate-400 flex flex-col items-center gap-1 transition-colors"><span class="text-lg">📦</span><span>Inventario</span></button>
+    <button onclick="cambiarVista('balance')" id="nav-balance" class="nav-btn text-slate-400 flex flex-col items-center gap-1 transition-colors"><span class="text-lg">💰</span><span>Caja</span></button>
+    <button onclick="cambiarVista('deudas')" id="nav-deudas" class="nav-btn text-slate-400 flex flex-col items-center gap-1 transition-colors"><span class="text-lg">💳</span><span>Deudas</span></button>
   </nav>
 
   <script>
-    // 1. CREDENCIALES
+    // 1. CREDENCIALES SUPABASE
     const { createClient } = supabase;
     const supabaseUrl = 'https://jmidlrztyzzmauroxuuf.supabase.co'; 
     const supabaseKey = 'sb_publishable_7rrvQ2yvzVaiYLEqtgoa_w_GbrCRoAi';
@@ -197,13 +199,13 @@
       if(!e || !p) return alert('Por favor ingresa tu correo y contraseña.');
       if(p.length < 6) return alert('La contraseña debe tener al menos 6 caracteres.');
       const { error } = await db.auth.signUp({ email: e, password: p });
-      if(error) alert('Error: ' + error.message); else alert('Registro exitoso. Revisa tu correo o inicia sesión directamente si desactivaste la validación.');
+      if(error) alert('Error: ' + error.message); else alert('Registro exitoso. Revisa tu correo o inicia sesión.');
     }
     
     async function logout() { await db.auth.signOut(); checkSession(); }
     window.onload = checkSession;
 
-    // 3. INICIALIZAR Y NAVEGACIÓN
+    // 3. NAVEGACIÓN Y CONFIGURACIÓN INICIAL
     function iniciarApp() {
       const hoy = new Date().toISOString().split('T')[0];
       document.getElementById('filtro-inicio').value = hoy;
@@ -218,7 +220,7 @@
       if(document.getElementById(`nav-${vista}`)) document.getElementById(`nav-${vista}`).classList.replace('text-slate-400', 'text-blue-400');
       
       if(vista === 'inicio') actualizarDashboard();
-      if(vista === 'balance') { cargarBalance(); cambiarPestanaCaja('ingresos'); } // Forzar visibilidad al abrir
+      if(vista === 'balance') { cargarBalance(); cambiarPestanaCaja('ingresos'); }
       if(vista === 'deudas') { cargarDeudas(); cambiarPestanaDeudas('cobrar'); }
       if(vista === 'inventario') cargarInventario();
       if(vista === 'clientes') cargarListaClientes();
@@ -226,17 +228,25 @@
     }
 
     function cambiarPestanaCaja(tipo) {
-      document.getElementById('btn-caja-ingresos').classList.replace('bg-emerald-600', 'bg-slate-800');
-      document.getElementById('btn-caja-egresos').classList.replace('bg-rose-600', 'bg-slate-800');
-      document.getElementById('lista-caja-ingresos').classList.add('hidden');
-      document.getElementById('lista-caja-egresos').classList.add('hidden');
-      
-      const isIngreso = tipo === 'ingresos';
-      document.getElementById(`btn-caja-${tipo}`).classList.replace('bg-slate-800', isIngreso ? 'bg-emerald-600' : 'bg-rose-600');
-      document.getElementById(`lista-caja-${tipo}`).classList.remove('hidden');
+      const btnIn = document.getElementById('btn-caja-ingresos');
+      const btnOut = document.getElementById('btn-caja-egresos');
+      const listIn = document.getElementById('lista-caja-ingresos');
+      const listOut = document.getElementById('lista-caja-egresos');
+
+      if(tipo === 'ingresos') {
+        btnIn.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white shadow-lg transition-all';
+        btnOut.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400 transition-all';
+        listIn.classList.remove('hidden');
+        listOut.classList.add('hidden');
+      } else {
+        btnOut.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-rose-600 text-white shadow-lg transition-all';
+        btnIn.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400 transition-all';
+        listIn.classList.add('hidden');
+        listOut.classList.remove('hidden');
+      }
     }
 
-    // 4. ACTUALIZAR BALANCE
+    // 4. LÓGICA DE BALANCE Y CAJA
     async function procesarFlujoCaja(filtroFecha) {
       const { data: vts } = await db.from('ventas').select('*, clientes(nombre)');
       const { data: gts } = await db.from('gastos').select('*, proveedores(nombre)');
@@ -249,7 +259,7 @@
           const efectivo = v.es_deuda ? Number(v.abono) : Number(v.monto_final);
           if(efectivo > 0) {
             inTotal += efectivo;
-            htmlIn += `<div class="bg-slate-700/40 p-2 rounded border border-emerald-900/50 flex justify-between items-center"><div class="flex-1"><p class="text-sm font-bold">${v.clientes?.nombre||'Venta Libre'}</p><p class="text-[10px] text-slate-400">Venta / Abono Inicial</p></div><div class="text-emerald-400 font-bold">+${fmtMoneda(efectivo)}</div></div>`;
+            htmlIn += `<div class="bg-slate-700/40 p-3 rounded-lg border border-emerald-900/50 flex justify-between items-center shadow-sm"><div class="flex-1"><p class="text-sm font-bold text-white">${v.clientes?.nombre||'Venta Libre'}</p><p class="text-[10px] text-slate-400 uppercase">Venta / Abono Inicial</p></div><div class="text-emerald-400 font-bold tracking-wide">+${fmtMoneda(efectivo)}</div><button onclick="eliminarRegistro('ventas', '${v.id}')" class="ml-3 text-rose-500 bg-rose-950/40 p-1.5 rounded">🗑️</button></div>`;
           }
         }
       });
@@ -257,10 +267,10 @@
         if(!filtroFecha || gFecha(a.fecha) === filtroFecha) {
           if(a.tipo === 'COBRO_VENTA') {
             inTotal += Number(a.monto);
-            htmlIn += `<div class="bg-slate-700/40 p-2 rounded border border-emerald-900/50 flex justify-between items-center"><div class="flex-1"><p class="text-sm font-bold text-amber-300">Pago a Deuda Recibido</p></div><div class="text-emerald-400 font-bold">+${fmtMoneda(a.monto)}</div><button onclick="eliminarRegistro('pagos_abonos', '${a.id}')" class="ml-2 text-rose-500">🗑️</button></div>`;
+            htmlIn += `<div class="bg-slate-700/40 p-3 rounded-lg border border-emerald-900/50 flex justify-between items-center shadow-sm"><div class="flex-1"><p class="text-sm font-bold text-amber-300">Pago a Deuda Recibido</p></div><div class="text-emerald-400 font-bold tracking-wide">+${fmtMoneda(a.monto)}</div><button onclick="eliminarRegistro('pagos_abonos', '${a.id}')" class="ml-3 text-rose-500 bg-rose-950/40 p-1.5 rounded">🗑️</button></div>`;
           } else {
             outTotal += Number(a.monto);
-            htmlOut += `<div class="bg-slate-700/40 p-2 rounded border border-rose-900/50 flex justify-between items-center"><div class="flex-1"><p class="text-sm font-bold text-amber-300">Abono a Proveedor Pagado</p></div><div class="text-rose-400 font-bold">-${fmtMoneda(a.monto)}</div><button onclick="eliminarRegistro('pagos_abonos', '${a.id}')" class="ml-2 text-rose-500">🗑️</button></div>`;
+            htmlOut += `<div class="bg-slate-700/40 p-3 rounded-lg border border-rose-900/50 flex justify-between items-center shadow-sm"><div class="flex-1"><p class="text-sm font-bold text-amber-300">Abono a Proveedor Pagado</p></div><div class="text-rose-400 font-bold tracking-wide">-${fmtMoneda(a.monto)}</div><button onclick="eliminarRegistro('pagos_abonos', '${a.id}')" class="ml-3 text-rose-500 bg-rose-950/40 p-1.5 rounded">🗑️</button></div>`;
           }
         }
       });
@@ -269,7 +279,7 @@
           const efectivo = g.es_deuda ? Number(g.abono) : Number(g.valor);
           if(efectivo > 0) {
             outTotal += efectivo;
-            htmlOut += `<div class="bg-slate-700/40 p-2 rounded border border-rose-900/50 flex justify-between items-center"><div class="flex-1"><p class="text-sm font-bold">${g.proveedores?.nombre||'Gasto General'}</p><p class="text-[10px] text-slate-400">Gasto / Abono Inic.</p></div><div class="text-rose-400 font-bold">-${fmtMoneda(efectivo)}</div></div>`;
+            htmlOut += `<div class="bg-slate-700/40 p-3 rounded-lg border border-rose-900/50 flex justify-between items-center shadow-sm"><div class="flex-1"><p class="text-sm font-bold text-white">${g.proveedores?.nombre||'Gasto General'}</p><p class="text-[10px] text-slate-400 uppercase">Gasto / Abono Inicial</p></div><div class="text-rose-400 font-bold tracking-wide">-${fmtMoneda(efectivo)}</div><button onclick="eliminarRegistro('gastos', '${g.id}')" class="ml-3 text-rose-500 bg-rose-950/40 p-1.5 rounded">🗑️</button></div>`;
           }
         }
       });
@@ -291,18 +301,26 @@
       document.getElementById('bal-ingresos').innerText = fmtMoneda(res.inTotal);
       document.getElementById('bal-egresos').innerText = fmtMoneda(res.outTotal);
       document.getElementById('bal-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
-      document.getElementById('lista-caja-ingresos').innerHTML = res.htmlIn || '<p class="text-xs text-slate-500 text-center mt-4">Sin ingresos en esta fecha.</p>';
-      document.getElementById('lista-caja-egresos').innerHTML = res.htmlOut || '<p class="text-xs text-slate-500 text-center mt-4">Sin egresos en esta fecha.</p>';
+      document.getElementById('lista-caja-ingresos').innerHTML = res.htmlIn || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin ingresos en esta fecha.</p></div>';
+      document.getElementById('lista-caja-egresos').innerHTML = res.htmlOut || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin egresos en esta fecha.</p></div>';
     }
 
     // 5. DEUDAS
     function cambiarPestanaDeudas(tipo) {
-      document.getElementById('btn-cobrar').classList.replace('bg-amber-600', 'bg-slate-800');
-      document.getElementById('btn-pagar').classList.replace('bg-purple-600', 'bg-slate-800');
-      document.getElementById('lista-deudas-cobrar').classList.add('hidden');
-      document.getElementById('lista-deudas-pagar').classList.add('hidden');
-      document.getElementById(`btn-${tipo}`).classList.replace('bg-slate-800', tipo==='cobrar'?'bg-amber-600':'bg-purple-600');
-      document.getElementById(`lista-deudas-${tipo}`).classList.remove('hidden');
+      const btnC = document.getElementById('btn-cobrar');
+      const btnP = document.getElementById('btn-pagar');
+      const listC = document.getElementById('lista-deudas-cobrar');
+      const listP = document.getElementById('lista-deudas-pagar');
+
+      if(tipo === 'cobrar') {
+        btnC.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-amber-600 text-white shadow-lg transition-all';
+        btnP.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400 transition-all';
+        listC.classList.remove('hidden'); listP.classList.add('hidden');
+      } else {
+        btnP.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-purple-600 text-white shadow-lg transition-all';
+        btnC.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400 transition-all';
+        listP.classList.remove('hidden'); listC.classList.add('hidden');
+      }
     }
 
     async function cargarDeudas() {
@@ -318,12 +336,12 @@
           ventasCl.forEach(v => {
             cTotal += Number(v.saldo_pendiente); 
             const concepto = v.productos?.nombre || v.detalles || 'Venta Libre';
-            mHtml += `<div class="pl-2 border-l-2 border-slate-600 mt-2 flex justify-between items-center"><div class="flex-1"><p class="text-[11px] text-slate-300">${gFecha(v.fecha)} | ${concepto}</p><p class="text-amber-400 font-bold text-sm">${fmtMoneda(v.saldo_pendiente)}</p></div><div><button onclick="pagarDeuda('ventas', '${v.id}', ${v.saldo_pendiente})" class="text-[10px] bg-amber-700/50 px-2 py-1 rounded">Abonar</button><button onclick="eliminarRegistro('ventas', '${v.id}')" class="text-[10px] text-rose-500 ml-1">🗑️</button></div></div>`; 
+            mHtml += `<div class="pl-3 border-l-2 border-slate-600 mt-3 flex justify-between items-center"><div class="flex-1"><p class="text-[11px] text-slate-300 font-mono">${gFecha(v.fecha)} | ${concepto}</p><p class="text-amber-400 font-bold text-sm mt-0.5">${fmtMoneda(v.saldo_pendiente)}</p></div><div><button onclick="pagarDeuda('ventas', '${v.id}', ${v.saldo_pendiente})" class="text-xs font-bold text-amber-100 bg-amber-700/60 px-3 py-1.5 rounded shadow">Abonar</button><button onclick="eliminarRegistro('ventas', '${v.id}')" class="text-xs text-rose-500 bg-rose-950/40 px-2 py-1.5 rounded ml-1">🗑️</button></div></div>`; 
           });
-          htmlC += `<div class="bg-slate-700/30 p-3 rounded-lg border border-slate-700"><div class="flex justify-between items-center border-b border-slate-600 pb-1"><h3 class="font-bold text-white">${nombreCl}</h3><span class="font-black text-amber-500">${fmtMoneda(cTotal)}</span></div>${mHtml}<button onclick="pagarDeudaGeneral('ventas', '${cId}', '${nombreCl}', ${cTotal})" class="w-full mt-2 bg-amber-600/80 py-1 rounded text-xs font-bold text-white">Hacer Abono General</button></div>`;
+          htmlC += `<div class="bg-slate-700/30 p-4 rounded-xl border border-slate-700 shadow-md"><div class="flex justify-between items-center border-b border-slate-600 pb-2"><h3 class="font-bold text-white text-lg">${nombreCl}</h3><span class="font-black text-amber-500 text-lg">${fmtMoneda(cTotal)}</span></div>${mHtml}<button onclick="pagarDeudaGeneral('ventas', '${cId}', '${nombreCl}', ${cTotal})" class="w-full mt-4 bg-amber-600 hover:bg-amber-500 transition-colors py-2 rounded-lg text-sm font-bold text-white shadow">Realizar Abono General</button></div>`;
         });
       }
-      document.getElementById('lista-deudas-cobrar').innerHTML = htmlC || '<p class="text-sm text-slate-400">No hay deudas por cobrar.</p>';
+      document.getElementById('lista-deudas-cobrar').innerHTML = htmlC || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">No hay deudas por cobrar registradas.</p></div>';
 
       const { data: gts } = await db.from('gastos').select('*, proveedores(nombre), productos(nombre)').gt('saldo_pendiente', 0);
       let htmlP='';
@@ -336,13 +354,13 @@
           
           gastosPr.forEach(g => { 
             pTotal += Number(g.saldo_pendiente); 
-            const concepto = g.productos?.nombre || g.detalles || 'Sin concepto';
-            mHtml += `<div class="pl-2 border-l-2 border-slate-600 mt-2 flex justify-between items-center"><div class="flex-1"><p class="text-[11px] text-slate-300">${gFecha(g.fecha)} | ${concepto}</p><p class="text-purple-400 font-bold text-sm">${fmtMoneda(g.saldo_pendiente)}</p></div><div><button onclick="pagarDeuda('gastos', '${g.id}', ${g.saldo_pendiente})" class="text-[10px] bg-purple-700/50 px-2 py-1 rounded">Abonar</button><button onclick="eliminarRegistro('gastos', '${g.id}')" class="text-[10px] text-rose-500 ml-1">🗑️</button></div></div>`; 
+            const concepto = g.productos?.nombre || g.detalles || 'Gasto sin detalle';
+            mHtml += `<div class="pl-3 border-l-2 border-slate-600 mt-3 flex justify-between items-center"><div class="flex-1"><p class="text-[11px] text-slate-300 font-mono">${gFecha(g.fecha)} | ${concepto}</p><p class="text-purple-400 font-bold text-sm mt-0.5">${fmtMoneda(g.saldo_pendiente)}</p></div><div><button onclick="pagarDeuda('gastos', '${g.id}', ${g.saldo_pendiente})" class="text-xs font-bold text-purple-100 bg-purple-700/60 px-3 py-1.5 rounded shadow">Abonar</button><button onclick="eliminarRegistro('gastos', '${g.id}')" class="text-xs text-rose-500 bg-rose-950/40 px-2 py-1.5 rounded ml-1">🗑️</button></div></div>`; 
           });
-          htmlP += `<div class="bg-slate-700/30 p-3 rounded-lg border border-slate-700"><div class="flex justify-between items-center border-b border-slate-600 pb-1"><h3 class="font-bold text-white">${nombrePr}</h3><span class="font-black text-purple-500">${fmtMoneda(pTotal)}</span></div>${mHtml}<button onclick="pagarDeudaGeneral('gastos', '${pId}', '${nombrePr}', ${pTotal})" class="w-full mt-2 bg-purple-600/80 py-1 rounded text-xs font-bold text-white">Hacer Abono General</button></div>`;
+          htmlP += `<div class="bg-slate-700/30 p-4 rounded-xl border border-slate-700 shadow-md"><div class="flex justify-between items-center border-b border-slate-600 pb-2"><h3 class="font-bold text-white text-lg">${nombrePr}</h3><span class="font-black text-purple-500 text-lg">${fmtMoneda(pTotal)}</span></div>${mHtml}<button onclick="pagarDeudaGeneral('gastos', '${pId}', '${nombrePr}', ${pTotal})" class="w-full mt-4 bg-purple-600 hover:bg-purple-500 transition-colors py-2 rounded-lg text-sm font-bold text-white shadow">Realizar Abono General</button></div>`;
         });
       }
-      document.getElementById('lista-deudas-pagar').innerHTML = htmlP || '<p class="text-sm text-slate-400">No hay deudas por pagar.</p>';
+      document.getElementById('lista-deudas-pagar').innerHTML = htmlP || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">No hay deudas por pagar registradas.</p></div>';
     }
 
     async function pagarDeuda(tabla, id, maxMonto) {
@@ -361,7 +379,7 @@
     }
 
     async function pagarDeudaGeneral(tabla, idEntidad, nombreEntidad, maxMonto) {
-      if(idEntidad === 'null') return alert('Usa el abono individual para registros sin cliente/proveedor.');
+      if(idEntidad === 'null') return alert('Usa el abono individual para registros de Venta Libre o Gasto General sin entidad vinculada.');
       const p = prompt(`Abono a ${nombreEntidad} (Deuda: $${fmtMoneda(maxMonto)}):\nValor a abonar:`);
       if(!p || isNaN(p) || Number(p) <= 0) return;
       let montoRestante = Math.min(Number(p), maxMonto);
@@ -379,10 +397,10 @@
         await db.from('pagos_abonos').insert([payload]);
         await db.from(tabla).update({ abono: Number(d.abono) + aAbonar }).eq('id', d.id);
       }
-      cargarDeudas(); cargarBalance(); actualizarDashboard(); alert('Abono distribuido con éxito');
+      cargarDeudas(); cargarBalance(); actualizarDashboard(); alert('Abono general distribuido correctamente a las deudas más antiguas.');
     }
 
-    // 6. VENTAS Y GASTOS (Cálculos automáticos)
+    // 6. VENTAS, GASTOS E INVENTARIO
     document.getElementById('g-producto').addEventListener('change', (e) => {
       const p = window.listaProductos.find(x => x.id === e.target.value);
       if(p) { document.getElementById('g-cantidad').value = 1; document.getElementById('g-valor').value = p.precio_compra; }
@@ -394,6 +412,7 @@
     });
 
     async function guardarVentaProducto() {
+      const fInp = document.getElementById('vp-fecha').value;
       const cliente_id = document.getElementById('vp-cliente').value;
       const producto_id = document.getElementById('vp-producto').value;
       const cant = Number(document.getElementById('vp-cantidad').value);
@@ -408,11 +427,15 @@
       const prod = window.listaProductos.find(x => x.id === producto_id);
       await db.from('productos').update({ cantidad_disponible: Number(prod.cantidad_disponible) - cant }).eq('id', producto_id);
 
-      await db.from('ventas').insert([{ tipo_venta: 'PRODUCTO', cliente_id: cliente_id || null, producto_id, cantidad: cant, monto_bruto: mBruto, descuento: 0, es_deuda, abono: es_deuda?abono:0 }]);
+      const payload = { tipo_venta: 'PRODUCTO', cliente_id: cliente_id || null, producto_id, cantidad: cant, monto_bruto: mBruto, descuento: 0, es_deuda, abono: es_deuda?abono:0 };
+      if (fInp) payload.fecha = new Date(fInp).toISOString();
+
+      await db.from('ventas').insert([payload]);
       document.getElementById('form-venta-prod').reset(); ocultarForm(); cargarDropdowns(); actualizarDashboard(); cargarDeudas();
     }
 
     async function guardarVentaLibre() {
+      const fInp = document.getElementById('vl-fecha').value;
       const cliente_id = document.getElementById('vl-cliente').value;
       const valor = Number(document.getElementById('vl-valor').value||0);
       const es_deuda = document.getElementById('vl-es-deuda').checked;
@@ -421,11 +444,15 @@
       if (es_deuda && !cliente_id) return alert('Para una venta a crédito debes seleccionar un cliente.');
       if (!valor) return alert('El valor total es obligatorio.');
 
-      await db.from('ventas').insert([{ tipo_venta: 'LIBRE', cliente_id: cliente_id || null, monto_bruto: valor, descuento: 0, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('vl-detalles').value }]);
+      const payload = { tipo_venta: 'LIBRE', cliente_id: cliente_id || null, monto_bruto: valor, descuento: 0, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('vl-detalles').value };
+      if (fInp) payload.fecha = new Date(fInp).toISOString();
+
+      await db.from('ventas').insert([payload]);
       document.getElementById('form-venta-libre').reset(); ocultarForm(); actualizarDashboard(); cargarDeudas();
     }
 
     async function guardarGasto() {
+      const fInp = document.getElementById('g-fecha').value;
       const prov = document.getElementById('g-proveedor').value;
       const valor = Number(document.getElementById('g-valor').value||0);
       const prod_id = document.getElementById('g-producto').value;
@@ -433,7 +460,7 @@
       const es_deuda = document.getElementById('g-es-deuda').checked;
       const abono = Number(document.getElementById('g-abono').value||0);
 
-      if (!valor) return alert('Agrega el valor del gasto');
+      if (!valor) return alert('Agrega el valor total de la compra o gasto.');
       if (es_deuda && !prov) return alert('Para deudas por pagar debes elegir un proveedor.');
 
       if(prod_id && cant > 0) {
@@ -441,7 +468,10 @@
         await db.from('productos').update({ cantidad_disponible: Number(prod.cantidad_disponible) + cant }).eq('id', prod_id);
       }
 
-      await db.from('gastos').insert([{ proveedor_id: prov||null, valor, producto_id: prod_id||null, cantidad: cant, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('g-detalles').value }]);
+      const payload = { proveedor_id: prov||null, valor, producto_id: prod_id||null, cantidad: cant, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('g-detalles').value };
+      if (fInp) payload.fecha = new Date(fInp).toISOString();
+
+      await db.from('gastos').insert([payload]);
       document.getElementById('form-gasto').reset(); ocultarForm(); cargarDropdowns(); actualizarDashboard(); cargarDeudas();
     }
 
@@ -480,7 +510,7 @@
     }
 
     async function eliminarRegistro(tabla, id) {
-      if(confirm('¿Eliminar permanentemente?')) {
+      if(confirm('¿Eliminar registro permanentemente? (Esta acción no devolverá automáticamente las cantidades al inventario)')) {
         await db.from(tabla).delete().eq('id', id);
         actualizarDashboard(); cargarBalance(); cargarDeudas();
         if(tabla==='clientes') cargarListaClientes();
@@ -489,12 +519,12 @@
       }
     }
 
-    // 7. LISTAS Y EDICIÓN
+    // 7. LISTAS Y EDICIÓN (Directorios e Inventario)
     document.getElementById('vp-producto').addEventListener('change', (e) => { const p = window.listaProductos.find(x => x.id === e.target.value); if(p) document.getElementById('vp-precio').value = p.precio_venta; });
 
-    async function cargarListaClientes() { const {data} = await db.from('clientes').select('*').order('creado_en',{ascending:false}); document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700 p-3 rounded flex justify-between items-center"><p class="font-bold">${c.nombre}</p><div><button class="text-blue-400 bg-blue-900/30 px-2 py-1 rounded text-sm mr-1" onclick="editarCliente('${c.id}','${c.nombre}','${c.telefono}')">Editar</button><button class="text-rose-400 bg-rose-900/30 px-2 py-1 rounded text-sm" onclick="eliminarRegistro('clientes','${c.id}')">🗑️</button></div></div>`).join('') || '<p class="text-sm text-slate-400">Sin registros.</p>'; }
-    async function cargarListaProveedores() { const {data} = await db.from('proveedores').select('*').order('creado_en',{ascending:false}); document.getElementById('lista-proveedores').innerHTML = data.map(p=>`<div class="bg-slate-700 p-3 rounded flex justify-between items-center"><p class="font-bold">${p.nombre}</p><div><button class="text-blue-400 bg-blue-900/30 px-2 py-1 rounded text-sm mr-1" onclick="editarProveedor('${p.id}','${p.nombre}','${p.telefono}')">Editar</button><button class="text-rose-400 bg-rose-900/30 px-2 py-1 rounded text-sm" onclick="eliminarRegistro('proveedores','${p.id}')">🗑️</button></div></div>`).join('') || '<p class="text-sm text-slate-400">Sin registros.</p>'; }
-    async function cargarInventario() { const {data} = await db.from('productos').select('*').order('nombre',{ascending:true}); document.getElementById('lista-inventario').innerHTML = data.map(p=>{ const img = p.imagen_url ? `<img src="${p.imagen_url}" class="w-10 h-10 object-cover rounded">` : `<div class="w-10 h-10 bg-slate-600 rounded flex items-center justify-center text-xs">📦</div>`; return `<div class="bg-slate-700 p-3 rounded flex justify-between items-center gap-3">${img}<div class="flex-1"><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-amber-400">Stock: ${p.cantidad_disponible}</p></div><div class="text-right text-emerald-400 font-bold text-sm mb-1">${fmtMoneda(p.precio_venta)}<br><div class="flex gap-1 justify-end mt-1"><button class="text-blue-400 bg-blue-900/30 px-2 py-1 rounded text-[10px]" onclick="editarProducto('${p.id}','${p.nombre}',${p.precio_compra},${p.precio_venta},${p.cantidad_disponible})">Editar</button><button class="text-rose-400 bg-rose-900/30 px-2 py-1 rounded text-[10px]" onclick="eliminarRegistro('productos','${p.id}')">🗑️</button></div></div></div>`}).join('') || '<p class="text-sm text-slate-400">Sin registros.</p>'; }
+    async function cargarListaClientes() { const {data} = await db.from('clientes').select('*').order('creado_en',{ascending:false}); document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${c.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarCliente('${c.id}','${c.nombre}','${c.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('clientes','${c.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin clientes registrados.</p></div>'; }
+    async function cargarListaProveedores() { const {data} = await db.from('proveedores').select('*').order('creado_en',{ascending:false}); document.getElementById('lista-proveedores').innerHTML = data.map(p=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${p.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarProveedor('${p.id}','${p.nombre}','${p.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('proveedores','${p.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin proveedores registrados.</p></div>'; }
+    async function cargarInventario() { const {data} = await db.from('productos').select('*').order('nombre',{ascending:true}); document.getElementById('lista-inventario').innerHTML = data.map(p=>{ const img = p.imagen_url ? `<img src="${p.imagen_url}" class="w-12 h-12 object-cover rounded-lg shadow">` : `<div class="w-12 h-12 bg-slate-800 border border-slate-600 rounded-lg shadow flex items-center justify-center text-sm">📦</div>`; return `<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center gap-4 shadow-md">${img}<div class="flex-1"><p class="font-bold text-white leading-tight">${p.nombre}</p><p class="text-[11px] font-bold text-amber-400 mt-1 tracking-wide">STOCK: ${p.cantidad_disponible}</p></div><div class="text-right"><p class="text-emerald-400 font-black text-sm mb-2">${fmtMoneda(p.precio_venta)}</p><div class="flex gap-2 justify-end"><button class="text-blue-400 font-bold bg-blue-950/50 px-2.5 py-1 rounded-md text-[10px] shadow" onclick="editarProducto('${p.id}','${p.nombre}',${p.precio_compra},${p.precio_venta},${p.cantidad_disponible})">EDITAR</button><button class="text-rose-400 bg-rose-950/50 px-2 py-1 rounded-md text-[10px] shadow" onclick="eliminarRegistro('productos','${p.id}')">🗑️</button></div></div></div>`}).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">El inventario está vacío.</p></div>'; }
 
     // HELPERS INTERFAZ
     function prepararFormulario(tipo) { 
