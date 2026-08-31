@@ -62,23 +62,34 @@
       </section>
     </section>
 
-    <!-- ================= CAJA / BALANCE DETALLADO ================= -->
+    <!-- ================= CAJA / BALANCE DETALLADO (DISEÑO MEJORADO) ================= -->
     <section id="view-balance" class="vista-seccion space-y-4 hidden">
-      <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg mb-4">
+      <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg space-y-3">
         <div class="flex justify-between items-center">
           <h2 class="text-xs font-bold text-slate-400 uppercase">Flujo de Caja Real</h2>
-          <input type="date" id="filtro-balance" onchange="cargarBalance()" class="bg-slate-700 text-xs p-1.5 rounded text-white border border-slate-600 outline-none focus:border-blue-500">
+          <button onclick="limpiarFiltroCaja()" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded text-slate-300 shadow">Ver Todo</button>
+        </div>
+        <div>
+          <input type="date" id="filtro-balance" onchange="cargarBalance()" class="w-full bg-slate-700 text-xs p-2 rounded text-white border border-slate-600 outline-none focus:border-blue-500">
+        </div>
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <div class="bg-emerald-950/40 p-2.5 rounded-lg border border-emerald-800/50">
+            <p class="text-[10px] text-emerald-400">Entradas</p>
+            <p id="bal-ingresos" class="text-lg font-bold text-emerald-300">0</p>
+          </div>
+          <div class="bg-rose-950/40 p-2.5 rounded-lg border border-rose-800/50">
+            <p class="text-[10px] text-rose-400">Salidas</p>
+            <p id="bal-egresos" class="text-lg font-bold text-rose-300">0</p>
+          </div>
+        </div>
+        <div class="flex justify-between items-center pt-2 border-t border-slate-700 text-xs">
+          <span class="font-bold">Neto en Caja:</span>
+          <span id="bal-neto" class="text-base font-bold text-blue-400">0</span>
         </div>
       </div>
-      
-      <div class="flex gap-2 mb-2">
-        <button onclick="cambiarPestanaCaja('ingresos')" id="btn-caja-ingresos" class="flex-1 py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white shadow-lg transition-all">Entradas</button>
-        <button onclick="cambiarPestanaCaja('egresos')" id="btn-caja-egresos" class="flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400 transition-all">Salidas</button>
-      </div>
 
-      <!-- Contenedores sin clases conflictivas, manejados 100% por JS -->
-      <div id="lista-caja-ingresos" class="space-y-2"></div>
-      <div id="lista-caja-egresos" class="space-y-2 hidden"></div>
+      <!-- Historial Unificado de Movimientos -->
+      <div id="lista-caja-movimientos" class="space-y-2"></div>
     </section>
 
     <!-- ================= DEUDAS AGRUPADAS ================= -->
@@ -220,71 +231,92 @@
       if(document.getElementById(`nav-${vista}`)) document.getElementById(`nav-${vista}`).classList.replace('text-slate-400', 'text-blue-400');
       
       if(vista === 'inicio') actualizarDashboard();
-      if(vista === 'balance') { cargarBalance(); cambiarPestanaCaja('ingresos'); }
+      if(vista === 'balance') cargarBalance();
       if(vista === 'deudas') { cargarDeudas(); cambiarPestanaDeudas('cobrar'); }
       if(vista === 'inventario') cargarInventario();
       if(vista === 'clientes') cargarListaClientes();
       if(vista === 'proveedores') cargarListaProveedores();
     }
 
-    function cambiarPestanaCaja(tipo) {
-      const btnIn = document.getElementById('btn-caja-ingresos');
-      const btnOut = document.getElementById('btn-caja-egresos');
-      const listIn = document.getElementById('lista-caja-ingresos');
-      const listOut = document.getElementById('lista-caja-egresos');
-
-      if(tipo === 'ingresos') {
-        btnIn.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white shadow-lg transition-all';
-        btnOut.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400 transition-all';
-        listIn.classList.remove('hidden');
-        listOut.classList.add('hidden');
-      } else {
-        btnOut.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-rose-600 text-white shadow-lg transition-all';
-        btnIn.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400 transition-all';
-        listIn.classList.add('hidden');
-        listOut.classList.remove('hidden');
-      }
-    }
-
-    // 4. LÓGICA DE BALANCE Y CAJA
+    // 4. LÓGICA DE BALANCE Y CAJA (HISTORIAL UNIFICADO)
     async function procesarFlujoCaja(filtroFecha) {
       const { data: vts } = await db.from('ventas').select('*, clientes(nombre)');
       const { data: gts } = await db.from('gastos').select('*, proveedores(nombre)');
       const { data: abs } = await db.from('pagos_abonos').select('*');
 
-      let inTotal = 0; let outTotal = 0; let htmlIn = ''; let htmlOut = '';
+      let inTotal = 0; let outTotal = 0; let movimientos = [];
 
       vts?.forEach(v => {
-        if(!filtroFecha || gFecha(v.fecha) === filtroFecha) {
+        const fechaStr = gFecha(v.fecha);
+        if(!filtroFecha || fechaStr === filtroFecha) {
           const efectivo = v.es_deuda ? Number(v.abono) : Number(v.monto_final);
           if(efectivo > 0) {
             inTotal += efectivo;
-            htmlIn += `<div class="bg-slate-700/40 p-3 rounded-lg border border-emerald-900/50 flex justify-between items-center shadow-sm"><div class="flex-1"><p class="text-sm font-bold text-white">${v.clientes?.nombre||'Venta Libre'}</p><p class="text-[10px] text-slate-400 uppercase">Venta / Abono Inicial</p></div><div class="text-emerald-400 font-bold tracking-wide">+${fmtMoneda(efectivo)}</div><button onclick="eliminarRegistro('ventas', '${v.id}')" class="ml-3 text-rose-500 bg-rose-950/40 p-1.5 rounded">🗑️</button></div>`;
-          }
-        }
-      });
-      abs?.forEach(a => {
-        if(!filtroFecha || gFecha(a.fecha) === filtroFecha) {
-          if(a.tipo === 'COBRO_VENTA') {
-            inTotal += Number(a.monto);
-            htmlIn += `<div class="bg-slate-700/40 p-3 rounded-lg border border-emerald-900/50 flex justify-between items-center shadow-sm"><div class="flex-1"><p class="text-sm font-bold text-amber-300">Pago a Deuda Recibido</p></div><div class="text-emerald-400 font-bold tracking-wide">+${fmtMoneda(a.monto)}</div><button onclick="eliminarRegistro('pagos_abonos', '${a.id}')" class="ml-3 text-rose-500 bg-rose-950/40 p-1.5 rounded">🗑️</button></div>`;
-          } else {
-            outTotal += Number(a.monto);
-            htmlOut += `<div class="bg-slate-700/40 p-3 rounded-lg border border-rose-900/50 flex justify-between items-center shadow-sm"><div class="flex-1"><p class="text-sm font-bold text-amber-300">Abono a Proveedor Pagado</p></div><div class="text-rose-400 font-bold tracking-wide">-${fmtMoneda(a.monto)}</div><button onclick="eliminarRegistro('pagos_abonos', '${a.id}')" class="ml-3 text-rose-500 bg-rose-950/40 p-1.5 rounded">🗑️</button></div>`;
-          }
-        }
-      });
-      gts?.forEach(g => {
-        if(!filtroFecha || gFecha(g.fecha) === filtroFecha) {
-          const efectivo = g.es_deuda ? Number(g.abono) : Number(g.valor);
-          if(efectivo > 0) {
-            outTotal += efectivo;
-            htmlOut += `<div class="bg-slate-700/40 p-3 rounded-lg border border-rose-900/50 flex justify-between items-center shadow-sm"><div class="flex-1"><p class="text-sm font-bold text-white">${g.proveedores?.nombre||'Gasto General'}</p><p class="text-[10px] text-slate-400 uppercase">Gasto / Abono Inicial</p></div><div class="text-rose-400 font-bold tracking-wide">-${fmtMoneda(efectivo)}</div><button onclick="eliminarRegistro('gastos', '${g.id}')" class="ml-3 text-rose-500 bg-rose-950/40 p-1.5 rounded">🗑️</button></div>`;
+            movimientos.push({
+              id: v.id, tabla: 'ventas', fecha: v.fecha, tipo: 'ENTRADA',
+              titulo: v.clientes?.nombre || 'Venta Libre', sub: 'Venta / Abono Inicial', monto: efectivo
+            });
           }
         }
       });
 
-      return { inTotal, outTotal, htmlIn, htmlOut };
+      abs?.forEach(a => {
+        const fechaStr = gFecha(a.fecha);
+        if(!filtroFecha || fechaStr === filtroFecha) {
+          if(a.tipo === 'COBRO_VENTA') {
+            inTotal += Number(a.monto);
+            movimientos.push({
+              id: a.id, tabla: 'pagos_abonos', fecha: a.fecha, tipo: 'ENTRADA',
+              titulo: 'Pago a Deuda Recibido', sub: 'Abono de Cliente', monto: Number(a.monto)
+            });
+          } else {
+            outTotal += Number(a.monto);
+            movimientos.push({
+              id: a.id, tabla: 'pagos_abonos', fecha: a.fecha, tipo: 'SALIDA',
+              titulo: 'Abono a Proveedor Pagado', sub: 'Pago de Deuda', monto: Number(a.monto)
+            });
+          }
+        }
+      });
+
+      gts?.forEach(g => {
+        const fechaStr = gFecha(g.fecha);
+        if(!filtroFecha || fechaStr === filtroFecha) {
+          const efectivo = g.es_deuda ? Number(g.abono) : Number(g.valor);
+          if(efectivo > 0) {
+            outTotal += efectivo;
+            movimientos.push({
+              id: g.id, tabla: 'gastos', fecha: g.fecha, tipo: 'SALIDA',
+              titulo: g.proveedores?.nombre || 'Gasto General', sub: 'Gasto / Abono Inicial', monto: efectivo
+            });
+          }
+        }
+      });
+
+      // Ordenar por fecha descendiente (más reciente primero)
+      movimientos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+      let html = '';
+      movimientos.forEach(m => {
+        const isEntrada = m.tipo === 'ENTRADA';
+        const colorCls = isEntrada ? 'border-emerald-900/50' : 'border-rose-900/50';
+        const signo = isEntrada ? '+' : '-';
+        html += `<div class="bg-slate-700/40 p-3 rounded-xl border ${colorCls} flex justify-between items-center shadow-sm">
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] px-1.5 py-0.5 rounded font-bold ${isEntrada ? 'bg-emerald-950 text-emerald-300' : 'bg-rose-950 text-rose-300'}">${m.tipo}</span>
+              <p class="text-sm font-bold text-white">${m.titulo}</p>
+            </div>
+            <p class="text-[10px] text-slate-400 mt-1">${gFecha(m.fecha)} • ${m.sub}</p>
+          </div>
+          <div class="text-right font-black tracking-wide ${isEntrada ? 'text-emerald-400' : 'text-rose-400'}">
+            ${signo}${fmtMoneda(m.monto)}
+          </div>
+          <button onclick="eliminarRegistro('${m.tabla}', '${m.id}')" class="ml-3 text-rose-500 bg-rose-950/40 p-1.5 rounded-lg shadow">🗑️</button>
+        </div>`;
+      });
+
+      return { inTotal, outTotal, html };
     }
 
     async function actualizarDashboard() {
@@ -301,8 +333,12 @@
       document.getElementById('bal-ingresos').innerText = fmtMoneda(res.inTotal);
       document.getElementById('bal-egresos').innerText = fmtMoneda(res.outTotal);
       document.getElementById('bal-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
-      document.getElementById('lista-caja-ingresos').innerHTML = res.htmlIn || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin ingresos en esta fecha.</p></div>';
-      document.getElementById('lista-caja-egresos').innerHTML = res.htmlOut || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin egresos en esta fecha.</p></div>';
+      document.getElementById('lista-caja-movimientos').innerHTML = res.html || '<div class="text-center p-6 bg-slate-800 rounded-xl border border-slate-700"><p class="text-sm text-slate-400">No hay movimientos de caja en esta fecha.</p></div>';
+    }
+
+    function limpiarFiltroCaja() {
+      document.getElementById('filtro-balance').value = '';
+      cargarBalance();
     }
 
     // 5. DEUDAS
@@ -379,7 +415,7 @@
     }
 
     async function pagarDeudaGeneral(tabla, idEntidad, nombreEntidad, maxMonto) {
-      if(idEntidad === 'null') return alert('Usa el abono individual para registros de Venta Libre o Gasto General sin entidad vinculada.');
+      if(idEntidad === 'null') return alert('Usa el abono individual para registros sin entidad vinculada.');
       const p = prompt(`Abono a ${nombreEntidad} (Deuda: $${fmtMoneda(maxMonto)}):\nValor a abonar:`);
       if(!p || isNaN(p) || Number(p) <= 0) return;
       let montoRestante = Math.min(Number(p), maxMonto);
@@ -397,7 +433,7 @@
         await db.from('pagos_abonos').insert([payload]);
         await db.from(tabla).update({ abono: Number(d.abono) + aAbonar }).eq('id', d.id);
       }
-      cargarDeudas(); cargarBalance(); actualizarDashboard(); alert('Abono general distribuido correctamente a las deudas más antiguas.');
+      cargarDeudas(); cargarBalance(); actualizarDashboard(); alert('Abono distribuido correctamente.');
     }
 
     // 6. VENTAS, GASTOS E INVENTARIO
@@ -510,7 +546,7 @@
     }
 
     async function eliminarRegistro(tabla, id) {
-      if(confirm('¿Eliminar registro permanentemente? (Esta acción no devolverá automáticamente las cantidades al inventario)')) {
+      if(confirm('¿Eliminar registro permanentemente?')) {
         await db.from(tabla).delete().eq('id', id);
         actualizarDashboard(); cargarBalance(); cargarDeudas();
         if(tabla==='clientes') cargarListaClientes();
@@ -519,7 +555,7 @@
       }
     }
 
-    // 7. LISTAS Y EDICIÓN (Directorios e Inventario)
+    // 7. LISTAS Y EDICIÓN
     document.getElementById('vp-producto').addEventListener('change', (e) => { const p = window.listaProductos.find(x => x.id === e.target.value); if(p) document.getElementById('vp-precio').value = p.precio_venta; });
 
     async function cargarListaClientes() { const {data} = await db.from('clientes').select('*').order('creado_en',{ascending:false}); document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${c.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarCliente('${c.id}','${c.nombre}','${c.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('clientes','${c.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin clientes registrados.</p></div>'; }
