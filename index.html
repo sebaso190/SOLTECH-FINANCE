@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>App Financiera</title>
@@ -76,7 +76,7 @@
         <button onclick="cambiarPestanaCaja('egresos')" id="btn-caja-egresos" class="flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400">Salidas</button>
       </div>
 
-      <div id="lista-caja-ingresos" class="space-y-2"></div>
+      <div id="lista-caja-ingresos" class="space-y-2 block"></div>
       <div id="lista-caja-egresos" class="space-y-2 hidden"></div>
     </section>
 
@@ -86,7 +86,7 @@
         <button onclick="cambiarPestanaDeudas('cobrar')" id="btn-cobrar" class="flex-1 py-2 rounded-lg font-bold text-sm bg-amber-600">Por Cobrar</button>
         <button onclick="cambiarPestanaDeudas('pagar')" id="btn-pagar" class="flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400">Por Pagar</button>
       </div>
-      <div id="lista-deudas-cobrar" class="space-y-4"></div>
+      <div id="lista-deudas-cobrar" class="space-y-4 block"></div>
       <div id="lista-deudas-pagar" class="space-y-4 hidden"></div>
     </section>
 
@@ -106,11 +106,11 @@
           <select id="vp-cliente" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><option value="">Cliente (Opcional al contado)</option></select>
           <select id="vp-producto" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select>
           <div class="grid grid-cols-2 gap-2">
-            <div><label class="text-xs text-slate-400">Cant.</label><input type="number" step="any" id="vp-cantidad" value="1" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></div>
-            <div><label class="text-xs text-slate-400">Precio Und.</label><input type="number" step="any" id="vp-precio" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></div>
+            <div><label class="text-xs text-slate-400">Cant.</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="vp-cantidad" value="1" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></div>
+            <div><label class="text-xs text-slate-400">Precio Und.</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="vp-precio" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></div>
           </div>
           <div class="flex gap-2 items-center"><input type="checkbox" id="vp-es-deuda" onchange="toggleAbono('vp')"><label class="text-sm">¿A Crédito?</label></div>
-          <input type="number" step="any" id="vp-abono" placeholder="Abono Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden">
+          <input type="number" inputmode="decimal" pattern="[0-9]*" id="vp-abono" placeholder="Abono Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden">
           <button type="button" onclick="guardarVentaProducto()" class="w-full bg-blue-600 py-2 rounded font-bold">Vender</button>
         </form>
 
@@ -118,14 +118,14 @@
         <form id="form-venta-libre" class="space-y-3 hidden"><h3 class="font-bold text-cyan-400">Venta Libre</h3>
           <input type="datetime-local" id="vl-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
           <select id="vl-cliente" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><option value="">Cliente (Opcional al contado)</option></select>
-          <input type="number" step="any" id="vl-valor" placeholder="Monto Total" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
+          <input type="number" inputmode="decimal" pattern="[0-9]*" id="vl-valor" placeholder="Monto Total" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
           <div class="flex gap-2 items-center"><input type="checkbox" id="vl-es-deuda" onchange="toggleAbono('vl')"><label class="text-sm">¿A Crédito?</label></div>
-          <input type="number" step="any" id="vl-abono" placeholder="Abono Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden">
+          <input type="number" inputmode="decimal" pattern="[0-9]*" id="vl-abono" placeholder="Abono Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden">
           <input type="text" id="vl-detalles" placeholder="Concepto..." class="w-full bg-slate-700 p-2 rounded text-sm text-white">
           <button type="button" onclick="guardarVentaLibre()" class="w-full bg-cyan-600 py-2 rounded font-bold">Guardar Venta</button>
         </form>
 
-        <!-- GASTO CON INVENTARIO -->
+        <!-- GASTO -->
         <form id="form-gasto" class="space-y-3 hidden"><h3 class="font-bold text-rose-400">Registrar Gasto o Compra</h3>
           <input type="datetime-local" id="g-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white">
           <select id="g-proveedor" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select>
@@ -134,19 +134,19 @@
             <label class="text-xs text-amber-400 font-bold block mb-1">Sumar al Inventario (Opcional)</label>
             <select id="g-producto" class="w-full bg-slate-700 p-2 rounded text-sm text-white mb-2"><option value="">-- No aplica --</option></select>
             <div class="grid grid-cols-2 gap-2">
-              <div><label class="text-xs text-slate-400">Cantidad</label><input type="number" step="any" id="g-cantidad" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></div>
-              <div><label class="text-xs text-slate-400">Total Compra</label><input type="number" step="any" id="g-valor" class="w-full bg-slate-700 p-2 rounded text-sm text-white font-bold text-amber-300"></div>
+              <div><label class="text-xs text-slate-400">Cantidad</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="g-cantidad" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></div>
+              <div><label class="text-xs text-slate-400">Total Compra</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="g-valor" class="w-full bg-slate-700 p-2 rounded text-sm text-white font-bold text-amber-300"></div>
             </div>
           </div>
           
           <div class="flex gap-2 items-center mt-3"><input type="checkbox" id="g-es-deuda" onchange="toggleAbono('g')"><label class="text-sm">¿Queda debiendo?</label></div>
-          <input type="number" step="any" id="g-abono" placeholder="Abono Realizado" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden">
+          <input type="number" inputmode="decimal" pattern="[0-9]*" id="g-abono" placeholder="Abono Realizado" class="w-full bg-slate-700 p-2 rounded text-sm text-white hidden">
           <input type="text" id="g-detalles" placeholder="Detalles..." class="w-full bg-slate-700 p-2 rounded text-sm text-white mt-2">
           <button type="button" onclick="guardarGasto()" class="w-full bg-rose-600 py-2 rounded font-bold mt-3">Guardar Gasto</button>
         </form>
         
         <!-- EDICIÓN Y CREACIÓN -->
-        <form id="form-producto" class="space-y-3 hidden"><h3 id="p-titulo" class="font-bold text-amber-400">Producto</h3><input type="hidden" id="p-id"><input type="text" id="p-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><div class="grid grid-cols-2 gap-2"><input type="number" step="any" id="p-compra" placeholder="P. Compra" class="bg-slate-700 p-2 rounded text-sm text-white"><input type="number" step="any" id="p-venta" placeholder="P. Venta" class="bg-slate-700 p-2 rounded text-sm text-white"></div><input type="number" step="any" id="p-stock" placeholder="Cantidad Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><div><label class="text-xs text-slate-400">Imagen (Opcional)</label><input type="file" id="p-imagen" accept="image/*" class="w-full text-xs text-slate-300"></div><button type="button" onclick="guardarProducto()" class="w-full bg-amber-600 py-2 rounded font-bold">Guardar</button></form>
+        <form id="form-producto" class="space-y-3 hidden"><h3 id="p-titulo" class="font-bold text-amber-400">Producto</h3><input type="hidden" id="p-id"><input type="text" id="p-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><div class="grid grid-cols-2 gap-2"><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-compra" placeholder="P. Compra" class="bg-slate-700 p-2 rounded text-sm text-white"><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-venta" placeholder="P. Venta" class="bg-slate-700 p-2 rounded text-sm text-white"></div><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-stock" placeholder="Cantidad Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><div><label class="text-xs text-slate-400">Imagen (Opcional)</label><input type="file" id="p-imagen" accept="image/*" class="w-full text-xs text-slate-300"></div><button type="button" onclick="guardarProducto()" class="w-full bg-amber-600 py-2 rounded font-bold">Guardar</button></form>
         <form id="form-cliente" class="space-y-3 hidden"><h3 id="c-titulo" class="font-bold text-emerald-400">Cliente</h3><input type="hidden" id="c-id"><input type="text" id="c-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><input type="tel" id="c-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><button type="button" onclick="guardarCliente()" class="w-full bg-emerald-600 py-2 rounded font-bold">Guardar</button></form>
         <form id="form-proveedor" class="space-y-3 hidden"><h3 id="prov-titulo" class="font-bold text-purple-400">Proveedor</h3><input type="hidden" id="prov-id"><input type="text" id="prov-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><input type="tel" id="prov-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><button type="button" onclick="guardarProveedor()" class="w-full bg-purple-600 py-2 rounded font-bold">Guardar</button></form>
       </div>
@@ -197,7 +197,7 @@
       if(!e || !p) return alert('Por favor ingresa tu correo y contraseña.');
       if(p.length < 6) return alert('La contraseña debe tener al menos 6 caracteres.');
       const { error } = await db.auth.signUp({ email: e, password: p });
-      if(error) alert('Error: ' + error.message); else alert('Registro exitoso. Revisa tu correo electrónico para verificar tu cuenta antes de iniciar sesión.');
+      if(error) alert('Error: ' + error.message); else alert('Registro exitoso. Revisa tu correo o inicia sesión directamente si desactivaste la validación.');
     }
     
     async function logout() { await db.auth.signOut(); checkSession(); }
@@ -218,8 +218,8 @@
       if(document.getElementById(`nav-${vista}`)) document.getElementById(`nav-${vista}`).classList.replace('text-slate-400', 'text-blue-400');
       
       if(vista === 'inicio') actualizarDashboard();
-      if(vista === 'balance') cargarBalance();
-      if(vista === 'deudas') cargarDeudas();
+      if(vista === 'balance') { cargarBalance(); cambiarPestanaCaja('ingresos'); } // Forzar visibilidad al abrir
+      if(vista === 'deudas') { cargarDeudas(); cambiarPestanaDeudas('cobrar'); }
       if(vista === 'inventario') cargarInventario();
       if(vista === 'clientes') cargarListaClientes();
       if(vista === 'proveedores') cargarListaProveedores();
@@ -236,7 +236,7 @@
       document.getElementById(`lista-caja-${tipo}`).classList.remove('hidden');
     }
 
-    // 4. ACTUALIZAR BALANCE (Inicio y Caja Separada)
+    // 4. ACTUALIZAR BALANCE
     async function procesarFlujoCaja(filtroFecha) {
       const { data: vts } = await db.from('ventas').select('*, clientes(nombre)');
       const { data: gts } = await db.from('gastos').select('*, proveedores(nombre)');
@@ -295,7 +295,7 @@
       document.getElementById('lista-caja-egresos').innerHTML = res.htmlOut || '<p class="text-xs text-slate-500 text-center mt-4">Sin egresos en esta fecha.</p>';
     }
 
-    // 5. DEUDAS, ELIMINACIÓN Y ABONOS GENERALES
+    // 5. DEUDAS
     function cambiarPestanaDeudas(tipo) {
       document.getElementById('btn-cobrar').classList.replace('bg-amber-600', 'bg-slate-800');
       document.getElementById('btn-pagar').classList.replace('bg-purple-600', 'bg-slate-800');
@@ -306,7 +306,6 @@
     }
 
     async function cargarDeudas() {
-      // Deudas por Cobrar
       const { data: vts } = await db.from('ventas').select('*, clientes(nombre), productos(nombre)').gt('saldo_pendiente', 0);
       let htmlC='';
       if(vts) {
@@ -318,22 +317,21 @@
           
           ventasCl.forEach(v => {
             cTotal += Number(v.saldo_pendiente); 
-            const concepto = v.productos?.nombre || v.detalles || 'Sin concepto';
+            const concepto = v.productos?.nombre || v.detalles || 'Venta Libre';
             mHtml += `<div class="pl-2 border-l-2 border-slate-600 mt-2 flex justify-between items-center"><div class="flex-1"><p class="text-[11px] text-slate-300">${gFecha(v.fecha)} | ${concepto}</p><p class="text-amber-400 font-bold text-sm">${fmtMoneda(v.saldo_pendiente)}</p></div><div><button onclick="pagarDeuda('ventas', '${v.id}', ${v.saldo_pendiente})" class="text-[10px] bg-amber-700/50 px-2 py-1 rounded">Abonar</button><button onclick="eliminarRegistro('ventas', '${v.id}')" class="text-[10px] text-rose-500 ml-1">🗑️</button></div></div>`; 
           });
-          htmlC += `<div class="bg-slate-700/30 p-3 rounded-lg border border-slate-700"><div class="flex justify-between items-center border-b border-slate-600 pb-1"><h3 class="font-bold text-white">${nombreCl}</h3><span class="font-black text-amber-500">${fmtMoneda(cTotal)}</span></div>${mHtml}<button onclick="pagarDeudaGeneral('ventas', '${cId}', '${nombreCl}', ${cTotal})" class="w-full mt-2 bg-amber-600/80 py-1 rounded text-xs font-bold text-white">Hacer Abono General al Cliente</button></div>`;
+          htmlC += `<div class="bg-slate-700/30 p-3 rounded-lg border border-slate-700"><div class="flex justify-between items-center border-b border-slate-600 pb-1"><h3 class="font-bold text-white">${nombreCl}</h3><span class="font-black text-amber-500">${fmtMoneda(cTotal)}</span></div>${mHtml}<button onclick="pagarDeudaGeneral('ventas', '${cId}', '${nombreCl}', ${cTotal})" class="w-full mt-2 bg-amber-600/80 py-1 rounded text-xs font-bold text-white">Hacer Abono General</button></div>`;
         });
       }
       document.getElementById('lista-deudas-cobrar').innerHTML = htmlC || '<p class="text-sm text-slate-400">No hay deudas por cobrar.</p>';
 
-      // Deudas por Pagar
       const { data: gts } = await db.from('gastos').select('*, proveedores(nombre), productos(nombre)').gt('saldo_pendiente', 0);
       let htmlP='';
       if(gts) {
         const porProv = gts.reduce((acc, g) => { const k = g.proveedor_id || 'null'; acc[k] = acc[k] || []; acc[k].push(g); return acc; }, {});
         Object.keys(porProv).forEach(pId => {
           const gastosPr = porProv[pId];
-          const nombrePr = gastosPr[0].proveedores?.nombre || 'General';
+          const nombrePr = gastosPr[0].proveedores?.nombre || 'Gasto General';
           let pTotal = 0; let mHtml = '';
           
           gastosPr.forEach(g => { 
@@ -341,7 +339,7 @@
             const concepto = g.productos?.nombre || g.detalles || 'Sin concepto';
             mHtml += `<div class="pl-2 border-l-2 border-slate-600 mt-2 flex justify-between items-center"><div class="flex-1"><p class="text-[11px] text-slate-300">${gFecha(g.fecha)} | ${concepto}</p><p class="text-purple-400 font-bold text-sm">${fmtMoneda(g.saldo_pendiente)}</p></div><div><button onclick="pagarDeuda('gastos', '${g.id}', ${g.saldo_pendiente})" class="text-[10px] bg-purple-700/50 px-2 py-1 rounded">Abonar</button><button onclick="eliminarRegistro('gastos', '${g.id}')" class="text-[10px] text-rose-500 ml-1">🗑️</button></div></div>`; 
           });
-          htmlP += `<div class="bg-slate-700/30 p-3 rounded-lg border border-slate-700"><div class="flex justify-between items-center border-b border-slate-600 pb-1"><h3 class="font-bold text-white">${nombrePr}</h3><span class="font-black text-purple-500">${fmtMoneda(pTotal)}</span></div>${mHtml}<button onclick="pagarDeudaGeneral('gastos', '${pId}', '${nombrePr}', ${pTotal})" class="w-full mt-2 bg-purple-600/80 py-1 rounded text-xs font-bold text-white">Hacer Abono General al Proveedor</button></div>`;
+          htmlP += `<div class="bg-slate-700/30 p-3 rounded-lg border border-slate-700"><div class="flex justify-between items-center border-b border-slate-600 pb-1"><h3 class="font-bold text-white">${nombrePr}</h3><span class="font-black text-purple-500">${fmtMoneda(pTotal)}</span></div>${mHtml}<button onclick="pagarDeudaGeneral('gastos', '${pId}', '${nombrePr}', ${pTotal})" class="w-full mt-2 bg-purple-600/80 py-1 rounded text-xs font-bold text-white">Hacer Abono General</button></div>`;
         });
       }
       document.getElementById('lista-deudas-pagar').innerHTML = htmlP || '<p class="text-sm text-slate-400">No hay deudas por pagar.</p>';
@@ -349,7 +347,7 @@
 
     async function pagarDeuda(tabla, id, maxMonto) {
       const p = prompt(`Ingrese valor a abonar (Máx: $${fmtMoneda(maxMonto)}):`);
-      if(!p || isNaN(p) || p <= 0) return;
+      if(!p || isNaN(p) || Number(p) <= 0) return;
       const monto = Math.min(Number(p), maxMonto);
 
       const payload = { monto, tipo: tabla==='ventas' ? 'COBRO_VENTA' : 'PAGO_GASTO' };
@@ -363,9 +361,9 @@
     }
 
     async function pagarDeudaGeneral(tabla, idEntidad, nombreEntidad, maxMonto) {
-      if(idEntidad === 'null') return alert('No se puede hacer abono general a registros sin cliente/proveedor asignado. Usa el abono individual.');
-      const p = prompt(`Abono general a ${nombreEntidad} (Deuda Total: $${fmtMoneda(maxMonto)}):\nIngrese valor a abonar:`);
-      if(!p || isNaN(p) || p <= 0) return;
+      if(idEntidad === 'null') return alert('Usa el abono individual para registros sin cliente/proveedor.');
+      const p = prompt(`Abono a ${nombreEntidad} (Deuda: $${fmtMoneda(maxMonto)}):\nValor a abonar:`);
+      if(!p || isNaN(p) || Number(p) <= 0) return;
       let montoRestante = Math.min(Number(p), maxMonto);
 
       const col = tabla === 'ventas' ? 'cliente_id' : 'proveedor_id';
@@ -381,10 +379,10 @@
         await db.from('pagos_abonos').insert([payload]);
         await db.from(tabla).update({ abono: Number(d.abono) + aAbonar }).eq('id', d.id);
       }
-      cargarDeudas(); cargarBalance(); actualizarDashboard(); alert('Abono general distribuido con éxito');
+      cargarDeudas(); cargarBalance(); actualizarDashboard(); alert('Abono distribuido con éxito');
     }
 
-    // 6. VENTAS Y GASTOS (CÁLCULO AUTOMÁTICO INVENTARIO)
+    // 6. VENTAS Y GASTOS (Cálculos automáticos)
     document.getElementById('g-producto').addEventListener('change', (e) => {
       const p = window.listaProductos.find(x => x.id === e.target.value);
       if(p) { document.getElementById('g-cantidad').value = 1; document.getElementById('g-valor').value = p.precio_compra; }
@@ -410,25 +408,26 @@
       const prod = window.listaProductos.find(x => x.id === producto_id);
       await db.from('productos').update({ cantidad_disponible: Number(prod.cantidad_disponible) - cant }).eq('id', producto_id);
 
-      await db.from('ventas').insert([{ tipo_venta: 'PRODUCTO', cliente_id: cliente_id || null, producto_id, cantidad: cant, monto_bruto: mBruto, es_deuda, abono: es_deuda?abono:0 }]);
+      await db.from('ventas').insert([{ tipo_venta: 'PRODUCTO', cliente_id: cliente_id || null, producto_id, cantidad: cant, monto_bruto: mBruto, descuento: 0, es_deuda, abono: es_deuda?abono:0 }]);
       document.getElementById('form-venta-prod').reset(); ocultarForm(); cargarDropdowns(); actualizarDashboard(); cargarDeudas();
     }
 
     async function guardarVentaLibre() {
       const cliente_id = document.getElementById('vl-cliente').value;
-      const valor = document.getElementById('vl-valor').value;
+      const valor = Number(document.getElementById('vl-valor').value||0);
       const es_deuda = document.getElementById('vl-es-deuda').checked;
+      const abono = Number(document.getElementById('vl-abono').value||0);
       
       if (es_deuda && !cliente_id) return alert('Para una venta a crédito debes seleccionar un cliente.');
       if (!valor) return alert('El valor total es obligatorio.');
 
-      await db.from('ventas').insert([{ tipo_venta: 'LIBRE', cliente_id: cliente_id || null, monto_bruto: valor, es_deuda, abono: es_deuda?document.getElementById('vl-abono').value:0, detalles: document.getElementById('vl-detalles').value }]);
+      await db.from('ventas').insert([{ tipo_venta: 'LIBRE', cliente_id: cliente_id || null, monto_bruto: valor, descuento: 0, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('vl-detalles').value }]);
       document.getElementById('form-venta-libre').reset(); ocultarForm(); actualizarDashboard(); cargarDeudas();
     }
 
     async function guardarGasto() {
       const prov = document.getElementById('g-proveedor').value;
-      const valor = document.getElementById('g-valor').value;
+      const valor = Number(document.getElementById('g-valor').value||0);
       const prod_id = document.getElementById('g-producto').value;
       const cant = Number(document.getElementById('g-cantidad').value||0);
       const es_deuda = document.getElementById('g-es-deuda').checked;
@@ -462,7 +461,7 @@
 
     async function guardarProducto() {
       const id = document.getElementById('p-id').value; const nom = document.getElementById('p-nombre').value;
-      const cmp = document.getElementById('p-compra').value || 0; const vnt = document.getElementById('p-venta').value || 0; const stk = document.getElementById('p-stock').value || 0;
+      const cmp = Number(document.getElementById('p-compra').value||0); const vnt = Number(document.getElementById('p-venta').value||0); const stk = Number(document.getElementById('p-stock').value||0);
       if (!nom || !vnt) return alert('Nombre y precio de venta obligatorios');
       
       const fileInput = document.getElementById('p-imagen');
