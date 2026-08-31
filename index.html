@@ -82,11 +82,11 @@
 
         <div class="grid grid-cols-2 gap-3 pt-1">
           <div class="bg-emerald-950/40 p-2.5 rounded-lg border border-emerald-800/50">
-            <p class="text-[10px] text-emerald-400">Entradas</p>
+            <p class="text-[10px] text-emerald-400">Entradas (<span id="bal-count-in">0</span>)</p>
             <p id="bal-ingresos" class="text-lg font-bold text-emerald-300">0</p>
           </div>
           <div class="bg-rose-950/40 p-2.5 rounded-lg border border-rose-800/50">
-            <p class="text-[10px] text-rose-400">Salidas</p>
+            <p class="text-[10px] text-rose-400">Salidas (<span id="bal-count-out">0</span>)</p>
             <p id="bal-egresos" class="text-lg font-bold text-rose-300">0</p>
           </div>
         </div>
@@ -246,13 +246,13 @@
       if(vista === 'proveedores') cargarListaProveedores();
     }
 
-    // 4. LÓGICA DE BALANCE Y CAJA CON DOBLE FILTRO (FECHA + TIPO)
+    // 4. LÓGICA DE BALANCE Y CAJA (CON CONTEO DE TRANSACCIONES)
     async function procesarFlujoCaja(filtroFecha) {
       const { data: vts } = await db.from('ventas').select('*, clientes(nombre)');
       const { data: gts } = await db.from('gastos').select('*, proveedores(nombre)');
       const { data: abs } = await db.from('pagos_abonos').select('*');
 
-      let inTotal = 0; let outTotal = 0; let movimientos = [];
+      let inTotal = 0; let outTotal = 0; let countIn = 0; let countOut = 0; let movimientos = [];
 
       vts?.forEach(v => {
         const fechaStr = gFecha(v.fecha);
@@ -260,6 +260,7 @@
           const efectivo = v.es_deuda ? Number(v.abono) : Number(v.monto_final);
           if(efectivo > 0) {
             inTotal += efectivo;
+            countIn++;
             movimientos.push({
               id: v.id, tabla: 'ventas', fecha: v.fecha, tipo: 'ENTRADA',
               titulo: v.clientes?.nombre || 'Venta Libre', sub: 'Venta / Abono Inicial', monto: efectivo
@@ -273,12 +274,14 @@
         if(!filtroFecha || fechaStr === filtroFecha) {
           if(a.tipo === 'COBRO_VENTA') {
             inTotal += Number(a.monto);
+            countIn++;
             movimientos.push({
               id: a.id, tabla: 'pagos_abonos', fecha: a.fecha, tipo: 'ENTRADA',
               titulo: 'Pago a Deuda Recibido', sub: 'Abono de Cliente', monto: Number(a.monto)
             });
           } else {
             outTotal += Number(a.monto);
+            countOut++;
             movimientos.push({
               id: a.id, tabla: 'pagos_abonos', fecha: a.fecha, tipo: 'SALIDA',
               titulo: 'Abono a Proveedor Pagado', sub: 'Pago de Deuda', monto: Number(a.monto)
@@ -293,6 +296,7 @@
           const efectivo = g.es_deuda ? Number(g.abono) : Number(g.valor);
           if(efectivo > 0) {
             outTotal += efectivo;
+            countOut++;
             movimientos.push({
               id: g.id, tabla: 'gastos', fecha: g.fecha, tipo: 'SALIDA',
               titulo: g.proveedores?.nombre || 'Gasto General', sub: 'Gasto / Abono Inicial', monto: efectivo
@@ -301,10 +305,9 @@
         }
       });
 
-      // Ordenar por fecha descendiente (más reciente primero)
       movimientos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
-      return { inTotal, outTotal, movimientos };
+      return { inTotal, outTotal, countIn, countOut, movimientos };
     }
 
     async function actualizarDashboard() {
@@ -323,8 +326,9 @@
       document.getElementById('bal-ingresos').innerText = fmtMoneda(res.inTotal);
       document.getElementById('bal-egresos').innerText = fmtMoneda(res.outTotal);
       document.getElementById('bal-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
+      document.getElementById('bal-count-in').innerText = res.countIn;
+      document.getElementById('bal-count-out').innerText = res.countOut;
 
-      // Filtrar la lista visual según el selector de tipo (Todos, ENTRADA, SALIDA)
       let movsFiltrados = res.movimientos;
       if (tipoFiltro !== 'todos') {
         movsFiltrados = res.movimientos.filter(m => m.tipo === tipoFiltro);
