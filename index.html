@@ -557,26 +557,6 @@
       cargarDeudas(); cargarBalance(); actualizarDashboard();
     }
 
-    // 6. GUARDAR CON ACTUALIZACION, COMPROBACIONES Y MANEJO DE INVENTARIO
-    async function restaurarStock(tabla, recordId) {
-       const {data: rec} = await db.from(tabla).select('*').eq('id', recordId).single();
-       if(tabla === 'ventas') {
-          if(rec.detalles && rec.detalles.startsWith('[')) {
-             const items = JSON.parse(rec.detalles);
-             for(let item of items) { const {data:p} = await db.from('productos').select('cantidad_disponible').eq('id', item.id).single(); if(p) await db.from('productos').update({cantidad_disponible: p.cantidad_disponible + item.cantidad}).eq('id', item.id); }
-          } else if(rec.producto_id) { const {data:p} = await db.from('productos').select('cantidad_disponible').eq('id', rec.producto_id).single(); if(p) await db.from('productos').update({cantidad_disponible: p.cantidad_disponible + rec.cantidad}).eq('id', rec.producto_id); }
-       } else if (tabla === 'gastos' && rec.producto_id) { const {data:p} = await db.from('productos').select('cantidad_disponible').eq('id', rec.producto_id).single(); if(p) await db.from('productos').update({cantidad_disponible: p.cantidad_disponible - rec.cantidad}).eq('id', rec.producto_id); }
-    }
-
-    async function deducirStock(tabla, payload) {
-       if(tabla === 'ventas') {
-          if(payload.detalles && payload.detalles.startsWith('[')) {
-             const items = JSON.parse(payload.detalles);
-             for(let item of items) { const p = listasData.productos.find(x=>x.id===item.id); if(p) await db.from('productos').update({cantidad_disponible: p.cantidad_disponible - item.cantidad}).eq('id', item.id); }
-          } else if(payload.producto_id) { const p = listasData.productos.find(x=>x.id===payload.producto_id); if(p) await db.from('productos').update({cantidad_disponible: p.cantidad_disponible - payload.cantidad}).eq('id', payload.producto_id); }
-       } else if (tabla === 'gastos' && payload.producto_id) { const p = listasData.productos.find(x=>x.id===payload.producto_id); if(p) await db.from('productos').update({cantidad_disponible: p.cantidad_disponible + payload.cantidad}).eq('id', payload.producto_id); }
-    }
-
     async function guardarVentaProducto() {
       const editId = document.getElementById('vp-edit-id').value; const fInp = document.getElementById('vp-fecha').value; const cId = document.getElementById('vp-cliente-id').value;
       const es_deuda = document.getElementById('vp-es-deuda').checked; const abono = Number(document.getElementById('vp-abono').value||0); const desc = Number(document.getElementById('vp-descuento').value||0);
@@ -584,8 +564,10 @@
       if(carritoActual.length === 0) return alert('El carrito está vacío.');
       if(es_deuda && !cId) return alert('Para crédito, selecciona un cliente.');
       
-      const mBruto = carritoActual.reduce((a,b)=>a+b.subtotal, 0); const mFinal = mBruto - desc; const saldoP = es_deuda ? (mFinal - abono) : 0;
-      const payload = { tipo_venta: 'PRODUCTO', cliente_id: cId || null, monto_bruto: mBruto, monto_final: mFinal, saldo_pendiente: saldoP, descuento: desc, es_deuda, abono: es_deuda?abono:0, detalles: JSON.stringify(carritoActual) };
+      const mBruto = carritoActual.reduce((a,b)=>a+b.subtotal, 0); 
+      
+      // Eliminamos monto_final y saldo_pendiente del payload, Supabase lo calcula
+      const payload = { tipo_venta: 'PRODUCTO', cliente_id: cId || null, monto_bruto: mBruto, descuento: desc, es_deuda, abono: es_deuda?abono:0, detalles: JSON.stringify(carritoActual) };
       if(fInp) payload.fecha = new Date(fInp).toISOString();
 
       try {
@@ -599,8 +581,10 @@
       const editId = document.getElementById('vl-edit-id').value; const fInp = document.getElementById('vl-fecha').value; const cId = document.getElementById('vl-cliente-id').value;
       const valor = Number(document.getElementById('vl-valor').value||0); const es_deuda = document.getElementById('vl-es-deuda').checked; const abono = Number(document.getElementById('vl-abono').value||0);
       
-      if(!valor) return alert('Valor obligatorio.'); const saldoP = es_deuda ? (valor - abono) : 0;
-      const payload = { tipo_venta: 'LIBRE', cliente_id: cId || null, monto_bruto: valor, monto_final: valor, saldo_pendiente: saldoP, descuento: 0, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('vl-detalles').value };
+      if(!valor) return alert('Valor obligatorio.'); 
+      
+      // Eliminamos monto_final y saldo_pendiente del payload
+      const payload = { tipo_venta: 'LIBRE', cliente_id: cId || null, monto_bruto: valor, descuento: 0, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('vl-detalles').value };
       if(fInp) payload.fecha = new Date(fInp).toISOString();
 
       try {
@@ -615,8 +599,10 @@
       const prodId = document.getElementById('g-producto-id').value; const valor = Number(document.getElementById('g-valor').value||0); const cant = Number(document.getElementById('g-cantidad').value||0);
       const es_deuda = document.getElementById('g-es-deuda').checked; const abono = Number(document.getElementById('g-abono').value||0);
       
-      if(!valor) return alert('Monto total obligatorio.'); const saldoP = es_deuda ? (valor - abono) : 0;
-      const payload = { proveedor_id: provId||null, valor, saldo_pendiente: saldoP, producto_id: prodId||null, cantidad: cant, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('g-detalles').value };
+      if(!valor) return alert('Monto total obligatorio.'); 
+      
+      // Eliminamos saldo_pendiente del payload
+      const payload = { proveedor_id: provId||null, valor, producto_id: prodId||null, cantidad: cant, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('g-detalles').value };
       if(fInp) payload.fecha = new Date(fInp).toISOString();
 
       try {
@@ -625,7 +611,7 @@
         cerrarActualizarForm('form-gasto');
       } catch(err) { alert('❌ Error al guardar el gasto: ' + err.message); }
     }
-
+    
     function cerrarActualizarForm(formId) { if(formId!=='null') document.getElementById(formId).reset(); ocultarForm(); cargarDropdowns(); actualizarDashboard(); cargarBalance(); cargarDeudas(); }
 
     async function eliminarRegistro(tabla, id) {
