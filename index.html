@@ -8,6 +8,11 @@
   <title>App Financiera</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* Estilos para ocultar scrollbars pero mantener funcionalidad */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans pb-20 overflow-x-hidden">
 
@@ -51,7 +56,7 @@
       </div>
 
       <section class="grid grid-cols-2 gap-3">
-        <button onclick="prepararFormulario('venta-prod')" class="bg-blue-600 p-4 rounded-xl font-bold text-sm shadow-lg flex flex-col items-center col-span-2 hover:bg-blue-500 transition">📦 Registrar Venta Producto</button>
+        <button onclick="prepararFormulario('venta-prod')" class="bg-blue-600 p-4 rounded-xl font-bold text-sm shadow-lg flex flex-col items-center col-span-2 hover:bg-blue-500 transition">📦 Registrar Venta de Productos</button>
         <button onclick="prepararFormulario('venta-libre')" class="bg-cyan-600 p-3 rounded-xl font-bold text-sm shadow-lg flex flex-col items-center hover:bg-cyan-500 transition">⚡ Venta Libre</button>
         <button onclick="prepararFormulario('gasto')" class="bg-rose-600 p-3 rounded-xl font-bold text-sm shadow-lg flex flex-col items-center hover:bg-rose-500 transition">💸 Registrar Gasto</button>
       </section>
@@ -69,8 +74,6 @@
           <h2 class="text-xs font-bold text-slate-400 uppercase">Flujo de Caja Real</h2>
           <button onclick="limpiarFiltroCaja()" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded text-slate-300 shadow">Ver Todo</button>
         </div>
-        
-        <!-- Doble Filtro: Fecha y Tipo de Movimiento -->
         <div class="grid grid-cols-2 gap-2">
           <input type="date" id="filtro-balance" onchange="cargarBalance()" class="w-full bg-slate-700 text-xs p-2 rounded text-white border border-slate-600 outline-none focus:border-blue-500">
           <select id="filtro-tipo-caja" onchange="cargarBalance()" class="w-full bg-slate-700 text-xs p-2 rounded text-white border border-slate-600 outline-none focus:border-blue-500">
@@ -79,7 +82,6 @@
             <option value="SALIDA">Solo Salidas</option>
           </select>
         </div>
-
         <div class="grid grid-cols-2 gap-3 pt-1">
           <div class="bg-emerald-950/40 p-2.5 rounded-lg border border-emerald-800/50">
             <p class="text-[10px] text-emerald-400">Entradas (<span id="bal-count-in">0</span>)</p>
@@ -90,13 +92,8 @@
             <p id="bal-egresos" class="text-lg font-bold text-rose-300">0</p>
           </div>
         </div>
-        <div class="flex justify-between items-center pt-2 border-t border-slate-700 text-xs">
-          <span class="font-bold">Neto en Caja:</span>
-          <span id="bal-neto" class="text-base font-bold text-blue-400">0</span>
-        </div>
+        <div class="flex justify-between items-center pt-2 border-t border-slate-700 text-xs"><span class="font-bold">Neto en Caja:</span><span id="bal-neto" class="text-base font-bold text-blue-400">0</span></div>
       </div>
-
-      <!-- Historial Filtrado de Movimientos -->
       <div id="lista-caja-movimientos" class="space-y-2"></div>
     </section>
 
@@ -106,7 +103,18 @@
         <button onclick="cambiarPestanaDeudas('cobrar')" id="btn-cobrar" class="flex-1 py-2 rounded-lg font-bold text-sm bg-amber-600 text-white shadow-lg transition-all">Por Cobrar</button>
         <button onclick="cambiarPestanaDeudas('pagar')" id="btn-pagar" class="flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400 transition-all">Por Pagar</button>
       </div>
-      <div id="lista-deudas-cobrar" class="space-y-4"></div>
+      
+      <!-- Filtros de Deudas -->
+      <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 grid grid-cols-2 gap-2">
+        <input type="date" id="filtro-deudas-fecha" onchange="cargarDeudas()" class="w-full bg-slate-700 text-[11px] p-2 rounded text-white border border-slate-600 outline-none">
+        <select id="filtro-deudas-orden" onchange="cargarDeudas()" class="w-full bg-slate-700 text-[11px] p-2 rounded text-white border border-slate-600 outline-none">
+          <option value="asc">Antiguas primero</option>
+          <option value="desc">Recientes primero</option>
+        </select>
+        <button onclick="document.getElementById('filtro-deudas-fecha').value=''; cargarDeudas();" class="col-span-2 bg-slate-700 text-[10px] py-1 rounded text-slate-400">Quitar filtro de fecha</button>
+      </div>
+
+      <div id="lista-deudas-cobrar" class="space-y-4 block"></div>
       <div id="lista-deudas-pagar" class="space-y-4 hidden"></div>
     </section>
 
@@ -117,58 +125,96 @@
 
     <!-- ================= MODALES FORMULARIOS ================= -->
     <div id="form-container" class="hidden fixed inset-0 z-50 bg-slate-900/95 flex justify-center items-center p-4">
-      <div class="bg-slate-800 p-5 rounded-xl border border-slate-600 shadow-2xl w-full max-w-sm relative max-h-[90vh] overflow-y-auto">
+      <div class="bg-slate-800 p-5 rounded-xl border border-slate-600 shadow-2xl w-full max-w-sm relative max-h-[90vh] overflow-y-auto no-scrollbar">
         <button onclick="ocultarForm()" class="absolute top-3 right-4 text-xl text-slate-400 hover:text-white">&times;</button>
         
-        <!-- VENTA PRODUCTO -->
-        <form id="form-venta-prod" class="space-y-3 hidden"><h3 class="font-bold text-blue-400">Vender Producto</h3>
-          <input type="datetime-local" id="vp-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-blue-500">
-          <select id="vp-cliente" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><option value="">Cliente (Opcional al contado)</option></select>
-          <select id="vp-producto" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select>
-          <div class="grid grid-cols-2 gap-2">
-            <div><label class="text-xs text-slate-400">Cant.</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="vp-cantidad" value="1" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"></div>
-            <div><label class="text-xs text-slate-400">Precio Und.</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="vp-precio" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"></div>
+        <!-- VENTA PRODUCTO (CARRITO) -->
+        <form id="form-venta-prod" class="space-y-3 hidden">
+          <h3 class="font-bold text-blue-400" id="vp-titulo-form">Vender Productos</h3>
+          <input type="hidden" id="vp-edit-id">
+          <input type="datetime-local" id="vp-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-blue-500 border border-transparent">
+          
+          <!-- Buscador de Clientes -->
+          <div class="relative">
+            <input type="text" id="vp-cliente-search" placeholder="🔍 Buscar Cliente (Opcional al contado)..." class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-blue-500 border border-transparent" oninput="filtrarLista('vp-cliente-list', this.value)" onfocus="mostrarLista('vp-cliente-list')">
+            <input type="hidden" id="vp-cliente-id">
+            <ul id="vp-cliente-list" class="hidden absolute z-50 w-full bg-slate-600 mt-1 max-h-32 overflow-y-auto rounded shadow-lg text-sm border border-slate-500"></ul>
           </div>
-          <div class="flex gap-2 items-center"><input type="checkbox" id="vp-es-deuda" onchange="toggleAbono('vp')"><label class="text-sm">¿A Crédito?</label></div>
-          <input type="number" inputmode="decimal" pattern="[0-9]*" id="vp-abono" placeholder="Abono Inicial (Si aplica)" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none hidden">
-          <button type="button" onclick="guardarVentaProducto()" class="w-full bg-blue-600 py-2 rounded font-bold shadow-lg">Vender</button>
+
+          <!-- Selector de Productos -->
+          <div class="p-3 bg-slate-900/50 rounded-lg border border-slate-700 space-y-2">
+            <div class="relative">
+              <input type="text" id="vp-producto-search" placeholder="📦 Buscar Producto..." class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-blue-500 border border-transparent" oninput="filtrarLista('vp-producto-list', this.value)" onfocus="mostrarLista('vp-producto-list')">
+              <input type="hidden" id="vp-producto-id">
+              <ul id="vp-producto-list" class="hidden absolute z-50 w-full bg-slate-600 mt-1 max-h-32 overflow-y-auto rounded shadow-lg text-sm border border-slate-500"></ul>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div><label class="text-xs text-slate-400">Cant.</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="vp-cantidad" value="1" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"></div>
+              <div><label class="text-xs text-slate-400">Precio Und.</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="vp-precio" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"></div>
+            </div>
+            <button type="button" onclick="agregarAlCarrito()" class="w-full bg-blue-900 text-blue-300 font-bold py-1.5 rounded shadow text-sm">➕ Agregar al Carrito</button>
+          </div>
+
+          <!-- Carrito Visual -->
+          <div id="vp-carrito-container" class="bg-slate-700 p-2 rounded min-h-[50px] max-h-40 overflow-y-auto no-scrollbar space-y-1">
+             <p class="text-[10px] text-center text-slate-400 mt-2">Carrito vacío</p>
+          </div>
+
+          <div class="flex justify-between items-center text-sm"><span class="text-slate-400">Subtotal:</span><span id="vp-subtotal" class="font-bold text-white">$0</span></div>
+          <div class="flex justify-between items-center text-sm"><span class="text-slate-400">Descuento:</span>
+             <input type="number" inputmode="decimal" pattern="[0-9]*" id="vp-descuento" value="0" class="w-24 bg-slate-700 p-1 rounded text-right text-white outline-none" oninput="actualizarTotalCarrito()">
+          </div>
+          <div class="flex justify-between items-center"><span class="font-bold text-blue-400">TOTAL FINAL:</span><span id="vp-total-final" class="font-black text-xl text-emerald-400">$0</span></div>
+
+          <!-- Switch de Crédito -->
+          <div class="p-3 bg-slate-800 rounded-lg border border-slate-600 mt-2">
+            <label class="flex items-center justify-between cursor-pointer">
+              <span class="font-bold text-emerald-400 text-sm" id="lbl-credito-vp">🟢 PAGO DE CONTADO</span>
+              <div class="relative">
+                <input type="checkbox" id="vp-es-deuda" class="sr-only" onchange="toggleCredito('vp')">
+                <div class="block bg-slate-600 w-12 h-7 rounded-full transition-colors" id="bg-credito-vp"></div>
+                <div class="dot absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform" id="dot-credito-vp"></div>
+              </div>
+            </label>
+            <div id="vp-abono-container" class="mt-3 hidden">
+              <label class="text-xs text-amber-400 font-bold">¿Cuánto abonó hoy?</label>
+              <input type="number" inputmode="decimal" pattern="[0-9]*" id="vp-abono" placeholder="Ej: 50000" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none mt-1">
+            </div>
+          </div>
+          <button type="button" onclick="guardarVentaProducto()" class="w-full bg-blue-600 py-3 rounded-lg font-bold shadow-lg uppercase tracking-wide">Guardar Venta</button>
         </form>
 
         <!-- VENTA LIBRE -->
-        <form id="form-venta-libre" class="space-y-3 hidden"><h3 class="font-bold text-cyan-400">Venta Libre</h3>
+        <form id="form-venta-libre" class="space-y-3 hidden"><h3 class="font-bold text-cyan-400" id="vl-titulo-form">Venta Libre</h3><input type="hidden" id="vl-edit-id">
           <input type="datetime-local" id="vl-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-cyan-500">
-          <select id="vl-cliente" class="w-full bg-slate-700 p-2 rounded text-sm text-white"><option value="">Cliente (Opcional al contado)</option></select>
+          <div class="relative"><input type="text" id="vl-cliente-search" placeholder="🔍 Buscar Cliente..." class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-cyan-500" oninput="filtrarLista('vl-cliente-list', this.value)" onfocus="mostrarLista('vl-cliente-list')"><input type="hidden" id="vl-cliente-id"><ul id="vl-cliente-list" class="hidden absolute z-50 w-full bg-slate-600 mt-1 max-h-32 overflow-y-auto rounded shadow-lg text-sm border border-slate-500"></ul></div>
           <input type="number" inputmode="decimal" pattern="[0-9]*" id="vl-valor" placeholder="Monto Total" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none">
-          <div class="flex gap-2 items-center"><input type="checkbox" id="vl-es-deuda" onchange="toggleAbono('vl')"><label class="text-sm">¿A Crédito?</label></div>
-          <input type="number" inputmode="decimal" pattern="[0-9]*" id="vl-abono" placeholder="Abono Inicial (Si aplica)" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none hidden">
-          <input type="text" id="vl-detalles" placeholder="Concepto..." class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none">
-          <button type="button" onclick="guardarVentaLibre()" class="w-full bg-cyan-600 py-2 rounded font-bold shadow-lg">Guardar Venta</button>
+          <input type="text" id="vl-detalles" placeholder="Concepto (Ej: Servicio técnico)" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none">
+          
+          <div class="p-3 bg-slate-800 rounded-lg border border-slate-600 mt-2"><label class="flex items-center justify-between cursor-pointer"><span class="font-bold text-emerald-400 text-sm" id="lbl-credito-vl">🟢 PAGO DE CONTADO</span><div class="relative"><input type="checkbox" id="vl-es-deuda" class="sr-only" onchange="toggleCredito('vl')"><div class="block bg-slate-600 w-12 h-7 rounded-full transition-colors" id="bg-credito-vl"></div><div class="dot absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform" id="dot-credito-vl"></div></div></label><div id="vl-abono-container" class="mt-3 hidden"><label class="text-xs text-amber-400 font-bold">¿Cuánto abonó hoy?</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="vl-abono" placeholder="Ej: 50000" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none mt-1"></div></div>
+          <button type="button" onclick="guardarVentaLibre()" class="w-full bg-cyan-600 py-3 rounded-lg font-bold shadow-lg uppercase tracking-wide">Guardar</button>
         </form>
 
         <!-- GASTO -->
-        <form id="form-gasto" class="space-y-3 hidden"><h3 class="font-bold text-rose-400">Registrar Gasto o Compra</h3>
+        <form id="form-gasto" class="space-y-3 hidden"><h3 class="font-bold text-rose-400" id="g-titulo-form">Registrar Gasto</h3><input type="hidden" id="g-edit-id">
           <input type="datetime-local" id="g-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-rose-500">
-          <select id="g-proveedor" class="w-full bg-slate-700 p-2 rounded text-sm text-white"></select>
+          <div class="relative"><input type="text" id="g-proveedor-search" placeholder="🏢 Buscar Proveedor..." class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-rose-500" oninput="filtrarLista('g-proveedor-list', this.value)" onfocus="mostrarLista('g-proveedor-list')"><input type="hidden" id="g-proveedor-id"><ul id="g-proveedor-list" class="hidden absolute z-50 w-full bg-slate-600 mt-1 max-h-32 overflow-y-auto rounded shadow-lg text-sm border border-slate-500"></ul></div>
           
-          <div class="p-2 border border-slate-700 rounded bg-slate-800">
-            <label class="text-xs text-amber-400 font-bold block mb-1">Sumar al Inventario (Opcional)</label>
-            <select id="g-producto" class="w-full bg-slate-700 p-2 rounded text-sm text-white mb-2"><option value="">-- No aplica --</option></select>
-            <div class="grid grid-cols-2 gap-2">
-              <div><label class="text-xs text-slate-400">Cantidad</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="g-cantidad" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"></div>
-              <div><label class="text-xs text-slate-400">Total Compra</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="g-valor" class="w-full bg-slate-700 p-2 rounded text-sm text-white font-bold text-amber-300 outline-none"></div>
-            </div>
+          <div class="p-3 border border-slate-600 rounded bg-slate-900/50">
+            <label class="text-xs text-amber-400 font-bold block mb-2">Sumar al Inventario (Opcional)</label>
+            <div class="relative mb-2"><input type="text" id="g-producto-search" placeholder="📦 Buscar Producto..." class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-rose-500" oninput="filtrarLista('g-producto-list', this.value)" onfocus="mostrarLista('g-producto-list')"><input type="hidden" id="g-producto-id"><ul id="g-producto-list" class="hidden absolute z-50 w-full bg-slate-600 mt-1 max-h-32 overflow-y-auto rounded shadow-lg text-sm border border-slate-500"></ul></div>
+            <div class="grid grid-cols-2 gap-2"><div><label class="text-xs text-slate-400">Cantidad comprada</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="g-cantidad" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"></div><div><label class="text-xs text-slate-400">Monto Total de Compra</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="g-valor" class="w-full bg-slate-700 p-2 rounded text-sm text-white font-bold text-amber-300 outline-none"></div></div>
           </div>
+          <input type="text" id="g-detalles" placeholder="Detalles o concepto (Ej: Pago de luz)..." class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none">
           
-          <div class="flex gap-2 items-center mt-3"><input type="checkbox" id="g-es-deuda" onchange="toggleAbono('g')"><label class="text-sm">¿Queda debiendo?</label></div>
-          <input type="number" inputmode="decimal" pattern="[0-9]*" id="g-abono" placeholder="Abono Realizado" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none hidden">
-          <input type="text" id="g-detalles" placeholder="Detalles..." class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none mt-2">
-          <button type="button" onclick="guardarGasto()" class="w-full bg-rose-600 py-2 rounded font-bold mt-3 shadow-lg">Guardar Gasto</button>
+          <div class="p-3 bg-slate-800 rounded-lg border border-slate-600 mt-2"><label class="flex items-center justify-between cursor-pointer"><span class="font-bold text-emerald-400 text-sm" id="lbl-credito-g">🟢 PAGO CONTADO</span><div class="relative"><input type="checkbox" id="g-es-deuda" class="sr-only" onchange="toggleCredito('g')"><div class="block bg-slate-600 w-12 h-7 rounded-full transition-colors" id="bg-credito-g"></div><div class="dot absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform" id="dot-credito-g"></div></div></label><div id="g-abono-container" class="mt-3 hidden"><label class="text-xs text-amber-400 font-bold">¿Cuánto abonó hoy?</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="g-abono" placeholder="Ej: 50000" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none mt-1"></div></div>
+          <button type="button" onclick="guardarGasto()" class="w-full bg-rose-600 py-3 rounded-lg font-bold shadow-lg uppercase tracking-wide">Guardar Gasto</button>
         </form>
         
-        <!-- EDICIÓN Y CREACIÓN -->
-        <form id="form-producto" class="space-y-3 hidden"><h3 id="p-titulo" class="font-bold text-amber-400">Producto</h3><input type="hidden" id="p-id"><input type="text" id="p-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><div class="grid grid-cols-2 gap-2"><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-compra" placeholder="P. Compra" class="bg-slate-700 p-2 rounded text-sm text-white outline-none"><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-venta" placeholder="P. Venta" class="bg-slate-700 p-2 rounded text-sm text-white outline-none"></div><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-stock" placeholder="Cantidad Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><div><label class="text-xs text-slate-400">Imagen (Opcional)</label><input type="file" id="p-imagen" accept="image/*" class="w-full text-xs text-slate-300"></div><button type="button" onclick="guardarProducto()" class="w-full bg-amber-600 py-2 rounded font-bold shadow-lg">Guardar</button></form>
-        <form id="form-cliente" class="space-y-3 hidden"><h3 id="c-titulo" class="font-bold text-emerald-400">Cliente</h3><input type="hidden" id="c-id"><input type="text" id="c-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><input type="tel" id="c-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><button type="button" onclick="guardarCliente()" class="w-full bg-emerald-600 py-2 rounded font-bold shadow-lg">Guardar</button></form>
-        <form id="form-proveedor" class="space-y-3 hidden"><h3 id="prov-titulo" class="font-bold text-purple-400">Proveedor</h3><input type="hidden" id="prov-id"><input type="text" id="prov-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><input type="tel" id="prov-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><button type="button" onclick="guardarProveedor()" class="w-full bg-purple-600 py-2 rounded font-bold shadow-lg">Guardar</button></form>
+        <!-- EDICIÓN Y CREACIÓN DIR -->
+        <form id="form-producto" class="space-y-3 hidden"><h3 id="p-titulo" class="font-bold text-amber-400">Producto</h3><input type="hidden" id="p-id"><input type="text" id="p-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><div class="grid grid-cols-2 gap-2"><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-compra" placeholder="P. Compra" class="bg-slate-700 p-2 rounded text-sm text-white outline-none"><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-venta" placeholder="P. Venta" class="bg-slate-700 p-2 rounded text-sm text-white outline-none"></div><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-stock" placeholder="Cantidad Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><div><label class="text-xs text-slate-400">Imagen (Opcional)</label><input type="file" id="p-imagen" accept="image/*" class="w-full text-xs text-slate-300"></div><button type="button" onclick="guardarProducto()" class="w-full bg-amber-600 py-3 rounded-lg font-bold shadow-lg uppercase tracking-wide">Guardar</button></form>
+        <form id="form-cliente" class="space-y-3 hidden"><h3 id="c-titulo" class="font-bold text-emerald-400">Cliente</h3><input type="hidden" id="c-id"><input type="text" id="c-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><input type="tel" id="c-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><button type="button" onclick="guardarCliente()" class="w-full bg-emerald-600 py-3 rounded-lg font-bold shadow-lg uppercase tracking-wide">Guardar</button></form>
+        <form id="form-proveedor" class="space-y-3 hidden"><h3 id="prov-titulo" class="font-bold text-purple-400">Proveedor</h3><input type="hidden" id="prov-id"><input type="text" id="prov-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><input type="tel" id="prov-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><button type="button" onclick="guardarProveedor()" class="w-full bg-purple-600 py-3 rounded-lg font-bold shadow-lg uppercase tracking-wide">Guardar</button></form>
       </div>
     </div>
   </main>
@@ -190,6 +236,18 @@
 
     const fmtMoneda = (v) => new Intl.NumberFormat('es-CO').format(v || 0);
     const gFecha = (fUTC) => { const d = new Date(fUTC); return new Date(d.getTime() - (d.getTimezoneOffset()*60000)).toISOString().split('T')[0]; };
+    const formatearFechaHora = (f) => { const d = new Date(f); return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`; };
+
+    // VARIABLES GLOBALES (CARRITO Y DROPDOWNS)
+    let carritoActual = [];
+    let listasData = { clientes: [], proveedores: [], productos: [] };
+
+    // Cerrar listas al tocar fuera
+    document.addEventListener('click', (e) => {
+      if(!e.target.closest('.relative')) {
+        document.querySelectorAll('ul[id$="-list"]').forEach(el => el.classList.add('hidden'));
+      }
+    });
 
     // 2. AUTENTICACIÓN
     async function checkSession() {
@@ -201,30 +259,25 @@
         iniciarApp();
       } else {
         document.getElementById('auth-screen').classList.remove('hidden');
-        document.getElementById('main-app').classList.add('hidden');
-        document.getElementById('main-nav').classList.add('hidden');
       }
     }
-    
     async function login() {
       const e = document.getElementById('auth-email').value; const p = document.getElementById('auth-pass').value;
-      if(!e || !p) return alert('Por favor ingresa tu correo y contraseña.');
+      if(!e || !p) return alert('Ingresa correo y contraseña.');
       const { error } = await db.auth.signInWithPassword({ email: e, password: p });
       if(error) alert('Error: ' + error.message); else checkSession();
     }
-    
     async function register() {
       const e = document.getElementById('auth-email').value; const p = document.getElementById('auth-pass').value;
-      if(!e || !p) return alert('Por favor ingresa tu correo y contraseña.');
-      if(p.length < 6) return alert('La contraseña debe tener al menos 6 caracteres.');
+      if(!e || !p) return alert('Ingresa correo y contraseña.');
+      if(p.length < 6) return alert('Mínimo 6 caracteres.');
       const { error } = await db.auth.signUp({ email: e, password: p });
-      if(error) alert('Error: ' + error.message); else alert('Registro exitoso. Revisa tu correo o inicia sesión.');
+      if(error) alert('Error: ' + error.message); else alert('Registro exitoso. Inicia sesión.');
     }
-    
-    async function logout() { await db.auth.signOut(); checkSession(); }
+    async function logout() { await db.auth.signOut(); location.reload(); }
     window.onload = checkSession;
 
-    // 3. NAVEGACIÓN Y CONFIGURACIÓN INICIAL
+    // 3. INICIO Y NAVEGACIÓN
     function iniciarApp() {
       const hoy = new Date().toISOString().split('T')[0];
       document.getElementById('filtro-inicio').value = hoy;
@@ -235,7 +288,7 @@
     function cambiarVista(vista) {
       document.querySelectorAll('.vista-seccion').forEach(el => el.classList.add('hidden'));
       document.getElementById(`view-${vista}`).classList.remove('hidden');
-      document.querySelectorAll('.nav-btn').forEach(btn => { btn.classList.replace('text-blue-400', 'text-slate-400'); });
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-blue-400', 'text-slate-400'));
       if(document.getElementById(`nav-${vista}`)) document.getElementById(`nav-${vista}`).classList.replace('text-slate-400', 'text-blue-400');
       
       if(vista === 'inicio') actualizarDashboard();
@@ -246,7 +299,113 @@
       if(vista === 'proveedores') cargarListaProveedores();
     }
 
-    // 4. LÓGICA DE BALANCE Y CAJA (CON CONTEO DE TRANSACCIONES)
+    // TOGGLES DE CRÉDITO VISUALES
+    function toggleCredito(prefijo) {
+      const isChecked = document.getElementById(`${prefijo}-es-deuda`).checked;
+      const bg = document.getElementById(`bg-credito-${prefijo}`);
+      const dot = document.getElementById(`dot-credito-${prefijo}`);
+      const lbl = document.getElementById(`lbl-credito-${prefijo}`);
+      const abono = document.getElementById(`${prefijo}-abono-container`);
+      
+      if(isChecked) {
+        bg.classList.replace('bg-slate-600', 'bg-amber-500');
+        dot.classList.add('translate-x-5');
+        lbl.innerText = '🟠 A CRÉDITO (DEBE)';
+        lbl.classList.replace('text-emerald-400', 'text-amber-400');
+        abono.classList.remove('hidden');
+      } else {
+        bg.classList.replace('bg-amber-500', 'bg-slate-600');
+        dot.classList.remove('translate-x-5');
+        lbl.innerText = '🟢 PAGO DE CONTADO';
+        lbl.classList.replace('text-amber-400', 'text-emerald-400');
+        abono.classList.add('hidden');
+        document.getElementById(`${prefijo}-abono`).value = '';
+      }
+    }
+
+    // COMPONENTE BUSCADOR DROPDOWN
+    async function cargarDropdowns() {
+      const { data: c } = await db.from('clientes').select('*').order('nombre', {ascending: true}); listasData.clientes = c || [];
+      const { data: p } = await db.from('productos').select('*').order('nombre', {ascending: true}); listasData.productos = p || [];
+      const { data: pr } = await db.from('proveedores').select('*').order('nombre', {ascending: true}); listasData.proveedores = pr || [];
+      
+      renderListaDropdown('vp-cliente-list', listasData.clientes, 'vp-cliente');
+      renderListaDropdown('vl-cliente-list', listasData.clientes, 'vl-cliente');
+      renderListaDropdown('vp-producto-list', listasData.productos, 'vp-producto', true);
+      renderListaDropdown('g-producto-list', listasData.productos, 'g-producto', true);
+      renderListaDropdown('g-proveedor-list', listasData.proveedores, 'g-proveedor');
+    }
+
+    function renderListaDropdown(ulId, data, targetPrefix, esProducto=false) {
+      const ul = document.getElementById(ulId);
+      if(!ul) return;
+      let html = `<li class="p-2 border-b border-slate-500 hover:bg-slate-500 cursor-pointer text-slate-400" onclick="seleccionarDropdown('${targetPrefix}', '', '--- Limpiar Selección ---')">--- Limpiar Selección ---</li>`;
+      data.forEach(item => {
+        const desc = esProducto ? ` (Disp: ${item.cantidad_disponible} | $${fmtMoneda(item.precio_venta)})` : '';
+        html += `<li class="p-2 border-b border-slate-500 hover:bg-slate-500 cursor-pointer" onclick="seleccionarDropdown('${targetPrefix}', '${item.id}', '${item.nombre.replace(/'/g, "\\'")}')">${item.nombre}${desc}</li>`;
+      });
+      ul.innerHTML = html;
+    }
+
+    function filtrarLista(ulId, text) {
+      const items = document.getElementById(ulId).getElementsByTagName('li');
+      Array.from(items).forEach(li => {
+        if(li.innerText.toLowerCase().includes(text.toLowerCase()) || li.innerText.includes('Limpiar')) li.style.display = 'block'; else li.style.display = 'none';
+      });
+    }
+
+    function mostrarLista(ulId) { document.getElementById(ulId).classList.remove('hidden'); }
+    function seleccionarDropdown(prefijo, id, nombre) {
+      document.getElementById(`${prefijo}-id`).value = id;
+      document.getElementById(`${prefijo}-search`).value = id ? nombre : '';
+      document.querySelectorAll('ul[id$="-list"]').forEach(el => el.classList.add('hidden'));
+      
+      // Autollenar precio en ventas o gastos
+      if(prefijo === 'vp-producto' && id) { const p = listasData.productos.find(x=>x.id===id); if(p) document.getElementById('vp-precio').value = p.precio_venta; }
+      if(prefijo === 'g-producto' && id) { const p = listasData.productos.find(x=>x.id===id); if(p) { document.getElementById('g-cantidad').value = 1; document.getElementById('g-valor').value = p.precio_compra; } }
+    }
+
+    // LÓGICA DEL CARRITO (VENTA MÚLTIPLE)
+    function agregarAlCarrito() {
+      const pId = document.getElementById('vp-producto-id').value;
+      const cant = Number(document.getElementById('vp-cantidad').value);
+      const precio = Number(document.getElementById('vp-precio').value);
+      
+      if(!pId || cant < 1 || !precio) return alert('Selecciona un producto y verifica la cantidad y precio.');
+      const prod = listasData.productos.find(x=>x.id===pId);
+      
+      carritoActual.push({ id: prod.id, nombre: prod.nombre, cantidad: cant, precio: precio, subtotal: cant * precio });
+      
+      // Limpiar inputs del producto
+      document.getElementById('vp-producto-id').value = ''; document.getElementById('vp-producto-search').value = '';
+      document.getElementById('vp-cantidad').value = '1'; document.getElementById('vp-precio').value = '';
+      renderCarrito();
+    }
+
+    function eliminarDelCarrito(index) { carritoActual.splice(index, 1); renderCarrito(); }
+    
+    function renderCarrito() {
+      const cont = document.getElementById('vp-carrito-container');
+      if(carritoActual.length === 0) { cont.innerHTML = '<p class="text-[10px] text-center text-slate-400 mt-2">Carrito vacío</p>'; actualizarTotalCarrito(); return; }
+      
+      cont.innerHTML = carritoActual.map((item, i) => `
+        <div class="flex justify-between items-center text-xs bg-slate-800 p-2 rounded border border-slate-600 shadow-sm">
+          <div class="flex-1"><span class="font-bold text-white">${item.cantidad}x ${item.nombre}</span><br><span class="text-[10px] text-emerald-400">$${fmtMoneda(item.precio)} c/u</span></div>
+          <div class="text-right mr-2 font-bold text-amber-300">$${fmtMoneda(item.subtotal)}</div>
+          <button type="button" onclick="eliminarDelCarrito(${i})" class="text-rose-500 bg-rose-900/40 p-1 rounded">❌</button>
+        </div>
+      `).join('');
+      actualizarTotalCarrito();
+    }
+
+    function actualizarTotalCarrito() {
+      const sub = carritoActual.reduce((acc, el) => acc + el.subtotal, 0);
+      const desc = Number(document.getElementById('vp-descuento').value || 0);
+      document.getElementById('vp-subtotal').innerText = '$' + fmtMoneda(sub);
+      document.getElementById('vp-total-final').innerText = '$' + fmtMoneda(sub - desc);
+    }
+
+    // 4. FLUJO DE CAJA
     async function procesarFlujoCaja(filtroFecha) {
       const { data: vts } = await db.from('ventas').select('*, clientes(nombre)');
       const { data: gts } = await db.from('gastos').select('*, proveedores(nombre)');
@@ -259,11 +418,19 @@
         if(!filtroFecha || fechaStr === filtroFecha) {
           const efectivo = v.es_deuda ? Number(v.abono) : Number(v.monto_final);
           if(efectivo > 0) {
-            inTotal += efectivo;
-            countIn++;
+            inTotal += efectivo; countIn++;
+            
+            // Construir concepto inteligente
+            let subText = '';
+            if(v.tipo_venta === 'MULTIPLE') {
+              try { const arr = JSON.parse(v.detalles); subText = arr.map(x => `${x.cantidad}x ${x.nombre}`).join(', '); } 
+              catch(e) { subText = 'Venta Múltiple'; }
+            } else if(v.tipo_venta === 'PRODUCTO') { subText = v.productos?.nombre || 'Venta de Producto'; }
+            else { subText = v.detalles || 'Ingreso sin concepto'; }
+
             movimientos.push({
               id: v.id, tabla: 'ventas', fecha: v.fecha, tipo: 'ENTRADA',
-              titulo: v.clientes?.nombre || 'Venta Libre', sub: 'Venta / Abono Inicial', monto: efectivo
+              titulo: v.clientes?.nombre || 'Venta Mostrador', sub: subText, monto: efectivo
             });
           }
         }
@@ -273,19 +440,11 @@
         const fechaStr = gFecha(a.fecha);
         if(!filtroFecha || fechaStr === filtroFecha) {
           if(a.tipo === 'COBRO_VENTA') {
-            inTotal += Number(a.monto);
-            countIn++;
-            movimientos.push({
-              id: a.id, tabla: 'pagos_abonos', fecha: a.fecha, tipo: 'ENTRADA',
-              titulo: 'Pago a Deuda Recibido', sub: 'Abono de Cliente', monto: Number(a.monto)
-            });
+            inTotal += Number(a.monto); countIn++;
+            movimientos.push({ id: a.id, tabla: 'pagos_abonos', fecha: a.fecha, tipo: 'ENTRADA', titulo: 'Abono de Cliente', sub: 'Pago de deuda anterior', monto: Number(a.monto) });
           } else {
-            outTotal += Number(a.monto);
-            countOut++;
-            movimientos.push({
-              id: a.id, tabla: 'pagos_abonos', fecha: a.fecha, tipo: 'SALIDA',
-              titulo: 'Abono a Proveedor Pagado', sub: 'Pago de Deuda', monto: Number(a.monto)
-            });
+            outTotal += Number(a.monto); countOut++;
+            movimientos.push({ id: a.id, tabla: 'pagos_abonos', fecha: a.fecha, tipo: 'SALIDA', titulo: 'Pago a Proveedor', sub: 'Abono a deuda pendiente', monto: Number(a.monto) });
           }
         }
       });
@@ -295,18 +454,14 @@
         if(!filtroFecha || fechaStr === filtroFecha) {
           const efectivo = g.es_deuda ? Number(g.abono) : Number(g.valor);
           if(efectivo > 0) {
-            outTotal += efectivo;
-            countOut++;
-            movimientos.push({
-              id: g.id, tabla: 'gastos', fecha: g.fecha, tipo: 'SALIDA',
-              titulo: g.proveedores?.nombre || 'Gasto General', sub: 'Gasto / Abono Inicial', monto: efectivo
-            });
+            outTotal += efectivo; countOut++;
+            const subText = g.producto_id ? `Compra para stock (${g.cantidad} unds)` : (g.detalles || 'Gasto General');
+            movimientos.push({ id: g.id, tabla: 'gastos', fecha: g.fecha, tipo: 'SALIDA', titulo: g.proveedores?.nombre || 'Salida de Caja', sub: subText, monto: efectivo });
           }
         }
       });
 
       movimientos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-
       return { inTotal, outTotal, countIn, countOut, movimientos };
     }
 
@@ -323,106 +478,74 @@
       const tipoFiltro = document.getElementById('filtro-tipo-caja').value;
       const res = await procesarFlujoCaja(f);
       
-      document.getElementById('bal-ingresos').innerText = fmtMoneda(res.inTotal);
-      document.getElementById('bal-egresos').innerText = fmtMoneda(res.outTotal);
-      document.getElementById('bal-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
-      document.getElementById('bal-count-in').innerText = res.countIn;
-      document.getElementById('bal-count-out').innerText = res.countOut;
+      document.getElementById('bal-ingresos').innerText = fmtMoneda(res.inTotal); document.getElementById('bal-egresos').innerText = fmtMoneda(res.outTotal); document.getElementById('bal-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
+      document.getElementById('bal-count-in').innerText = res.countIn; document.getElementById('bal-count-out').innerText = res.countOut;
 
-      let movsFiltrados = res.movimientos;
-      if (tipoFiltro !== 'todos') {
-        movsFiltrados = res.movimientos.filter(m => m.tipo === tipoFiltro);
-      }
+      let movsFiltrados = res.movimientos; if (tipoFiltro !== 'todos') movsFiltrados = res.movimientos.filter(m => m.tipo === tipoFiltro);
 
-      let html = '';
-      movsFiltrados.forEach(m => {
-        const isEntrada = m.tipo === 'ENTRADA';
-        const colorCls = isEntrada ? 'border-emerald-900/50' : 'border-rose-900/50';
-        const signo = isEntrada ? '+' : '-';
-        html += `<div class="bg-slate-700/40 p-3 rounded-xl border ${colorCls} flex justify-between items-center shadow-sm">
-          <div class="flex-1">
-            <div class="flex items-center gap-2">
-              <span class="text-[10px] px-1.5 py-0.5 rounded font-bold ${isEntrada ? 'bg-emerald-950 text-emerald-300' : 'bg-rose-950 text-rose-300'}">${m.tipo}</span>
-              <p class="text-sm font-bold text-white">${m.titulo}</p>
-            </div>
-            <p class="text-[10px] text-slate-400 mt-1">${gFecha(m.fecha)} • ${m.sub}</p>
-          </div>
-          <div class="text-right font-black tracking-wide ${isEntrada ? 'text-emerald-400' : 'text-rose-400'}">
-            ${signo}${fmtMoneda(m.monto)}
-          </div>
-          <button onclick="eliminarRegistro('${m.tabla}', '${m.id}')" class="ml-3 text-rose-500 bg-rose-950/40 p-1.5 rounded-lg shadow">🗑️</button>
+      document.getElementById('lista-caja-movimientos').innerHTML = movsFiltrados.map(m => {
+        const isEn = m.tipo === 'ENTRADA'; const cCls = isEn ? 'border-emerald-900/50 bg-emerald-950/20' : 'border-rose-900/50 bg-rose-950/20'; const sig = isEn ? '+' : '-';
+        return `<div class="p-3 rounded-xl border ${cCls} flex justify-between items-center shadow-sm">
+          <div class="flex-1"><div class="flex items-center gap-2"><span class="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${isEn ? 'bg-emerald-900/50 text-emerald-300' : 'bg-rose-900/50 text-rose-300'}">${m.tipo}</span><p class="text-sm font-bold text-white">${m.titulo}</p></div><p class="text-[10px] text-slate-300 mt-1">${formatearFechaHora(m.fecha)}<br><span class="text-slate-400 font-mono">${m.sub}</span></p></div>
+          <div class="text-right font-black tracking-wide ${isEn ? 'text-emerald-400' : 'text-rose-400'}">${sig}${fmtMoneda(m.monto)}</div>
+          <div class="flex flex-col gap-1 ml-3"><button onclick="editarTransaccion('${m.tabla}', '${m.id}')" class="text-blue-400 bg-blue-900/40 p-1.5 rounded-md shadow">✏️</button><button onclick="eliminarRegistro('${m.tabla}', '${m.id}')" class="text-rose-500 bg-rose-900/40 p-1.5 rounded-md shadow">🗑️</button></div>
         </div>`;
-      });
-
-      document.getElementById('lista-caja-movimientos').innerHTML = html || '<div class="text-center p-6 bg-slate-800 rounded-xl border border-slate-700"><p class="text-sm text-slate-400">No hay movimientos con este filtro.</p></div>';
+      }).join('') || '<div class="text-center p-6 bg-slate-800 rounded-xl border border-slate-700"><p class="text-sm text-slate-400">No hay movimientos.</p></div>';
     }
 
-    function limpiarFiltroCaja() {
-      document.getElementById('filtro-balance').value = '';
-      document.getElementById('filtro-tipo-caja').value = 'todos';
-      cargarBalance();
-    }
+    function limpiarFiltroCaja() { document.getElementById('filtro-balance').value = ''; document.getElementById('filtro-tipo-caja').value = 'todos'; cargarBalance(); }
 
     // 5. DEUDAS
     function cambiarPestanaDeudas(tipo) {
-      const btnC = document.getElementById('btn-cobrar');
-      const btnP = document.getElementById('btn-pagar');
-      const listC = document.getElementById('lista-deudas-cobrar');
-      const listP = document.getElementById('lista-deudas-pagar');
-
-      if(tipo === 'cobrar') {
-        btnC.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-amber-600 text-white shadow-lg transition-all';
-        btnP.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400 transition-all';
-        listC.classList.remove('hidden'); listP.classList.add('hidden');
-      } else {
-        btnP.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-purple-600 text-white shadow-lg transition-all';
-        btnC.className = 'flex-1 py-2 rounded-lg font-bold text-sm bg-slate-800 border border-slate-600 text-slate-400 transition-all';
-        listP.classList.remove('hidden'); listC.classList.add('hidden');
-      }
+      document.getElementById('btn-cobrar').className = `flex-1 py-2 rounded-lg font-bold text-sm transition-all ${tipo==='cobrar'?'bg-amber-600 text-white shadow-lg':'bg-slate-800 border border-slate-600 text-slate-400'}`;
+      document.getElementById('btn-pagar').className = `flex-1 py-2 rounded-lg font-bold text-sm transition-all ${tipo==='pagar'?'bg-purple-600 text-white shadow-lg':'bg-slate-800 border border-slate-600 text-slate-400'}`;
+      document.getElementById('lista-deudas-cobrar').style.display = tipo==='cobrar'?'block':'none'; document.getElementById('lista-deudas-pagar').style.display = tipo==='pagar'?'block':'none';
     }
 
     async function cargarDeudas() {
-      const { data: vts } = await db.from('ventas').select('*, clientes(nombre), productos(nombre)').gt('saldo_pendiente', 0);
-      let htmlC='';
-      if(vts) {
-        const porCliente = vts.reduce((acc, v) => { const k = v.cliente_id || 'null'; acc[k] = acc[k] || []; acc[k].push(v); return acc; }, {});
-        Object.keys(porCliente).forEach(cId => {
-          const ventasCl = porCliente[cId];
-          const nombreCl = ventasCl[0].clientes?.nombre || 'Venta Libre';
-          let cTotal = 0; let mHtml = '';
-          
-          ventasCl.forEach(v => {
-            cTotal += Number(v.saldo_pendiente); 
-            const concepto = v.productos?.nombre || v.detalles || 'Venta Libre';
-            mHtml += `<div class="pl-3 border-l-2 border-slate-600 mt-3 flex justify-between items-center"><div class="flex-1"><p class="text-[11px] text-slate-300 font-mono">${gFecha(v.fecha)} | ${concepto}</p><p class="text-amber-400 font-bold text-sm mt-0.5">${fmtMoneda(v.saldo_pendiente)}</p></div><div><button onclick="pagarDeuda('ventas', '${v.id}', ${v.saldo_pendiente})" class="text-xs font-bold text-amber-100 bg-amber-700/60 px-3 py-1.5 rounded shadow">Abonar</button><button onclick="eliminarRegistro('ventas', '${v.id}')" class="text-xs text-rose-500 bg-rose-950/40 px-2 py-1.5 rounded ml-1">🗑️</button></div></div>`; 
-          });
-          htmlC += `<div class="bg-slate-700/30 p-4 rounded-xl border border-slate-700 shadow-md"><div class="flex justify-between items-center border-b border-slate-600 pb-2"><h3 class="font-bold text-white text-lg">${nombreCl}</h3><span class="font-black text-amber-500 text-lg">${fmtMoneda(cTotal)}</span></div>${mHtml}<button onclick="pagarDeudaGeneral('ventas', '${cId}', '${nombreCl}', ${cTotal})" class="w-full mt-4 bg-amber-600 hover:bg-amber-500 transition-colors py-2 rounded-lg text-sm font-bold text-white shadow">Realizar Abono General</button></div>`;
-        });
-      }
-      document.getElementById('lista-deudas-cobrar').innerHTML = htmlC || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">No hay deudas por cobrar registradas.</p></div>';
+      const fFecha = document.getElementById('filtro-deudas-fecha').value;
+      const fOrden = document.getElementById('filtro-deudas-orden').value;
+      const asc = fOrden === 'asc';
 
-      const { data: gts } = await db.from('gastos').select('*, proveedores(nombre), productos(nombre)').gt('saldo_pendiente', 0);
-      let htmlP='';
-      if(gts) {
-        const porProv = gts.reduce((acc, g) => { const k = g.proveedor_id || 'null'; acc[k] = acc[k] || []; acc[k].push(g); return acc; }, {});
-        Object.keys(porProv).forEach(pId => {
-          const gastosPr = porProv[pId];
-          const nombrePr = gastosPr[0].proveedores?.nombre || 'Gasto General';
-          let pTotal = 0; let mHtml = '';
-          
-          gastosPr.forEach(g => { 
-            pTotal += Number(g.saldo_pendiente); 
-            const concepto = g.productos?.nombre || g.detalles || 'Gasto sin detalle';
-            mHtml += `<div class="pl-3 border-l-2 border-slate-600 mt-3 flex justify-between items-center"><div class="flex-1"><p class="text-[11px] text-slate-300 font-mono">${gFecha(g.fecha)} | ${concepto}</p><p class="text-purple-400 font-bold text-sm mt-0.5">${fmtMoneda(g.saldo_pendiente)}</p></div><div><button onclick="pagarDeuda('gastos', '${g.id}', ${g.saldo_pendiente})" class="text-xs font-bold text-purple-100 bg-purple-700/60 px-3 py-1.5 rounded shadow">Abonar</button><button onclick="eliminarRegistro('gastos', '${g.id}')" class="text-xs text-rose-500 bg-rose-950/40 px-2 py-1.5 rounded ml-1">🗑️</button></div></div>`; 
-          });
-          htmlP += `<div class="bg-slate-700/30 p-4 rounded-xl border border-slate-700 shadow-md"><div class="flex justify-between items-center border-b border-slate-600 pb-2"><h3 class="font-bold text-white text-lg">${nombrePr}</h3><span class="font-black text-purple-500 text-lg">${fmtMoneda(pTotal)}</span></div>${mHtml}<button onclick="pagarDeudaGeneral('gastos', '${pId}', '${nombrePr}', ${pTotal})" class="w-full mt-4 bg-purple-600 hover:bg-purple-500 transition-colors py-2 rounded-lg text-sm font-bold text-white shadow">Realizar Abono General</button></div>`;
+      const queryV = db.from('ventas').select('*, clientes(nombre)').gt('saldo_pendiente', 0).order('fecha', {ascending: asc});
+      const queryG = db.from('gastos').select('*, proveedores(nombre)').gt('saldo_pendiente', 0).order('fecha', {ascending: asc});
+
+      let [resV, resG] = await Promise.all([queryV, queryG]);
+      let vts = resV.data || []; let gts = resG.data || [];
+
+      if(fFecha) { vts = vts.filter(x => gFecha(x.fecha) === fFecha); gts = gts.filter(x => gFecha(x.fecha) === fFecha); }
+
+      let htmlC='';
+      const porCliente = vts.reduce((acc, v) => { const k = v.cliente_id || 'null'; acc[k] = acc[k] || []; acc[k].push(v); return acc; }, {});
+      Object.keys(porCliente).forEach(cId => {
+        const ventasCl = porCliente[cId]; const nombreCl = ventasCl[0].clientes?.nombre || 'Venta Libre';
+        let cTotal = 0; let mHtml = '';
+        ventasCl.forEach(v => {
+          cTotal += Number(v.saldo_pendiente); 
+          let sub = v.tipo_venta === 'MULTIPLE' ? 'Múltiples Prod.' : (v.tipo_venta === 'PRODUCTO' ? 'Producto' : (v.detalles || 'Venta Libre'));
+          mHtml += `<div class="pl-3 border-l-2 border-slate-600 mt-3 flex justify-between items-center"><div class="flex-1"><p class="text-[10px] text-slate-400 font-mono">${formatearFechaHora(v.fecha)}</p><p class="text-[11px] text-slate-200 mt-0.5 font-bold">${sub}</p><p class="text-amber-400 font-bold text-sm mt-0.5">$${fmtMoneda(v.saldo_pendiente)}</p></div><div class="flex gap-1"><button onclick="editarTransaccion('ventas', '${v.id}')" class="text-xs text-blue-300 bg-blue-900/50 px-2 py-1.5 rounded shadow">✏️</button><button onclick="pagarDeuda('ventas', '${v.id}', ${v.saldo_pendiente})" class="text-xs font-bold text-amber-100 bg-amber-700/60 px-3 py-1.5 rounded shadow">Abonar</button><button onclick="eliminarRegistro('ventas', '${v.id}')" class="text-xs text-rose-500 bg-rose-950/40 px-2 py-1.5 rounded">🗑️</button></div></div>`; 
         });
-      }
-      document.getElementById('lista-deudas-pagar').innerHTML = htmlP || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">No hay deudas por pagar registradas.</p></div>';
+        htmlC += `<div class="bg-slate-700/30 p-4 rounded-xl border border-slate-700 shadow-md mb-4"><div class="flex justify-between items-center border-b border-slate-600 pb-2"><h3 class="font-bold text-white text-base">${nombreCl}</h3><span class="font-black text-amber-500 text-base">$${fmtMoneda(cTotal)}</span></div>${mHtml}<button onclick="pagarDeudaGeneral('ventas', '${cId}', '${nombreCl}', ${cTotal})" class="w-full mt-4 bg-amber-600 hover:bg-amber-500 py-2 rounded-lg text-sm font-bold shadow">Abono General</button></div>`;
+      });
+      document.getElementById('lista-deudas-cobrar').innerHTML = htmlC || '<p class="text-center text-sm text-slate-400 p-4">No hay deudas por cobrar en esta fecha.</p>';
+
+      let htmlP='';
+      const porProv = gts.reduce((acc, g) => { const k = g.proveedor_id || 'null'; acc[k] = acc[k] || []; acc[k].push(g); return acc; }, {});
+      Object.keys(porProv).forEach(pId => {
+        const gastosPr = porProv[pId]; const nombrePr = gastosPr[0].proveedores?.nombre || 'Gasto General';
+        let pTotal = 0; let mHtml = '';
+        gastosPr.forEach(g => { 
+          pTotal += Number(g.saldo_pendiente); 
+          const sub = g.producto_id ? 'Compra Inventario' : (g.detalles || 'Gasto');
+          mHtml += `<div class="pl-3 border-l-2 border-slate-600 mt-3 flex justify-between items-center"><div class="flex-1"><p class="text-[10px] text-slate-400 font-mono">${formatearFechaHora(g.fecha)}</p><p class="text-[11px] text-slate-200 mt-0.5 font-bold">${sub}</p><p class="text-purple-400 font-bold text-sm mt-0.5">$${fmtMoneda(g.saldo_pendiente)}</p></div><div class="flex gap-1"><button onclick="editarTransaccion('gastos', '${g.id}')" class="text-xs text-blue-300 bg-blue-900/50 px-2 py-1.5 rounded shadow">✏️</button><button onclick="pagarDeuda('gastos', '${g.id}', ${g.saldo_pendiente})" class="text-xs font-bold text-purple-100 bg-purple-700/60 px-3 py-1.5 rounded shadow">Abonar</button><button onclick="eliminarRegistro('gastos', '${g.id}')" class="text-xs text-rose-500 bg-rose-950/40 px-2 py-1.5 rounded">🗑️</button></div></div>`; 
+        });
+        htmlP += `<div class="bg-slate-700/30 p-4 rounded-xl border border-slate-700 shadow-md mb-4"><div class="flex justify-between items-center border-b border-slate-600 pb-2"><h3 class="font-bold text-white text-base">${nombrePr}</h3><span class="font-black text-purple-500 text-base">$${fmtMoneda(pTotal)}</span></div>${mHtml}<button onclick="pagarDeudaGeneral('gastos', '${pId}', '${nombrePr}', ${pTotal})" class="w-full mt-4 bg-purple-600 hover:bg-purple-500 py-2 rounded-lg text-sm font-bold shadow">Abono General</button></div>`;
+      });
+      document.getElementById('lista-deudas-pagar').innerHTML = htmlP || '<p class="text-center text-sm text-slate-400 p-4">No hay deudas por pagar en esta fecha.</p>';
     }
 
     async function pagarDeuda(tabla, id, maxMonto) {
-      const p = prompt(`Ingrese valor a abonar (Máx: $${fmtMoneda(maxMonto)}):`);
+      const p = prompt(`Valor a abonar (Máx: $${fmtMoneda(maxMonto)}):`);
       if(!p || isNaN(p) || Number(p) <= 0) return;
       const monto = Math.min(Number(p), maxMonto);
 
@@ -433,12 +556,12 @@
       const { data } = await db.from(tabla).select('abono').eq('id', id).single();
       await db.from(tabla).update({ abono: Number(data.abono) + monto }).eq('id', id);
 
-      cargarDeudas(); cargarBalance(); actualizarDashboard(); alert('Abono registrado con éxito');
+      cargarDeudas(); cargarBalance(); actualizarDashboard();
     }
-
+    
     async function pagarDeudaGeneral(tabla, idEntidad, nombreEntidad, maxMonto) {
-      if(idEntidad === 'null') return alert('Usa el abono individual para registros sin entidad vinculada.');
-      const p = prompt(`Abono a ${nombreEntidad} (Deuda: $${fmtMoneda(maxMonto)}):\nValor a abonar:`);
+      if(idEntidad === 'null') return alert('Usa el abono individual para registros sin entidad.');
+      const p = prompt(`Abono a ${nombreEntidad} (Deuda total: $${fmtMoneda(maxMonto)}):\nValor a abonar:`);
       if(!p || isNaN(p) || Number(p) <= 0) return;
       let montoRestante = Math.min(Number(p), maxMonto);
 
@@ -449,161 +572,202 @@
         if(montoRestante <= 0) break;
         const aAbonar = Math.min(montoRestante, Number(d.saldo_pendiente));
         montoRestante -= aAbonar;
-
         const payload = { monto: aAbonar, tipo: tabla==='ventas' ? 'COBRO_VENTA' : 'PAGO_GASTO' };
         if(tabla==='ventas') payload.venta_id = d.id; else payload.gasto_id = d.id;
         await db.from('pagos_abonos').insert([payload]);
         await db.from(tabla).update({ abono: Number(d.abono) + aAbonar }).eq('id', d.id);
       }
-      cargarDeudas(); cargarBalance(); actualizarDashboard(); alert('Abono distribuido correctamente.');
+      cargarDeudas(); cargarBalance(); actualizarDashboard();
     }
 
-    // 6. VENTAS, GASTOS E INVENTARIO
-    document.getElementById('g-producto').addEventListener('change', (e) => {
-      const p = window.listaProductos.find(x => x.id === e.target.value);
-      if(p) { document.getElementById('g-cantidad').value = 1; document.getElementById('g-valor').value = p.precio_compra; }
-    });
-    
-    document.getElementById('g-cantidad').addEventListener('input', (e) => {
-      const p = window.listaProductos.find(x => x.id === document.getElementById('g-producto').value);
-      if(p) document.getElementById('g-valor').value = p.precio_compra * Number(e.target.value);
-    });
+    // 6. GUARDAR (CON SOPORTE PARA EDICIÓN Y STOCK)
+    // Helpers Internos de Stock
+    async function restaurarStock(tabla, recordId) {
+       const {data: rec} = await db.from(tabla).select('*').eq('id', recordId).single();
+       if(tabla === 'ventas') {
+          if(rec.tipo_venta === 'PRODUCTO') {
+             const {data:p} = await db.from('productos').select('cantidad_disponible').eq('id', rec.producto_id).single();
+             if(p) await db.from('productos').update({cantidad_disponible: p.cantidad_disponible + rec.cantidad}).eq('id', rec.producto_id);
+          } else if(rec.tipo_venta === 'MULTIPLE' && rec.detalles) {
+             const items = JSON.parse(rec.detalles);
+             for(let item of items) {
+                const {data:p} = await db.from('productos').select('cantidad_disponible').eq('id', item.id).single();
+                if(p) await db.from('productos').update({cantidad_disponible: p.cantidad_disponible + item.cantidad}).eq('id', item.id);
+             }
+          }
+       } else if (tabla === 'gastos' && rec.producto_id) {
+          const {data:p} = await db.from('productos').select('cantidad_disponible').eq('id', rec.producto_id).single();
+          if(p) await db.from('productos').update({cantidad_disponible: p.cantidad_disponible - rec.cantidad}).eq('id', rec.producto_id);
+       }
+    }
+
+    async function deducirStock(tabla, payload) {
+       if(tabla === 'ventas') {
+          if(payload.tipo_venta === 'MULTIPLE' && payload.detalles) {
+             const items = JSON.parse(payload.detalles);
+             for(let item of items) {
+                const p = listasData.productos.find(x=>x.id===item.id);
+                await db.from('productos').update({cantidad_disponible: p.cantidad_disponible - item.cantidad}).eq('id', item.id);
+             }
+          }
+       } else if (tabla === 'gastos' && payload.producto_id) {
+          const p = listasData.productos.find(x=>x.id===payload.producto_id);
+          await db.from('productos').update({cantidad_disponible: p.cantidad_disponible + payload.cantidad}).eq('id', payload.producto_id);
+       }
+    }
 
     async function guardarVentaProducto() {
+      const editId = document.getElementById('vp-edit-id').value;
       const fInp = document.getElementById('vp-fecha').value;
-      const cliente_id = document.getElementById('vp-cliente').value;
-      const producto_id = document.getElementById('vp-producto').value;
-      const cant = Number(document.getElementById('vp-cantidad').value);
-      const precioUnd = Number(document.getElementById('vp-precio').value);
-      const mBruto = cant * precioUnd;
+      const cId = document.getElementById('vp-cliente-id').value;
       const es_deuda = document.getElementById('vp-es-deuda').checked;
       const abono = Number(document.getElementById('vp-abono').value||0);
+      const desc = Number(document.getElementById('vp-descuento').value||0);
       
-      if (es_deuda && !cliente_id) return alert('Para una venta a crédito debes seleccionar un cliente.');
-      if (!producto_id || !mBruto || cant < 1) return alert('Verifica el producto, precio y cantidad.');
+      if(carritoActual.length === 0) return alert('El carrito está vacío.');
+      if(es_deuda && !cId) return alert('Para crédito, selecciona un cliente.');
+      
+      const mBruto = carritoActual.reduce((a,b)=>a+b.subtotal, 0);
 
-      const prod = window.listaProductos.find(x => x.id === producto_id);
-      await db.from('productos').update({ cantidad_disponible: Number(prod.cantidad_disponible) - cant }).eq('id', producto_id);
+      const payload = { tipo_venta: 'MULTIPLE', cliente_id: cId || null, monto_bruto: mBruto, descuento: desc, es_deuda, abono: es_deuda?abono:0, detalles: JSON.stringify(carritoActual) };
+      if(fInp) payload.fecha = new Date(fInp).toISOString();
 
-      const payload = { tipo_venta: 'PRODUCTO', cliente_id: cliente_id || null, producto_id, cantidad: cant, monto_bruto: mBruto, descuento: 0, es_deuda, abono: es_deuda?abono:0 };
-      if (fInp) payload.fecha = new Date(fInp).toISOString();
-
-      await db.from('ventas').insert([payload]);
-      document.getElementById('form-venta-prod').reset(); ocultarForm(); cargarDropdowns(); actualizarDashboard(); cargarDeudas();
+      if(editId) { await restaurarStock('ventas', editId); await deducirStock('ventas', payload); await db.from('ventas').update(payload).eq('id', editId); } 
+      else { await deducirStock('ventas', payload); await db.from('ventas').insert([payload]); }
+      
+      cerrarActualizarForm('form-venta-prod');
     }
 
     async function guardarVentaLibre() {
+      const editId = document.getElementById('vl-edit-id').value;
       const fInp = document.getElementById('vl-fecha').value;
-      const cliente_id = document.getElementById('vl-cliente').value;
+      const cId = document.getElementById('vl-cliente-id').value;
       const valor = Number(document.getElementById('vl-valor').value||0);
       const es_deuda = document.getElementById('vl-es-deuda').checked;
       const abono = Number(document.getElementById('vl-abono').value||0);
+      if(!valor) return alert('Valor obligatorio.');
       
-      if (es_deuda && !cliente_id) return alert('Para una venta a crédito debes seleccionar un cliente.');
-      if (!valor) return alert('El valor total es obligatorio.');
+      const payload = { tipo_venta: 'LIBRE', cliente_id: cId || null, monto_bruto: valor, descuento: 0, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('vl-detalles').value };
+      if(fInp) payload.fecha = new Date(fInp).toISOString();
 
-      const payload = { tipo_venta: 'LIBRE', cliente_id: cliente_id || null, monto_bruto: valor, descuento: 0, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('vl-detalles').value };
-      if (fInp) payload.fecha = new Date(fInp).toISOString();
-
-      await db.from('ventas').insert([payload]);
-      document.getElementById('form-venta-libre').reset(); ocultarForm(); actualizarDashboard(); cargarDeudas();
+      if(editId) await db.from('ventas').update(payload).eq('id', editId); else await db.from('ventas').insert([payload]);
+      cerrarActualizarForm('form-venta-libre');
     }
 
     async function guardarGasto() {
+      const editId = document.getElementById('g-edit-id').value;
       const fInp = document.getElementById('g-fecha').value;
-      const prov = document.getElementById('g-proveedor').value;
+      const provId = document.getElementById('g-proveedor-id').value;
+      const prodId = document.getElementById('g-producto-id').value;
       const valor = Number(document.getElementById('g-valor').value||0);
-      const prod_id = document.getElementById('g-producto').value;
       const cant = Number(document.getElementById('g-cantidad').value||0);
       const es_deuda = document.getElementById('g-es-deuda').checked;
       const abono = Number(document.getElementById('g-abono').value||0);
+      
+      if(!valor) return alert('Monto total obligatorio.');
+      
+      const payload = { proveedor_id: provId||null, valor, producto_id: prodId||null, cantidad: cant, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('g-detalles').value };
+      if(fInp) payload.fecha = new Date(fInp).toISOString();
 
-      if (!valor) return alert('Agrega el valor total de la compra o gasto.');
-      if (es_deuda && !prov) return alert('Para deudas por pagar debes elegir un proveedor.');
-
-      if(prod_id && cant > 0) {
-        const prod = window.listaProductos.find(x => x.id === prod_id);
-        await db.from('productos').update({ cantidad_disponible: Number(prod.cantidad_disponible) + cant }).eq('id', prod_id);
-      }
-
-      const payload = { proveedor_id: prov||null, valor, producto_id: prod_id||null, cantidad: cant, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('g-detalles').value };
-      if (fInp) payload.fecha = new Date(fInp).toISOString();
-
-      await db.from('gastos').insert([payload]);
-      document.getElementById('form-gasto').reset(); ocultarForm(); cargarDropdowns(); actualizarDashboard(); cargarDeudas();
+      if(editId) { await restaurarStock('gastos', editId); await deducirStock('gastos', payload); await db.from('gastos').update(payload).eq('id', editId); }
+      else { await deducirStock('gastos', payload); await db.from('gastos').insert([payload]); }
+      
+      cerrarActualizarForm('form-gasto');
     }
 
-    async function guardarCliente() {
-      const id = document.getElementById('c-id').value; const nom = document.getElementById('c-nombre').value; const tel = document.getElementById('c-telefono').value;
-      if (!nom) return alert('El nombre es obligatorio');
-      if (id) await db.from('clientes').update({ nombre: nom, telefono: tel }).eq('id', id); else await db.from('clientes').insert([{ nombre: nom, telefono: tel }]);
-      ocultarForm(); cargarListaClientes(); cargarDropdowns();
+    function cerrarActualizarForm(formId) {
+      document.getElementById(formId).reset(); ocultarForm(); cargarDropdowns(); actualizarDashboard(); cargarBalance(); cargarDeudas();
     }
 
-    async function guardarProveedor() {
-      const id = document.getElementById('prov-id').value; const nom = document.getElementById('prov-nombre').value; const tel = document.getElementById('prov-telefono').value;
-      if (!nom) return alert('El nombre es obligatorio');
-      if (id) await db.from('proveedores').update({ nombre: nom, telefono: tel }).eq('id', id); else await db.from('proveedores').insert([{ nombre: nom, telefono: tel }]);
-      ocultarForm(); cargarListaProveedores(); cargarDropdowns();
+    async function eliminarRegistro(tabla, id) {
+      if(!confirm('¿Eliminar registro permanentemente? (Si contiene productos, se devolverán al inventario)')) return;
+      if(tabla==='ventas' || tabla==='gastos') await restaurarStock(tabla, id);
+      await db.from(tabla).delete().eq('id', id);
+      cerrarActualizarForm('null');
+      if(tabla==='clientes') cargarListaClientes(); if(tabla==='proveedores') cargarListaProveedores(); if(tabla==='productos') cargarInventario();
     }
 
+    async function editarTransaccion(tabla, id) {
+       const {data: r} = await db.from(tabla).select('*').eq('id', id).single();
+       if(tabla === 'ventas') {
+          if(r.tipo_venta === 'LIBRE') {
+             prepararFormulario('venta-libre', 'Editar Venta Libre', true);
+             document.getElementById('vl-edit-id').value = r.id;
+             document.getElementById('vl-fecha').value = r.fecha.substring(0,16);
+             if(r.cliente_id) { const c=listasData.clientes.find(x=>x.id===r.cliente_id); seleccionarDropdown('vl-cliente', r.cliente_id, c.nombre); }
+             document.getElementById('vl-valor').value = r.monto_bruto;
+             document.getElementById('vl-detalles').value = r.detalles;
+             document.getElementById('vl-es-deuda').checked = r.es_deuda; toggleCredito('vl');
+             document.getElementById('vl-abono').value = r.abono;
+          } else {
+             prepararFormulario('venta-prod', 'Editar Venta de Productos', true);
+             document.getElementById('vp-edit-id').value = r.id;
+             document.getElementById('vp-fecha').value = r.fecha.substring(0,16);
+             if(r.cliente_id) { const c=listasData.clientes.find(x=>x.id===r.cliente_id); seleccionarDropdown('vp-cliente', r.cliente_id, c.nombre); }
+             if(r.tipo_venta === 'MULTIPLE') carritoActual = JSON.parse(r.detalles);
+             else if (r.tipo_venta === 'PRODUCTO') { const p = listasData.productos.find(x=>x.id===r.producto_id); carritoActual = [{id:p.id, nombre:p.nombre, cantidad:r.cantidad, precio: (r.monto_bruto/r.cantidad), subtotal:r.monto_bruto}]; }
+             renderCarrito();
+             document.getElementById('vp-descuento').value = r.descuento;
+             document.getElementById('vp-es-deuda').checked = r.es_deuda; toggleCredito('vp');
+             document.getElementById('vp-abono').value = r.abono; actualizarTotalCarrito();
+          }
+       } else if (tabla === 'gastos') {
+          prepararFormulario('gasto', 'Editar Gasto', true);
+          document.getElementById('g-edit-id').value = r.id;
+          document.getElementById('g-fecha').value = r.fecha.substring(0,16);
+          if(r.proveedor_id) { const p=listasData.proveedores.find(x=>x.id===r.proveedor_id); seleccionarDropdown('g-proveedor', r.proveedor_id, p.nombre); }
+          if(r.producto_id) { const p=listasData.productos.find(x=>x.id===r.producto_id); seleccionarDropdown('g-producto', r.producto_id, p.nombre); }
+          document.getElementById('g-cantidad').value = r.cantidad; document.getElementById('g-valor').value = r.valor;
+          document.getElementById('g-detalles').value = r.detalles;
+          document.getElementById('g-es-deuda').checked = r.es_deuda; toggleCredito('g');
+          document.getElementById('g-abono').value = r.abono;
+       }
+    }
+
+    // DIRECTORIOS
+    async function guardarCliente() { const id = document.getElementById('c-id').value; const nom = document.getElementById('c-nombre').value; const tel = document.getElementById('c-telefono').value; if (!nom) return alert('Nombre obligatorio'); if (id) await db.from('clientes').update({ nombre: nom, telefono: tel }).eq('id', id); else await db.from('clientes').insert([{ nombre: nom, telefono: tel }]); ocultarForm(); cargarListaClientes(); cargarDropdowns(); }
+    async function guardarProveedor() { const id = document.getElementById('prov-id').value; const nom = document.getElementById('prov-nombre').value; const tel = document.getElementById('prov-telefono').value; if (!nom) return alert('Nombre obligatorio'); if (id) await db.from('proveedores').update({ nombre: nom, telefono: tel }).eq('id', id); else await db.from('proveedores').insert([{ nombre: nom, telefono: tel }]); ocultarForm(); cargarListaProveedores(); cargarDropdowns(); }
     async function guardarProducto() {
-      const id = document.getElementById('p-id').value; const nom = document.getElementById('p-nombre').value;
-      const cmp = Number(document.getElementById('p-compra').value||0); const vnt = Number(document.getElementById('p-venta').value||0); const stk = Number(document.getElementById('p-stock').value||0);
+      const id = document.getElementById('p-id').value; const nom = document.getElementById('p-nombre').value; const cmp = Number(document.getElementById('p-compra').value||0); const vnt = Number(document.getElementById('p-venta').value||0); const stk = Number(document.getElementById('p-stock').value||0);
       if (!nom || !vnt) return alert('Nombre y precio de venta obligatorios');
-      
-      const fileInput = document.getElementById('p-imagen');
-      let imgBase64 = null;
-      if (fileInput.files.length > 0) {
-        imgBase64 = await new Promise(res => {
-          const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.readAsDataURL(fileInput.files[0]);
-        });
-      }
-
-      const payload = { nombre: nom, precio_compra: cmp, precio_venta: vnt, cantidad_disponible: stk };
-      if(imgBase64) payload.imagen_url = imgBase64;
-      
+      const fileInput = document.getElementById('p-imagen'); let imgBase64 = null;
+      if (fileInput.files.length > 0) { imgBase64 = await new Promise(res => { const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.readAsDataURL(fileInput.files[0]); }); }
+      const payload = { nombre: nom, precio_compra: cmp, precio_venta: vnt, cantidad_disponible: stk }; if(imgBase64) payload.imagen_url = imgBase64;
       if (id) await db.from('productos').update(payload).eq('id', id); else await db.from('productos').insert([payload]);
       ocultarForm(); cargarInventario(); cargarDropdowns();
     }
 
-    async function eliminarRegistro(tabla, id) {
-      if(confirm('¿Eliminar registro permanentemente?')) {
-        await db.from(tabla).delete().eq('id', id);
-        actualizarDashboard(); cargarBalance(); cargarDeudas();
-        if(tabla==='clientes') cargarListaClientes();
-        if(tabla==='proveedores') cargarListaProveedores();
-        if(tabla==='productos') cargarInventario();
-      }
-    }
-
-    // 7. LISTAS Y EDICIÓN
-    document.getElementById('vp-producto').addEventListener('change', (e) => { const p = window.listaProductos.find(x => x.id === e.target.value); if(p) document.getElementById('vp-precio').value = p.precio_venta; });
-
-    async function cargarListaClientes() { const {data} = await db.from('clientes').select('*').order('creado_en',{ascending:false}); document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${c.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarCliente('${c.id}','${c.nombre}','${c.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('clientes','${c.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin clientes registrados.</p></div>'; }
-    async function cargarListaProveedores() { const {data} = await db.from('proveedores').select('*').order('creado_en',{ascending:false}); document.getElementById('lista-proveedores').innerHTML = data.map(p=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${p.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarProveedor('${p.id}','${p.nombre}','${p.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('proveedores','${p.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin proveedores registrados.</p></div>'; }
-    async function cargarInventario() { const {data} = await db.from('productos').select('*').order('nombre',{ascending:true}); document.getElementById('lista-inventario').innerHTML = data.map(p=>{ const img = p.imagen_url ? `<img src="${p.imagen_url}" class="w-12 h-12 object-cover rounded-lg shadow">` : `<div class="w-12 h-12 bg-slate-800 border border-slate-600 rounded-lg shadow flex items-center justify-center text-sm">📦</div>`; return `<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center gap-4 shadow-md">${img}<div class="flex-1"><p class="font-bold text-white leading-tight">${p.nombre}</p><p class="text-[11px] font-bold text-amber-400 mt-1 tracking-wide">STOCK: ${p.cantidad_disponible}</p></div><div class="text-right"><p class="text-emerald-400 font-black text-sm mb-2">${fmtMoneda(p.precio_venta)}</p><div class="flex gap-2 justify-end"><button class="text-blue-400 font-bold bg-blue-950/50 px-2.5 py-1 rounded-md text-[10px] shadow" onclick="editarProducto('${p.id}','${p.nombre}',${p.precio_compra},${p.precio_venta},${p.cantidad_disponible})">EDITAR</button><button class="text-rose-400 bg-rose-950/50 px-2 py-1 rounded-md text-[10px] shadow" onclick="eliminarRegistro('productos','${p.id}')">🗑️</button></div></div></div>`}).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">El inventario está vacío.</p></div>'; }
+    async function cargarListaClientes() { const {data} = await db.from('clientes').select('*').order('nombre',{ascending:true}); document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${c.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarCliente('${c.id}','${c.nombre}','${c.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('clientes','${c.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin clientes registrados.</p></div>'; }
+    async function cargarListaProveedores() { const {data} = await db.from('proveedores').select('*').order('nombre',{ascending:true}); document.getElementById('lista-proveedores').innerHTML = data.map(p=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${p.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarProveedor('${p.id}','${p.nombre}','${p.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('proveedores','${p.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin proveedores registrados.</p></div>'; }
+    async function cargarInventario() { const {data} = await db.from('productos').select('*').order('nombre',{ascending:true}); document.getElementById('lista-inventario').innerHTML = data.map(p=>{ const img = p.imagen_url ? `<img src="${p.imagen_url}" class="w-12 h-12 object-cover rounded-lg shadow">` : `<div class="w-12 h-12 bg-slate-800 border border-slate-600 rounded-lg shadow flex items-center justify-center text-sm">📦</div>`; return `<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center gap-4 shadow-md">${img}<div class="flex-1"><p class="font-bold text-white leading-tight">${p.nombre}</p><p class="text-[11px] font-bold text-amber-400 mt-1 tracking-wide">STOCK: ${p.cantidad_disponible}</p></div><div class="text-right"><p class="text-emerald-400 font-black text-sm mb-2">$${fmtMoneda(p.precio_venta)}</p><div class="flex gap-2 justify-end"><button class="text-blue-400 font-bold bg-blue-950/50 px-2.5 py-1 rounded-md text-[10px] shadow" onclick="editarProducto('${p.id}','${p.nombre}',${p.precio_compra},${p.precio_venta},${p.cantidad_disponible})">EDITAR</button><button class="text-rose-400 bg-rose-950/50 px-2 py-1 rounded-md text-[10px] shadow" onclick="eliminarRegistro('productos','${p.id}')">🗑️</button></div></div></div>`}).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">El inventario está vacío.</p></div>'; }
 
     // HELPERS INTERFAZ
-    function prepararFormulario(tipo) { 
-      document.getElementById(`form-${tipo}`).reset(); document.getElementById('form-container').classList.remove('hidden'); 
+    function prepararFormulario(tipo, tituloManual=null, esEdit=false) { 
+      const form = document.getElementById(`form-${tipo}`); form.reset(); 
+      document.getElementById('form-container').classList.remove('hidden'); 
       ['venta-prod','venta-libre','gasto','producto','cliente','proveedor'].forEach(f=>document.getElementById(`form-${f}`).classList.add('hidden')); 
-      document.getElementById(`form-${tipo}`).classList.remove('hidden'); 
+      form.classList.remove('hidden'); 
+      if(!esEdit) {
+         if(tipo==='venta-prod') { carritoActual=[]; renderCarrito(); document.getElementById('vp-edit-id').value=''; toggleCredito('vp'); }
+         if(tipo==='venta-libre') { document.getElementById('vl-edit-id').value=''; toggleCredito('vl'); }
+         if(tipo==='gasto') { document.getElementById('g-edit-id').value=''; toggleCredito('g'); }
+      }
+      if(tituloManual) { 
+        if(tipo==='venta-prod') document.getElementById('vp-titulo-form').innerText=tituloManual;
+        if(tipo==='venta-libre') document.getElementById('vl-titulo-form').innerText=tituloManual;
+        if(tipo==='gasto') document.getElementById('g-titulo-form').innerText=tituloManual;
+      } else {
+        if(tipo==='venta-prod') document.getElementById('vp-titulo-form').innerText='Vender Productos';
+        if(tipo==='venta-libre') document.getElementById('vl-titulo-form').innerText='Venta Libre';
+        if(tipo==='gasto') document.getElementById('g-titulo-form').innerText='Registrar Gasto';
+      }
       if(['cliente', 'proveedor', 'producto'].includes(tipo)) { let p = tipo === 'proveedor' ? 'prov' : tipo.charAt(0); document.getElementById(`${p}-id`).value = ''; document.getElementById(`${p}-titulo`).innerText = `Nuevo ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`; }
     }
     
     function editarCliente(id, nom, tel) { prepararFormulario('cliente'); document.getElementById('c-id').value = id; document.getElementById('c-nombre').value = nom; document.getElementById('c-telefono').value = tel!=='null'?tel:''; document.getElementById('c-titulo').innerText = 'Editar Cliente'; }
     function editarProveedor(id, nom, tel) { prepararFormulario('proveedor'); document.getElementById('prov-id').value = id; document.getElementById('prov-nombre').value = nom; document.getElementById('prov-telefono').value = tel!=='null'?tel:''; document.getElementById('prov-titulo').innerText = 'Editar Proveedor'; }
     function editarProducto(id, nom, comp, vent, stk) { prepararFormulario('producto'); document.getElementById('p-id').value = id; document.getElementById('p-nombre').value = nom; document.getElementById('p-compra').value = comp; document.getElementById('p-venta').value = vent; document.getElementById('p-stock').value = stk; document.getElementById('p-titulo').innerText = 'Editar Producto'; }
-    
     function ocultarForm() { document.getElementById('form-container').classList.add('hidden'); }
-    function toggleAbono(px) { document.getElementById(`${px}-abono`).classList.toggle('hidden', !document.getElementById(`${px}-es-deuda`).checked); }
-    
-    async function cargarDropdowns() {
-      const { data: c } = await db.from('clientes').select('*'); let cHTML = '<option value="">Cliente (Opcional al contado)</option>'; c?.forEach(x => cHTML += `<option value="${x.id}">${x.nombre}</option>`); document.getElementById('vp-cliente').innerHTML = cHTML; document.getElementById('vl-cliente').innerHTML = cHTML;
-      const { data: p } = await db.from('productos').select('*'); window.listaProductos = p || []; let pHTML = '<option value="">Producto...</option>'; p?.forEach(x => pHTML += `<option value="${x.id}">${x.nombre} (Stock: ${x.cantidad_disponible})</option>`); document.getElementById('vp-producto').innerHTML = pHTML; document.getElementById('g-producto').innerHTML = '<option value="">-- No aplica --</option>' + pHTML;
-      const { data: pr } = await db.from('proveedores').select('*'); let prHTML = '<option value="">Proveedor (Opcional al contado)</option>'; pr?.forEach(x => prHTML += `<option value="${x.id}">${x.nombre}</option>`); document.getElementById('g-proveedor').innerHTML = prHTML;
-    }
   </script>
 </body>
 </html>
