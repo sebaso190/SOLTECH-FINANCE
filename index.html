@@ -641,6 +641,121 @@
        }
     }
 
+    // 6. GUARDAR CON ACTUALIZACION, COMPROBACIONES Y MANEJO DE INVENTARIO
+    async function restaurarStock(tabla, recordId) {
+       const {data: rec} = await db.from(tabla).select('*').eq('id', recordId).single();
+       if(!rec) return;
+       if(tabla === 'ventas') {
+          if(rec.detalles && rec.detalles.startsWith('[')) {
+             const items = JSON.parse(rec.detalles);
+             for(let item of items) { const {data:p} = await db.from('productos').select('cantidad_disponible').eq('id', item.id).single(); if(p) await db.from('productos').update({cantidad_disponible: p.cantidad_disponible + item.cantidad}).eq('id', item.id); }
+          } else if(rec.producto_id) { const {data:p} = await db.from('productos').select('cantidad_disponible').eq('id', rec.producto_id).single(); if(p) await db.from('productos').update({cantidad_disponible: p.cantidad_disponible + rec.cantidad}).eq('id', rec.producto_id); }
+       } else if (tabla === 'gastos' && rec.producto_id) { const {data:p} = await db.from('productos').select('cantidad_disponible').eq('id', rec.producto_id).single(); if(p) await db.from('productos').update({cantidad_disponible: p.cantidad_disponible - rec.cantidad}).eq('id', rec.producto_id); }
+    }
+
+    async function deducirStock(tabla, payload) {
+       if(tabla === 'ventas') {
+          if(payload.detalles && payload.detalles.startsWith('[')) {
+             const items = JSON.parse(payload.detalles);
+             for(let item of items) { const p = listasData.productos.find(x=>x.id===item.id); if(p) await db.from('productos').update({cantidad_disponible: p.cantidad_disponible - item.cantidad}).eq('id', item.id); }
+          } else if(payload.producto_id) { const p = listasData.productos.find(x=>x.id===payload.producto_id); if(p) await db.from('productos').update({cantidad_disponible: p.cantidad_disponible - payload.cantidad}).eq('id', payload.producto_id); }
+       } else if (tabla === 'gastos' && payload.producto_id) { const p = listasData.productos.find(x=>x.id===payload.producto_id); if(p) await db.from('productos').update({cantidad_disponible: p.cantidad_disponible + payload.cantidad}).eq('id', payload.producto_id); }
+    }
+
+    async function guardarVentaProducto() {
+      const editId = document.getElementById('vp-edit-id').value; const fInp = document.getElementById('vp-fecha').value; const cId = document.getElementById('vp-cliente-id').value;
+      const es_deuda = document.getElementById('vp-es-deuda').checked; const abono = Number(document.getElementById('vp-abono').value||0); const desc = Number(document.getElementById('vp-descuento').value||0);
+      
+      if(carritoActual.length === 0) return alert('El carrito está vacío.');
+      if(es_deuda && !cId) return alert('Para crédito, selecciona un cliente.');
+      
+      const mBruto = carritoActual.reduce((a,b)=>a+b.subtotal, 0); 
+      // Supabase calcula el monto_final y saldo_pendiente
+      const payload = { tipo_venta: 'PRODUCTO', cliente_id: cId || null, monto_bruto: mBruto, descuento: desc, es_deuda, abono: es_deuda?abono:0, detalles: JSON.stringify(carritoActual) };
+      if(fInp) payload.fecha = new Date(fInp).toISOString();
+
+      try {
+        if(editId) { await restaurarStock('ventas', editId); await deducirStock('ventas', payload); const {error} = await db.from('ventas').update(payload).eq('id', editId); if(error) throw error; } 
+        else { await deducirStock('ventas', payload); const {error} = await db.from('ventas').insert([payload]); if(error) throw error; }
+        cerrarActualizarForm('form-venta-prod');
+      } catch (err) { alert('❌ Error al guardar la venta: ' + err.message); }
+    }
+
+    async function guardarVentaLibre() {
+      const editId = document.getElementById('vl-edit-id').value; const fInp = document.getElementById('vl-fecha').value; const cId = document.getElementById('vl-cliente-id').value;
+      const valor = Number(document.getElementById('vl-valor').value||0); const es_deuda = document.getElementById('vl-es-deuda').checked; const abono = Number(document.getElementById('vl-abono').value||0);
+      
+      if(!valor) return alert('Valor obligatorio.'); 
+      const payload = { tipo_venta: 'LIBRE', cliente_id: cId || null, monto_bruto: valor, descuento: 0, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('vl-detalles').value };
+      if(fInp) payload.fecha = new Date(fInp).toISOString();
+
+      try {
+        if(editId) { const {error} = await db.from('ventas').update(payload).eq('id', editId); if(error) throw error;} 
+        else { const {error} = await db.from('ventas').insert([payload]); if(error) throw error; }
+        cerrarActualizarForm('form-venta-libre');
+      } catch (err) { alert('❌ Error al guardar la venta libre: ' + err.message); }
+    }
+
+    async function guardarGasto() {
+      const editId = document.getElementById('g-edit-id').value; const fInp = document.getElementById('g-fecha').value; const provId = document.getElementById('g-proveedor-id').value;
+      const prodId = document.getElementById('g-producto-id').value; const valor = Number(document.getElementById('g-valor').value||0); const cant = Number(document.getElementById('g-cantidad').value||0);
+      const es_deuda = document.getElementById('g-es-deuda').checked; const abono = Number(document.getElementById('g-abono').value||0);
+      
+      if(!valor) return alert('Monto total obligatorio.'); 
+      const payload = { proveedor_id: provId||null, valor, producto_id: prodId||null, cantidad: cant, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('g-detalles').value };
+      if(fInp) payload.fecha = new Date(fInp).toISOString();
+
+      try {
+        if(editId) { await restaurarStock('gastos', editId); await deducirStock('gastos', payload); const {error} = await db.from('gastos').update(payload).eq('id', editId); if(error) throw error; }
+        else { await deducirStock('gastos', payload); const {error} = await db.from('gastos').insert([payload]); if(error) throw error; }
+        cerrarActualizarForm('form-gasto');
+      } catch(err) { alert('❌ Error al guardar el gasto: ' + err.message); }
+    }
+
+    function cerrarActualizarForm(formId) { if(formId!=='null') document.getElementById(formId).reset(); ocultarForm(); cargarDropdowns(); actualizarDashboard(); cargarBalance(); cargarDeudas(); }
+
+    async function eliminarRegistro(tabla, id) {
+      if(!confirm('¿Eliminar registro permanentemente? (Si contiene productos, se devolverán al inventario)')) return;
+      try {
+          if(tabla==='ventas' || tabla==='gastos') {
+              await restaurarStock(tabla, id);
+              // Eliminar abonos relacionados para evitar conflicto de llaves foráneas en Supabase
+              const colFK = tabla === 'ventas' ? 'venta_id' : 'gasto_id';
+              await db.from('pagos_abonos').delete().eq(colFK, id);
+          }
+          const {error} = await db.from(tabla).delete().eq('id', id);
+          if (error) throw error;
+          
+          cerrarActualizarForm('null');
+          if(tabla==='clientes') cargarListaClientes(); 
+          if(tabla==='proveedores') cargarListaProveedores(); 
+          if(tabla==='productos') cargarInventario();
+      } catch(err) {
+          alert('❌ Error al eliminar: ' + err.message);
+      }
+    }
+
+    async function editarTransaccion(tabla, id) {
+       const {data: r} = await db.from(tabla).select('*').eq('id', id).single();
+       if(tabla === 'ventas') {
+          if(r.tipo_venta === 'LIBRE') {
+             prepararFormulario('venta-libre', 'Editar Venta Libre', true); document.getElementById('vl-edit-id').value = r.id; document.getElementById('vl-fecha').value = r.fecha.substring(0,16);
+             if(r.cliente_id) { const c=listasData.clientes.find(x=>x.id===r.cliente_id); seleccionarDropdown('vl-cliente', r.cliente_id, c.nombre); }
+             document.getElementById('vl-valor').value = r.monto_bruto; document.getElementById('vl-detalles').value = r.detalles; document.getElementById('vl-es-deuda').checked = r.es_deuda; toggleCredito('vl'); document.getElementById('vl-abono').value = r.abono;
+          } else {
+             prepararFormulario('venta-prod', 'Editar Venta', true); document.getElementById('vp-edit-id').value = r.id; document.getElementById('vp-fecha').value = r.fecha.substring(0,16);
+             if(r.cliente_id) { const c=listasData.clientes.find(x=>x.id===r.cliente_id); seleccionarDropdown('vp-cliente', r.cliente_id, c.nombre); }
+             if(r.detalles && r.detalles.startsWith('[')) carritoActual = JSON.parse(r.detalles); else if (r.producto_id) { const p = listasData.productos.find(x=>x.id===r.producto_id); carritoActual = [{id:p.id, nombre:p.nombre, cantidad:r.cantidad, precio: (r.monto_bruto/r.cantidad), subtotal:r.monto_bruto}]; }
+             renderCarrito(); document.getElementById('vp-descuento').value = r.descuento; document.getElementById('vp-es-deuda').checked = r.es_deuda; toggleCredito('vp'); document.getElementById('vp-abono').value = r.abono; actualizarTotalCarrito();
+          }
+       } else if (tabla === 'gastos') {
+          prepararFormulario('gasto', 'Editar Gasto', true); document.getElementById('g-edit-id').value = r.id; document.getElementById('g-fecha').value = r.fecha.substring(0,16);
+          if(r.proveedor_id) { const p=listasData.proveedores.find(x=>x.id===r.proveedor_id); seleccionarDropdown('g-proveedor', r.proveedor_id, p.nombre); }
+          if(r.producto_id) { const p=listasData.productos.find(x=>x.id===r.producto_id); seleccionarDropdown('g-producto', r.producto_id, p.nombre); }
+          document.getElementById('g-cantidad').value = r.cantidad; document.getElementById('g-valor').value = r.valor; document.getElementById('g-detalles').value = r.detalles; document.getElementById('g-es-deuda').checked = r.es_deuda; toggleCredito('g'); document.getElementById('g-abono').value = r.abono;
+       }
+    }
+    
     // DIRECTORIOS
     async function guardarCliente() { const id = document.getElementById('c-id').value; const nom = document.getElementById('c-nombre').value; const tel = document.getElementById('c-telefono').value; if (!nom) return alert('Nombre obligatorio'); if (id) await db.from('clientes').update({ nombre: nom, telefono: tel }).eq('id', id); else await db.from('clientes').insert([{ nombre: nom, telefono: tel }]); ocultarForm(); cargarListaClientes(); cargarDropdowns(); }
     async function guardarProveedor() { const id = document.getElementById('prov-id').value; const nom = document.getElementById('prov-nombre').value; const tel = document.getElementById('prov-telefono').value; if (!nom) return alert('Nombre obligatorio'); if (id) await db.from('proveedores').update({ nombre: nom, telefono: tel }).eq('id', id); else await db.from('proveedores').insert([{ nombre: nom, telefono: tel }]); ocultarForm(); cargarListaProveedores(); cargarDropdowns(); }
