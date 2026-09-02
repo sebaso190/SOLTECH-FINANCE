@@ -301,14 +301,63 @@
     async function checkSession() {
       const { data: { session } } = await db.auth.getSession();
       if (session) {
-        // Obtener la empresa del usuario actual
-        const { data: perfil } = await db.from('perfiles').select('empresa_id').eq('id', session.user.id).single();
-        if (perfil) {
-          currentEmpresaId = perfil.empresa_id;
+        let { data: perfil } = await db.from('perfiles').select('empresa_id').eq('id', session.user.id).single();
+        
+        // Si el usuario no tiene una empresa vinculada en la tabla perfiles
+        if (!perfil) {
+          const entrada = prompt(
+            "Tu cuenta no tiene una empresa asociada.\n\n" +
+            "• Si deseas unirte a un negocio existente, pega aquí su ID (UUID).\n" +
+            "• Si deseas crear un negocio nuevo, escribe el nombre comercial:"
+          );
+
+          if (!entrada || entrada.trim() === "") {
+            alert("Es obligatorio asociar una empresa para usar el sistema.");
+            await logout();
+            return;
+          }
+
+          let empresaIdFinal = null;
+          // Validar si el texto ingresado tiene formato de UUID (ID de empresa)
+          const esUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(entrada.trim());
+
+          if (esUuid) {
+            // Verificar si esa empresa realmente existe en la base de datos
+            const { data: empresaExiste } = await db.from('empresas').select('id').eq('id', entrada.trim()).single();
+            if (empresaExiste) {
+              empresaIdFinal = empresaExiste.id;
+            } else {
+              alert("El ID ingresado no corresponde a ninguna empresa registrada. Se creará una nueva empresa con ese texto.");
+              const { data: nuevaEmp } = await db.from('empresas').insert([{ nombre: entrada.trim() }]).select().single();
+              empresaIdFinal = nuevaEmp.id;
+            }
+          } else {
+            // Lo que escribió el usuario es un nombre comercial, creamos la empresa
+            const { data: nuevaEmp, error: errEmp } = await db.from('empresas').insert([{ nombre: entrada.trim() }]).select().single();
+            if (errEmp) {
+              alert("Error creando la empresa: " + errEmp.message);
+              await logout();
+              return;
+            }
+            empresaIdFinal = nuevaEmp.id;
+          }
+
+          // Crear el registro en la tabla perfiles asociando al usuario con la empresa elegida o creada
+          const { error: errPerfil } = await db.from('perfiles').insert([{ 
+            id: session.user.id, 
+            empresa_id: empresaIdFinal, 
+            nombre_completo: session.user.email 
+          }]);
+
+          if (errPerfil) {
+            alert("Error asociando tu perfil: " + errPerfil.message);
+            await logout();
+            return;
+          }
+
+          currentEmpresaId = empresaIdFinal;
         } else {
-          // Si por alguna razón no tiene perfil, lo mandamos a cerrar sesión
-          await logout();
-          return;
+          currentEmpresaId = perfil.empresa_id;
         }
 
         document.getElementById('auth-screen').classList.add('hidden'); 
