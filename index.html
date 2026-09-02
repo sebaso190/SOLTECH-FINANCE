@@ -277,12 +277,11 @@
   </nav>
 
   <script>
-    // 1. CREDENCIALES SUPABASE Y GEMINI
+    // 1. CREDENCIALES SUPABASE (¡Pega tus claves aquí!)
     const { createClient } = supabase;
     const supabaseUrl = 'https://jmidlrztyzzmauroxuuf.supabase.co'; 
     const supabaseKey = 'sb_publishable_7rrvQ2yvzVaiYLEqtgoa_w_GbrCRoAi';
     const db = createClient(supabaseUrl, supabaseKey);
-    const GEMINI_API_KEY = 'AQ.Ab8RN6LXHilSJcE7UiFOsvmAXH-lvbZO19yfgzX8I_bTcrzo1A';
 
     const fmtMoneda = (v) => new Intl.NumberFormat('es-CO').format(v || 0);
     const gFecha = (fUTC) => { const d = new Date(fUTC); return new Date(d.getTime() - (d.getTimezoneOffset()*60000)).toISOString().split('T')[0]; };
@@ -719,15 +718,18 @@
       Responde a la siguiente consulta del usuario de forma analítica, breve, clara y en español: "${text}"`;
 
       try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{text: prompt}] }] })
+        // Llamada segura a la Edge Function alojada en Supabase
+        const { data, error } = await db.functions.invoke('asistente-ia', {
+          body: { prompt: prompt }
         });
-        const data = await res.json();
+
+        if (error) throw error;
+
         const msg = data.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
         history.innerHTML += `<div class="bg-slate-700/50 p-3 rounded-lg text-sm text-slate-200 w-5/6 rounded-tl-none border border-slate-600 mt-2">${msg}</div>`;
       } catch (err) {
-        history.innerHTML += `<div class="bg-rose-900/50 p-3 rounded-lg text-sm text-rose-200 w-5/6 rounded-tl-none mt-2">Error de conexión con IA. Verifica tu API Key o conexión a internet.</div>`;
+        history.innerHTML += `<div class="bg-rose-900/50 p-3 rounded-lg text-sm text-rose-200 w-5/6 rounded-tl-none mt-2">Error procesando el análisis. Verifica tu conexión.</div>`;
+        console.error(err);
       }
       document.getElementById('ia-loading').classList.add('hidden');
       history.scrollTop = history.scrollHeight;
