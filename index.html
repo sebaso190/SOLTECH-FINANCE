@@ -277,18 +277,19 @@
   </nav>
 
   <script>
-    // 1. CREDENCIALES SUPABASE Y VARIABLES GLOBALES
+    // 1. CREDENCIALES SUPABASE (¡Pega tus claves aquí!)
     const { createClient } = supabase;
-    const supabaseUrl = 'PEGA_AQUI_TU_PROJECT_URL'; 
-    const supabaseKey = 'PEGA_AQUI_TU_ANON_KEY';
+    const supabaseUrl = 'https://jmidlrztyzzmauroxuuf.supabase.co'; 
+    const supabaseKey = 'sb_publishable_7rrvQ2yvzVaiYLEqtgoa_w_GbrCRoAi';
     const db = createClient(supabaseUrl, supabaseKey);
 
-    let currentEmpresaId = null; // VARIABLE CLAVE PARA MULTI-TENANT
+    let currentEmpresaId = null; // <--- NUEVA VARIABLE MULTI-TENANT
 
     const fmtMoneda = (v) => new Intl.NumberFormat('es-CO').format(v || 0);
     const gFecha = (fUTC) => { const d = new Date(fUTC); return new Date(d.getTime() - (d.getTimezoneOffset()*60000)).toISOString().split('T')[0]; };
     const formatearFechaHora = (f) => { const d = new Date(f); return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`; };
 
+    // VARIABLES GLOBALES (CARRITOS Y DROPDOWNS)
     let carritoVP = []; let carritoG = [];
     let listasData = { clientes: [], proveedores: [], productos: [] };
 
@@ -296,55 +297,64 @@
       if(!e.target.closest('.relative')) document.querySelectorAll('ul[id$="-list"]').forEach(el => el.classList.add('hidden'));
     });
 
-    // 2. AUTENTICACIÓN Y SESIÓN
+    // 2. AUTENTICACIÓN
     async function checkSession() {
-      const { data: { session }, error: sessionError } = await db.auth.getSession();
-      
+      const { data: { session } } = await db.auth.getSession();
       if (session) {
-        // Verificar si el usuario ya tiene perfil y empresa
         let { data: perfil } = await db.from('perfiles').select('empresa_id').eq('id', session.user.id).single();
         
+        // Si el usuario no tiene una empresa vinculada en la tabla perfiles
         if (!perfil) {
           const entrada = prompt(
-            "¡Bienvenido! Tu cuenta aún no tiene negocio asociado.\n\n" +
-            "• Para crear uno nuevo, escribe el nombre comercial (Ej. Mi Tienda).\n" +
-            "• Para unirte a uno, pega el Código UUID de la empresa:"
+            "Tu cuenta no tiene una empresa asociada.\n\n" +
+            "• Si deseas unirte a un negocio existente, pega aquí su ID (UUID).\n" +
+            "• Si deseas crear un negocio nuevo, escribe el nombre comercial:"
           );
 
           if (!entrada || entrada.trim() === "") {
-            alert("Debes asociar una empresa para usar el sistema.");
-            await db.auth.signOut();
-            location.reload();
+            alert("Es obligatorio asociar una empresa para usar el sistema.");
+            await logout();
             return;
           }
 
           let empresaIdFinal = null;
-          // Validar si pegaron un código UUID o si escribieron un nombre
-          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entrada.trim());
+          // Validar si el texto ingresado tiene formato de UUID (ID de empresa)
+          const esUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(entrada.trim());
 
-          if (isUUID) {
-             empresaIdFinal = entrada.trim();
+          if (esUuid) {
+            // Verificar si esa empresa realmente existe en la base de datos
+            const { data: empresaExiste } = await db.from('empresas').select('id').eq('id', entrada.trim()).single();
+            if (empresaExiste) {
+              empresaIdFinal = empresaExiste.id;
+            } else {
+              alert("El ID ingresado no corresponde a ninguna empresa registrada. Se creará una nueva empresa con ese texto.");
+              const { data: nuevaEmp } = await db.from('empresas').insert([{ nombre: entrada.trim() }]).select().single();
+              empresaIdFinal = nuevaEmp.id;
+            }
           } else {
-             // Es un nombre, creamos la empresa
-             const { data: nuevaEmp, error: errEmp } = await db.from('empresas').insert([{ nombre: entrada.trim() }]).select().single();
-             if (errEmp) { alert("Error al crear empresa: " + errEmp.message); await db.auth.signOut(); location.reload(); return; }
-             empresaIdFinal = nuevaEmp.id;
+            // Lo que escribió el usuario es un nombre comercial, creamos la empresa
+            const { data: nuevaEmp, error: errEmp } = await db.from('empresas').insert([{ nombre: entrada.trim() }]).select().single();
+            if (errEmp) {
+              alert("Error creando la empresa: " + errEmp.message);
+              await logout();
+              return;
+            }
+            empresaIdFinal = nuevaEmp.id;
           }
 
-          // Vinculamos el perfil a la empresa
+          // Crear el registro en la tabla perfiles asociando al usuario con la empresa elegida o creada
           const { error: errPerfil } = await db.from('perfiles').insert([{ 
             id: session.user.id, 
             empresa_id: empresaIdFinal, 
             nombre_completo: session.user.email 
           }]);
 
-          if (errPerfil) { 
-             alert("Error al vincular el perfil. Si pegaste un código, verifica que sea correcto."); 
-             await db.auth.signOut(); 
-             location.reload(); 
-             return; 
+          if (errPerfil) {
+            alert("Error asociando tu perfil: " + errPerfil.message);
+            await logout();
+            return;
           }
-          
+
           currentEmpresaId = empresaIdFinal;
         } else {
           currentEmpresaId = perfil.empresa_id;
@@ -353,54 +363,38 @@
         document.getElementById('auth-screen').classList.add('hidden'); 
         document.getElementById('main-app').classList.remove('hidden'); 
         document.getElementById('main-nav').classList.remove('hidden'); 
-        
-        // Retornamos el botón a la normalidad si viene de un login
-        const btnLogin = document.querySelector('button[onclick="login()"]');
-        if(btnLogin) btnLogin.innerText = "Iniciar Sesión";
-        
         iniciarApp(); 
       } else { 
         document.getElementById('auth-screen').classList.remove('hidden'); 
       }
     }
-
-    async function login() { 
+    async function login() { const e = document.getElementById('auth-email').value; const p = document.getElementById('auth-pass').value; if(!e || !p) return alert('Ingresa credenciales'); const { error } = await db.auth.signInWithPassword({ email: e, password: p }); if(error) alert('Error: ' + error.message); else checkSession(); }
+    async function register() {
       const e = document.getElementById('auth-email').value; 
       const p = document.getElementById('auth-pass').value; 
-      if(!e || !p) return alert('Ingresa correo y contraseña'); 
+      const nombreEmpresa = prompt("¡Bienvenido a SOLTECH! Ingresa el nombre comercial de tu negocio (Empresa):");
       
-      const btn = document.querySelector('button[onclick="login()"]');
-      btn.innerText = "Cargando..."; // Efecto visual de carga
+      if(!e || !p || !nombreEmpresa) return alert('Todos los datos son obligatorios');
       
-      const { error } = await db.auth.signInWithPassword({ email: e, password: p }); 
-      if(error) {
-         alert('Error: ' + error.message);
-         btn.innerText = "Iniciar Sesión";
-      } else {
-         checkSession(); 
-      }
+      // 1. Crear usuario en Auth
+      const { data: authData, error: authError } = await db.auth.signUp({ email: e, password: p }); 
+      if(authError) return alert('Error: ' + authError.message);
+      
+      const userId = authData.user.id;
+
+      // 2. Crear la Empresa
+      const { data: empresaData, error: empError } = await db.from('empresas').insert([{ nombre: nombreEmpresa }]).select().single();
+      if(empError) return alert('Error creando la empresa: ' + empError.message);
+
+      // 3. Vincular usuario a la empresa en la tabla perfiles
+      const { error: perfilError } = await db.from('perfiles').insert([{ id: userId, empresa_id: empresaData.id, nombre_completo: e }]);
+      if(perfilError) return alert('Error asociando perfil: ' + perfilError.message);
+
+      alert('¡Registro exitoso! Ya puedes iniciar sesión.');
     }
-
-    async function register() { 
-      const e = document.getElementById('auth-email').value; 
-      const p = document.getElementById('auth-pass').value; 
-      if(!e || !p) return alert('Ingresa correo y contraseña primero.'); 
-      
-      const btn = document.querySelector('button[onclick="register()"]');
-      btn.innerText = "Creando cuenta...";
-
-      const { error } = await db.auth.signUp({ email: e, password: p }); 
-      if(error) {
-         alert('Error al registrar: ' + error.message);
-      } else {
-         alert('Registro exitoso. Haz clic en "Iniciar Sesión" para entrar.');
-      }
-      btn.innerText = "Crear Cuenta";
-    }
-
     async function logout() { await db.auth.signOut(); location.reload(); }
     window.onload = checkSession;
-    
+
     // 3. INICIO Y NAVEGACIÓN
     function iniciarApp() {
       const hoy = new Date().toISOString().split('T')[0];
