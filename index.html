@@ -540,8 +540,10 @@
     }
 
     async function actualizarDashboard() {
-      const res = await procesarFlujoCaja();
-      document.getElementById('inicio-ingresos').innerText = fmtMoneda(res.inTotal); document.getElementById('inicio-egresos').innerText = fmtMoneda(res.outTotal); document.getElementById('inicio-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
+      const res = await procesarFlujoCaja('inicio'); // Indicamos que viene del Dashboard
+      document.getElementById('inicio-ingresos').innerText = fmtMoneda(res.inTotal); 
+      document.getElementById('inicio-egresos').innerText = fmtMoneda(res.outTotal); 
+      document.getElementById('inicio-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
     }
 
     async function cargarBalance() {
