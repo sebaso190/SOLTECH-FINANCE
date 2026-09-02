@@ -600,27 +600,17 @@
       elTotal.innerHTML = `TOTAL: $${fmtMoneda(total)}`;
       if(r.es_deuda) elTotal.innerHTML += `<br><span class="text-sm font-normal">Abono: $${fmtMoneda(r.abono)}<br>Saldo: $${fmtMoneda(r.saldo_pendiente)}</span>`;
 
-      // Corrección para evitar el PDF en blanco en dispositivos móviles
+      // Convertir a PDF
       const elemento = document.getElementById('plantilla-comprobante');
-      elemento.style.display = 'block'; 
       elemento.classList.remove('hidden');
       
-      // Le damos 300 milisegundos al navegador del celular para que dibuje el HTML
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const opt = { margin: 0, filename: `Comprobante_${id.substring(0,6)}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: [80, 150], orientation: 'portrait' } };
+      const opt = { margin: 0, filename: `Comprobante_${id.substring(0,6)}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: [80, 150], orientation: 'portrait' } };
       
       try {
         await html2pdf().set(opt).from(elemento).save();
         alert('PDF descargado. Puedes enviarlo por WhatsApp adjuntando el archivo.');
-      } catch(e) { 
-        console.error(e); 
-        alert('Hubo un error al generar el PDF.');
-      } finally {
-        // Volvemos a ocultar el elemento después de generar el PDF
-        elemento.style.display = 'none'; 
-        elemento.classList.add('hidden');
-      }
+      } catch(e) { console.error(e); }
+      elemento.classList.add('hidden');
     }
 
     // 5. DEUDAS CON TOTALES
