@@ -570,10 +570,10 @@
     }
     function limpiarFiltroCaja() { document.getElementById('filtro-tiempo-tipo').value = 'dia'; document.getElementById('filtro-balance-dia').value = ''; cambiarTipoFiltroTiempo(); document.getElementById('filtro-tipo-caja').value = 'todos'; cargarBalance(); }
 
+    // GENERADOR DE COMPROBANTES
     async function generarComprobante(id, tabla) {
       if(tabla === 'pagos_abonos') return alert('El comprobante se genera desde la venta principal o el gasto.');
       const {data: r} = await db.from(tabla).select(tabla==='ventas'?'*, clientes(nombre)':'*, proveedores(nombre)').eq('id', id).single();
-      if(!r) return alert('No se encontró el registro.');
       
       const elInfo = document.getElementById('comprobante-info');
       const elItems = document.getElementById('comprobante-items');
@@ -587,12 +587,8 @@
 
       let itemsHtml = '';
       if(r.detalles && r.detalles.startsWith('[')) {
-        try {
-          const items = JSON.parse(r.detalles);
-          items.forEach(i => { itemsHtml += `<div class="flex justify-between"><span>${i.cantidad}x ${i.nombre.substring(0,15)}</span><span>$${fmtMoneda(i.subtotal)}</span></div>`; });
-        } catch(e) {
-          itemsHtml = `<div class="flex justify-between"><span>1x ${r.detalles}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
-        }
+        const items = JSON.parse(r.detalles);
+        items.forEach(i => { itemsHtml += `<div class="flex justify-between"><span>${i.cantidad}x ${i.nombre.substring(0,15)}</span><span>$${fmtMoneda(i.subtotal)}</span></div>`; });
       } else {
         itemsHtml = `<div class="flex justify-between"><span>1x ${r.detalles || 'Servicio'}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
       }
@@ -604,44 +600,19 @@
       elTotal.innerHTML = `TOTAL: $${fmtMoneda(total)}`;
       if(r.es_deuda) elTotal.innerHTML += `<br><span class="text-sm font-normal">Abono: $${fmtMoneda(r.abono)}<br>Saldo: $${fmtMoneda(r.saldo_pendiente)}</span>`;
 
+      // Convertir a PDF
       const elemento = document.getElementById('plantilla-comprobante');
-      
-      // Hacemos visible el comprobante temporalmente para que html2pdf pueda medirlo y capturarlo
       elemento.classList.remove('hidden');
-      elemento.style.display = 'block';
-      elemento.style.position = 'fixed';
-      elemento.style.top = '0';
-      elemento.style.left = '0';
-      elemento.style.zIndex = '99999';
-      elemento.style.backgroundColor = '#ffffff';
-
-      // Damos un respiro de 400ms para que el navegador pinte el HTML en pantalla
-      await new Promise(resolve => setTimeout(resolve, 400));
       
-      const opt = { 
-        margin: 5, 
-        filename: `Comprobante_${id.substring(0,6)}.pdf`, 
-        image: { type: 'jpeg', quality: 0.98 }, 
-        html2canvas: { scale: 2, useCORS: true, logging: false }, 
-        jsPDF: { unit: 'mm', format: [80, 150], orientation: 'portrait' } 
-      };
+      const opt = { margin: 0, filename: `Comprobante_${id.substring(0,6)}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: [80, 150], orientation: 'portrait' } };
       
       try {
         await html2pdf().set(opt).from(elemento).save();
-      } catch(e) { 
-        console.error(e); 
-        alert('❌ Error al generar el PDF: ' + e.message);
-      } finally {
-        // Ocultamos el elemento nuevamente y limpiamos los estilos temporales
-        elemento.style.display = 'none';
-        elemento.classList.add('hidden');
-        elemento.style.position = '';
-        elemento.style.top = '';
-        elemento.style.left = '';
-        elemento.style.zIndex = '';
-      }
+        alert('PDF descargado. Puedes enviarlo por WhatsApp adjuntando el archivo.');
+      } catch(e) { console.error(e); }
+      elemento.classList.add('hidden');
     }
-
+    
     // 5. DEUDAS CON TOTALES
     function cambiarPestanaDeudas(tipo) {
       document.getElementById('btn-cobrar').className = `flex-1 py-2 rounded-lg font-bold text-sm transition-all ${tipo==='cobrar'?'bg-amber-600 text-white shadow-lg':'bg-slate-800 border border-slate-600 text-slate-400'}`;
