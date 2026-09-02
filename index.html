@@ -564,7 +564,7 @@
              <div class="text-right font-black tracking-wide ${isEn ? 'text-emerald-400' : 'text-rose-400'}">${sig}${fmtMoneda(m.monto)}</div>
           </div>
           <p class="text-[11px] text-slate-400 font-mono mt-2 mb-2">${m.sub}</p>
-          <div class="flex justify-end gap-1 border-t border-slate-700/50 pt-2"><button onclick="generarComprobante('${m.id}', '${m.tabla}')" class="text-xs font-bold text-slate-300 bg-slate-700 px-3 py-1 rounded shadow">📄 Comprobante</button><button onclick="editarTransaccion('${m.tabla}', '${m.id}')" class="text-xs bg-blue-900/50 text-blue-300 px-3 py-1 rounded shadow">✏️</button><button onclick="eliminarRegistro('${m.tabla}', '${m.id}')" class="text-xs bg-rose-900/50 text-rose-400 px-3 py-1 rounded shadow">🗑️</button></div>
+          <div class="flex justify-end gap-1 border-t border-slate-700/50 pt-2"><button onclick="('${m.id}', '${m.tabla}')" class="text-xs font-bold text-slate-300 bg-slate-700 px-3 py-1 rounded shadow">📄 Comprobante</button><button onclick="editarTransaccion('${m.tabla}', '${m.id}')" class="text-xs bg-blue-900/50 text-blue-300 px-3 py-1 rounded shadow">✏️</button><button onclick="eliminarRegistro('${m.tabla}', '${m.id}')" class="text-xs bg-rose-900/50 text-rose-400 px-3 py-1 rounded shadow">🗑️</button></div>
         </div>`;
       }).join('') || '<div class="text-center p-6 bg-slate-800 rounded-xl border border-slate-700"><p class="text-sm text-slate-400">No hay movimientos.</p></div>';
     }
@@ -600,17 +600,27 @@
       elTotal.innerHTML = `TOTAL: $${fmtMoneda(total)}`;
       if(r.es_deuda) elTotal.innerHTML += `<br><span class="text-sm font-normal">Abono: $${fmtMoneda(r.abono)}<br>Saldo: $${fmtMoneda(r.saldo_pendiente)}</span>`;
 
-      // Convertir a PDF
+      // Corrección para evitar el PDF en blanco en dispositivos móviles
       const elemento = document.getElementById('plantilla-comprobante');
+      elemento.style.display = 'block'; 
       elemento.classList.remove('hidden');
       
-      const opt = { margin: 0, filename: `Comprobante_${id.substring(0,6)}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: [80, 150], orientation: 'portrait' } };
+      // Le damos 300 milisegundos al navegador del celular para que dibuje el HTML
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const opt = { margin: 0, filename: `Comprobante_${id.substring(0,6)}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: [80, 150], orientation: 'portrait' } };
       
       try {
         await html2pdf().set(opt).from(elemento).save();
         alert('PDF descargado. Puedes enviarlo por WhatsApp adjuntando el archivo.');
-      } catch(e) { console.error(e); }
-      elemento.classList.add('hidden');
+      } catch(e) { 
+        console.error(e); 
+        alert('Hubo un error al generar el PDF.');
+      } finally {
+        // Volvemos a ocultar el elemento después de generar el PDF
+        elemento.style.display = 'none'; 
+        elemento.classList.add('hidden');
+      }
     }
 
     // 5. DEUDAS CON TOTALES
