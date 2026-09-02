@@ -283,6 +283,8 @@
     const supabaseKey = 'sb_publishable_7rrvQ2yvzVaiYLEqtgoa_w_GbrCRoAi';
     const db = createClient(supabaseUrl, supabaseKey);
 
+    let currentEmpresaId = null; // <--- NUEVA VARIABLE MULTI-TENANT
+
     const fmtMoneda = (v) => new Intl.NumberFormat('es-CO').format(v || 0);
     const gFecha = (fUTC) => { const d = new Date(fUTC); return new Date(d.getTime() - (d.getTimezoneOffset()*60000)).toISOString().split('T')[0]; };
     const formatearFechaHora = (f) => { const d = new Date(f); return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`; };
@@ -298,11 +300,49 @@
     // 2. AUTENTICACIÓN
     async function checkSession() {
       const { data: { session } } = await db.auth.getSession();
-      if (session) { document.getElementById('auth-screen').classList.add('hidden'); document.getElementById('main-app').classList.remove('hidden'); document.getElementById('main-nav').classList.remove('hidden'); iniciarApp(); } 
-      else { document.getElementById('auth-screen').classList.remove('hidden'); }
+      if (session) {
+        // Obtener la empresa del usuario actual
+        const { data: perfil } = await db.from('perfiles').select('empresa_id').eq('id', session.user.id).single();
+        if (perfil) {
+          currentEmpresaId = perfil.empresa_id;
+        } else {
+          // Si por alguna razón no tiene perfil, lo mandamos a cerrar sesión
+          await logout();
+          return;
+        }
+
+        document.getElementById('auth-screen').classList.add('hidden'); 
+        document.getElementById('main-app').classList.remove('hidden'); 
+        document.getElementById('main-nav').classList.remove('hidden'); 
+        iniciarApp(); 
+      } else { 
+        document.getElementById('auth-screen').classList.remove('hidden'); 
+      }
     }
     async function login() { const e = document.getElementById('auth-email').value; const p = document.getElementById('auth-pass').value; if(!e || !p) return alert('Ingresa credenciales'); const { error } = await db.auth.signInWithPassword({ email: e, password: p }); if(error) alert('Error: ' + error.message); else checkSession(); }
-    async function register() { const e = document.getElementById('auth-email').value; const p = document.getElementById('auth-pass').value; if(!e || !p) return; const { error } = await db.auth.signUp({ email: e, password: p }); if(error) alert('Error: ' + error.message); else alert('Registro exitoso.'); }
+    async function register() {
+      const e = document.getElementById('auth-email').value; 
+      const p = document.getElementById('auth-pass').value; 
+      const nombreEmpresa = prompt("¡Bienvenido a SOLTECH! Ingresa el nombre comercial de tu negocio (Empresa):");
+      
+      if(!e || !p || !nombreEmpresa) return alert('Todos los datos son obligatorios');
+      
+      // 1. Crear usuario en Auth
+      const { data: authData, error: authError } = await db.auth.signUp({ email: e, password: p }); 
+      if(authError) return alert('Error: ' + authError.message);
+      
+      const userId = authData.user.id;
+
+      // 2. Crear la Empresa
+      const { data: empresaData, error: empError } = await db.from('empresas').insert([{ nombre: nombreEmpresa }]).select().single();
+      if(empError) return alert('Error creando la empresa: ' + empError.message);
+
+      // 3. Vincular usuario a la empresa en la tabla perfiles
+      const { error: perfilError } = await db.from('perfiles').insert([{ id: userId, empresa_id: empresaData.id, nombre_completo: e }]);
+      if(perfilError) return alert('Error asociando perfil: ' + perfilError.message);
+
+      alert('¡Registro exitoso! Ya puedes iniciar sesión.');
+    }
     async function logout() { await db.auth.signOut(); location.reload(); }
     window.onload = checkSession;
 
@@ -618,7 +658,7 @@
       if(carritoVP.length === 0) return alert('El carrito está vacío.'); if(es_deuda && !cId) return alert('Para crédito, selecciona un cliente.');
       
       const mBruto = carritoVP.reduce((a,b)=>a+b.subtotal, 0); 
-      const payload = { tipo_venta: 'PRODUCTO', cliente_id: cId || null, monto_bruto: mBruto, descuento: desc, es_deuda, abono: es_deuda?abono:0, detalles: JSON.stringify(carritoVP) };
+      const payload = { tipo_venta: 'PRODUCTO', cliente_id: cId || null, monto_bruto: mBruto, descuento: desc, es_deuda, abono: es_deuda?abono:0, detalles: JSON.stringify(carritoVP), empresa_id: currentEmpresaId };
       if(fInp) payload.fecha = new Date(fInp).toISOString();
 
       try {
@@ -633,7 +673,7 @@
       const valor = Number(document.getElementById('vl-valor').value||0); const es_deuda = document.getElementById('vl-es-deuda').checked; const abono = Number(document.getElementById('vl-abono').value||0);
       
       if(!valor) return alert('Valor obligatorio.'); 
-      const payload = { tipo_venta: 'LIBRE', cliente_id: cId || null, monto_bruto: valor, descuento: 0, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('vl-detalles').value };
+      const payload = { tipo_venta: 'LIBRE', cliente_id: cId || null, monto_bruto: valor, descuento: 0, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('vl-detalles').value, empresa_id: currentEmpresaId };
       if(fInp) payload.fecha = new Date(fInp).toISOString();
 
       try {
@@ -655,7 +695,7 @@
          return alert('Debes agregar al menos un producto/concepto al carrito del gasto.');
       }
       
-      const payload = { proveedor_id: provId||null, valor: valorFinal, es_deuda, abono: es_deuda?abono:0, detalles: detallesFinal };
+      const payload = { proveedor_id: provId||null, valor: valorFinal, es_deuda, abono: es_deuda?abono:0, detalles: detallesFinal, empresa_id: currentEmpresaId };
       if(fInp) payload.fecha = new Date(fInp).toISOString();
 
       try {
@@ -736,14 +776,14 @@
     }
 
     // DIRECTORIOS
-    async function guardarCliente() { const id = document.getElementById('c-id').value; const nom = document.getElementById('c-nombre').value; const tel = document.getElementById('c-telefono').value; if (!nom) return alert('Nombre obligatorio'); if (id) await db.from('clientes').update({ nombre: nom, telefono: tel }).eq('id', id); else await db.from('clientes').insert([{ nombre: nom, telefono: tel }]); ocultarForm(); cargarListaClientes(); cargarDropdowns(); }
-    async function guardarProveedor() { const id = document.getElementById('prov-id').value; const nom = document.getElementById('prov-nombre').value; const tel = document.getElementById('prov-telefono').value; if (!nom) return alert('Nombre obligatorio'); if (id) await db.from('proveedores').update({ nombre: nom, telefono: tel }).eq('id', id); else await db.from('proveedores').insert([{ nombre: nom, telefono: tel }]); ocultarForm(); cargarListaProveedores(); cargarDropdowns(); }
+    async function guardarCliente() { const id = document.getElementById('c-id').value; const nom = document.getElementById('c-nombre').value; const tel = document.getElementById('c-telefono').value; if (!nom) return alert('Nombre obligatorio'); if (id) await db.from('clientes').update({ nombre: nom, telefono: tel }).eq('id', id); else await db.from('clientes').insert([{ nombre: nom, telefono: tel, empresa_id: currentEmpresaId }]); ocultarForm(); cargarListaClientes(); cargarDropdowns(); }
+    async function guardarProveedor() { const id = document.getElementById('prov-id').value; const nom = document.getElementById('prov-nombre').value; const tel = document.getElementById('prov-telefono').value; if (!nom) return alert('Nombre obligatorio'); if (id) await db.from('proveedores').update({ nombre: nom, telefono: tel }).eq('id', id); else await db.from('proveedores').insert([{ nombre: nom, telefono: tel, empresa_id: currentEmpresaId }]); ocultarForm(); cargarListaProveedores(); cargarDropdowns(); }
     async function guardarProducto() {
       const id = document.getElementById('p-id').value; const nom = document.getElementById('p-nombre').value; const cmp = Number(document.getElementById('p-compra').value||0); const vnt = Number(document.getElementById('p-venta').value||0); const stk = Number(document.getElementById('p-stock').value||0);
       if (!nom || !vnt) return alert('Nombre y precio de venta obligatorios');
       const fileInput = document.getElementById('p-imagen'); let imgBase64 = null;
       if (fileInput.files.length > 0) { imgBase64 = await new Promise(res => { const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.readAsDataURL(fileInput.files[0]); }); }
-      const payload = { nombre: nom, precio_compra: cmp, precio_venta: vnt, cantidad_disponible: stk }; if(imgBase64) payload.imagen_url = imgBase64;
+      const payload = { nombre: nom, precio_compra: cmp, precio_venta: vnt, cantidad_disponible: stk, empresa_id: currentEmpresaId }; if(imgBase64) payload.imagen_url = imgBase64;
       if (id) await db.from('productos').update(payload).eq('id', id); else await db.from('productos').insert([payload]);
       ocultarForm(); cargarInventario(); cargarDropdowns();
     }
