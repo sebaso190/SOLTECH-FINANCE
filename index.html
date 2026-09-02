@@ -476,11 +476,18 @@
        cargarBalance();
     }
 
-    async function procesarFlujoCaja() {
-      const tFiltro = document.getElementById('filtro-tiempo-tipo') ? document.getElementById('filtro-tiempo-tipo').value : 'dia';
-      const fDia = document.getElementById('filtro-balance-dia') ? document.getElementById('filtro-balance-dia').value : document.getElementById('filtro-inicio').value;
-      const fMes = document.getElementById('filtro-balance-mes') ? document.getElementById('filtro-balance-mes').value : '';
-      const fAno = document.getElementById('filtro-balance-ano') ? document.getElementById('filtro-balance-ano').value : '';
+    async function procesarFlujoCaja(origen = 'caja') {
+      let tFiltro = 'dia'; let fDia = ''; let fMes = ''; let fAno = '';
+      
+      // Separamos la lógica: si viene de inicio, usa su propio filtro. Si no, usa los de la caja.
+      if (origen === 'inicio') {
+         fDia = document.getElementById('filtro-inicio').value;
+      } else {
+         tFiltro = document.getElementById('filtro-tiempo-tipo') ? document.getElementById('filtro-tiempo-tipo').value : 'dia';
+         fDia = document.getElementById('filtro-balance-dia') ? document.getElementById('filtro-balance-dia').value : '';
+         fMes = document.getElementById('filtro-balance-mes') ? document.getElementById('filtro-balance-mes').value : '';
+         fAno = document.getElementById('filtro-balance-ano') ? document.getElementById('filtro-balance-ano').value : '';
+      }
 
       const { data: vts } = await db.from('ventas').select('*, clientes(nombre)');
       const { data: gts } = await db.from('gastos').select('*, proveedores(nombre)');
@@ -493,7 +500,7 @@
          if(tFiltro === 'dia' && fDia) return fechaStr === fDia;
          if(tFiltro === 'mes' && fMes) return fechaStr.startsWith(fMes);
          if(tFiltro === 'ano' && fAno) return fechaStr.startsWith(fAno);
-         return true; // Si no hay filtro, pasa
+         return true; 
       };
 
       vts?.forEach(v => {
