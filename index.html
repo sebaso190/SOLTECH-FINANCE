@@ -547,9 +547,13 @@
     }
 
     async function cargarBalance() {
-      const tipoFiltro = document.getElementById('filtro-tipo-caja').value; const res = await procesarFlujoCaja();
-      document.getElementById('bal-ingresos').innerText = fmtMoneda(res.inTotal); document.getElementById('bal-egresos').innerText = fmtMoneda(res.outTotal); document.getElementById('bal-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
-      document.getElementById('bal-count-in').innerText = res.countIn; document.getElementById('bal-count-out').innerText = res.countOut;
+      const tipoFiltro = document.getElementById('filtro-tipo-caja').value; 
+      const res = await procesarFlujoCaja('caja'); // Indicamos que viene de la Caja
+      document.getElementById('bal-ingresos').innerText = fmtMoneda(res.inTotal); 
+      document.getElementById('bal-egresos').innerText = fmtMoneda(res.outTotal); 
+      document.getElementById('bal-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
+      document.getElementById('bal-count-in').innerText = res.countIn; 
+      document.getElementById('bal-count-out').innerText = res.countOut;
 
       let movsFiltrados = res.movimientos; if (tipoFiltro !== 'todos') movsFiltrados = res.movimientos.filter(m => m.tipo === tipoFiltro);
       document.getElementById('lista-caja-movimientos').innerHTML = movsFiltrados.map(m => {
