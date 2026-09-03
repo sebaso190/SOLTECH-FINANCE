@@ -256,22 +256,6 @@
     </div>
   </main>
 
-  <!-- ================= PLANTILLA DEL COMPROBANTE ================= -->
-  <div id="plantilla-comprobante" class="bg-white text-black p-8 w-[400px] font-sans hidden absolute top-0 left-0 z-[-100]">
-      <div class="text-center mb-6">
-          <h1 class="font-black text-4xl tracking-widest text-slate-800">SOLTECH</h1>
-          <p class="text-sm text-slate-600 font-bold uppercase mt-1">Gestión Empresarial</p>
-          <p class="text-xs text-slate-500 mt-1">Dosquebradas, Risaralda</p>
-          <div class="border-b-2 border-dashed border-slate-400 mt-4"></div>
-      </div>
-      <div class="mb-4 text-sm" id="comprobante-info"></div>
-      <div class="border-b-2 border-dashed border-slate-400 mb-4"></div>
-      <div class="mb-4 text-sm font-mono space-y-1" id="comprobante-items"></div>
-      <div class="border-b-2 border-dashed border-slate-400 mb-4"></div>
-      <div class="text-right text-lg font-black text-slate-800" id="comprobante-total"></div>
-      <div class="text-center text-xs mt-10 text-slate-500 italic">¡Gracias por su confianza!</div>
-  </div>
-
   <!-- Navegación Inferior -->
   <nav class="fixed bottom-0 w-full bg-slate-800 border-t border-slate-700 flex justify-around p-2 pb-6 text-xs shadow-2xl z-10 hidden" id="main-nav">
     <button onclick="cambiarVista('inicio')" id="nav-inicio" class="nav-btn text-blue-400 flex flex-col items-center gap-1 transition-colors"><span class="text-lg">📊</span><span>Inicio</span></button>
@@ -547,7 +531,7 @@
              <div class="text-right font-black tracking-wide ${isEn ? 'text-emerald-400' : 'text-rose-400'}">${sig}${fmtMoneda(m.monto)}</div>
           </div>
           <p class="text-[11px] text-slate-400 font-mono mt-2 mb-2">${m.sub}</p>
-          <div class="flex justify-end gap-1 border-t border-slate-700/50 pt-2"><button onclick="generarComprobante('${m.id}', '${m.tabla}')" class="text-xs font-bold text-slate-300 bg-slate-700 px-3 py-1 rounded shadow">📄 Comprobante</button><button onclick="editarTransaccion('${m.tabla}', '${m.id}')" class="text-xs bg-blue-900/50 text-blue-300 px-3 py-1 rounded shadow">✏️</button><button onclick="eliminarRegistro('${m.tabla}', '${m.id}')" class="text-xs bg-rose-900/50 text-rose-400 px-3 py-1 rounded shadow">🗑️</button></div>
+          <div class="flex justify-end gap-1 border-t border-slate-700/50 pt-2"><button onclick="('${m.id}', '${m.tabla}')" class="text-xs font-bold text-slate-300 bg-slate-700 px-3 py-1 rounded shadow">📄 Comprobante</button><button onclick="editarTransaccion('${m.tabla}', '${m.id}')" class="text-xs bg-blue-900/50 text-blue-300 px-3 py-1 rounded shadow">✏️</button><button onclick="eliminarRegistro('${m.tabla}', '${m.id}')" class="text-xs bg-rose-900/50 text-rose-400 px-3 py-1 rounded shadow">🗑️</button></div>
         </div>`;
       }).join('') || '<div class="text-center p-6 bg-slate-800 rounded-xl border border-slate-700"><p class="text-sm text-slate-400">No hay movimientos.</p></div>';
     }
@@ -556,66 +540,71 @@
     // GENERADOR DE COMPROBANTES (VERSIÓN MÓVIL SEGURA)
     async function generarComprobante(id, tabla) {
       if(tabla === 'pagos_abonos') return alert('El comprobante se genera desde la venta principal o el gasto.');
-      
+
       const {data: r} = await db.from(tabla).select(tabla==='ventas'?'*, clientes(nombre)':'*, proveedores(nombre)').eq('id', id).single();
       if(!r) return alert('No se encontró el registro.');
-      
-      const elInfo = document.getElementById('comprobante-info');
-      const elItems = document.getElementById('comprobante-items');
-      const elTotal = document.getElementById('comprobante-total');
-
-      elInfo.innerHTML = `
-        <p><strong>Fecha:</strong> ${formatearFechaHora(r.fecha)}</p>
-        <p><strong>Tipo:</strong> ${tabla === 'ventas' ? 'Factura de Venta' : 'Comprobante de Gasto'}</p>
-        <p><strong>${tabla === 'ventas' ? 'Cliente' : 'Proveedor'}:</strong> ${tabla === 'ventas' ? (r.clientes?.nombre||'Mostrador') : (r.proveedores?.nombre||'General')}</p>
-      `;
 
       let itemsHtml = '';
       if(r.detalles && r.detalles.startsWith('[')) {
         try {
            const items = JSON.parse(r.detalles);
-           items.forEach(i => { itemsHtml += `<div class="flex justify-between"><span>${i.cantidad}x ${i.nombre.substring(0,15)}</span><span>$${fmtMoneda(i.subtotal)}</span></div>`; });
+           items.forEach(i => { itemsHtml += `<div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><span>${i.cantidad}x ${i.nombre}</span><span>$${fmtMoneda(i.subtotal)}</span></div>`; });
         } catch(e) {
-           itemsHtml = `<div class="flex justify-between"><span>1x ${r.detalles}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
+           itemsHtml = `<div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><span>1x ${r.detalles}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
         }
       } else {
-        itemsHtml = `<div class="flex justify-between"><span>1x ${r.detalles || 'Servicio'}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
+        itemsHtml = `<div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><span>1x ${r.detalles || 'Servicio'}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
       }
-      
-      if(tabla==='ventas' && r.descuento > 0) itemsHtml += `<div class="flex justify-between text-xs mt-1"><span>Descuento</span><span>-$${fmtMoneda(r.descuento)}</span></div>`;
-      elItems.innerHTML = itemsHtml;
-      
+
+      if(tabla==='ventas' && r.descuento > 0) itemsHtml += `<div style="display:flex; justify-content:space-between; font-size: 12px; margin-top: 5px;"><span>Descuento</span><span>-$${fmtMoneda(r.descuento)}</span></div>`;
+
       const total = tabla === 'ventas' ? (r.monto_final) : r.valor;
-      elTotal.innerHTML = `TOTAL: $${fmtMoneda(total)}`;
-      if(r.es_deuda) elTotal.innerHTML += `<br><span class="text-sm font-normal">Abono: $${fmtMoneda(r.abono)}<br>Saldo: $${fmtMoneda(r.saldo_pendiente)}</span>`;
+      let totalHtml = `<strong>TOTAL: $${fmtMoneda(total)}</strong>`;
+      if(r.es_deuda) totalHtml += `<br><span style="font-size: 14px; font-weight: normal;">Abono: $${fmtMoneda(r.abono)}<br>Saldo: $${fmtMoneda(r.saldo_pendiente)}</span>`;
 
-      const elemento = document.getElementById('plantilla-comprobante');
-      
-      // Truco: Quitamos el hidden, lo hacemos muy transparente pero lo dejamos en pantalla 
-      // para obligar a iOS a procesarlo gráficamente sin molestar al usuario.
-      elemento.classList.remove('hidden');
-      elemento.style.opacity = '0.01';
-
-      // Le damos a iOS 300ms obligatorios para renderizar
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const opt = { 
-        margin: 5, 
-        filename: `Comprobante_${id.substring(0,6)}.pdf`, 
-        image: { type: 'jpeg', quality: 0.98 }, 
-        html2canvas: { scale: 2, useCORS: true, windowWidth: 400 }, 
-        jsPDF: { unit: 'mm', format: [80, 150], orientation: 'portrait' } 
-      };
-      
-      try {
-        await html2pdf().set(opt).from(elemento).save();
-      } catch(e) { 
-        console.error(e); alert('❌ Hubo un error al generar el PDF.'); 
-      } finally {
-        // Restauramos los valores
-        elemento.classList.add('hidden');
-        elemento.style.opacity = '1';
-      }
+      // Creamos una ventana emergente limpia para el ticket
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+        <head>
+          <title>Comprobante ${id.substring(0,6)}</title>
+          <style>
+            body { font-family: monospace; padding: 20px; max-width: 320px; margin: 0 auto; color: black; background: white; }
+            .header { text-align: center; margin-bottom: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+            .info { margin-bottom: 15px; font-size: 14px; }
+            .items { margin-bottom: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; font-size: 14px;}
+            .total { text-align: right; font-size: 16px; margin-bottom: 20px; }
+            .footer { text-align: center; font-size: 12px; font-style: italic; border-top: 1px dashed #000; padding-top: 10px;}
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h2 style="margin:0; font-size: 24px;">SOLTECH</h2>
+            <p style="margin: 5px 0;">Gestión Empresarial</p>
+            <p style="margin: 5px 0; font-size: 12px;">Dosquebradas, Risaralda</p>
+          </div>
+          <div class="info">
+            <p style="margin: 3px 0;"><strong>Fecha:</strong> ${formatearFechaHora(r.fecha)}</p>
+            <p style="margin: 3px 0;"><strong>Tipo:</strong> ${tabla === 'ventas' ? 'Factura de Venta' : 'Comprobante de Gasto'}</p>
+            <p style="margin: 3px 0;"><strong>${tabla === 'ventas' ? 'Cliente' : 'Proveedor'}:</strong> ${tabla === 'ventas' ? (r.clientes?.nombre||'Mostrador') : (r.proveedores?.nombre||'General')}</p>
+          </div>
+          <div class="items">
+            ${itemsHtml}
+          </div>
+          <div class="total">
+            ${totalHtml}
+          </div>
+          <div class="footer">
+            ¡Gracias por su confianza!
+          </div>
+          <script>
+            // Dispara la impresión y cierra la ventana al terminar
+            window.onload = function() { window.print(); window.close(); }
+          </script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
     }
     // 5. DEUDAS CON TOTALES
     function cambiarPestanaDeudas(tipo) {
@@ -837,21 +826,29 @@
       Responde a la siguiente consulta del usuario de forma analítica, breve, clara y en español: "${text}"`;
 
       try {
-        const { data, error } = await db.functions.invoke('asistente-ia', {
-          body: { prompt: prompt }
+        // Obtenemos el token del usuario actual para la seguridad
+        const { data: { session } } = await db.auth.getSession();
+        
+        // Hacemos la petición directa al servidor usando la variable supabaseUrl que ya tienes definida
+        const response = await fetch(`${supabaseUrl}/functions/v1/asistente-ia`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': supabaseKey
+          },
+          body: JSON.stringify({ prompt: prompt })
         });
 
-        // Verificamos si la invocación de Edge Function falló
-        if (error) {
-           console.error("Error Edge Function:", error);
-           throw new Error(error.message || "Fallo la conexión con Supabase.");
+        if (!response.ok) {
+           // Si falla, leemos el texto real del error que envía Supabase
+           const errText = await response.text();
+           throw new Error(`HTTP ${response.status}: ${errText}`);
         }
 
-        // Verificamos si Google Gemini rechazó la llave dentro del payload
-        if (data && data.error) {
-           console.error("Error Google Gemini:", data.error);
-           throw new Error(data.error.message || "Tu API Key de Google fue rechazada (Verifica que no tenga restricciones activas).");
-        }
+        const data = await response.json();
+
+        if (data.error) throw new Error("Error de Gemini: " + data.error.message);
 
         const msg = data.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
         history.innerHTML += `<div class="bg-slate-700/50 p-3 rounded-lg text-sm text-slate-200 w-5/6 rounded-tl-none border border-slate-600 mt-2">${msg}</div>`;
