@@ -33,8 +33,30 @@
       <p class="text-center text-slate-400 text-sm mb-6 uppercase tracking-widest">Gestión Empresarial</p>
       <input type="email" id="auth-email" placeholder="Correo electrónico" class="w-full bg-slate-700 p-3 rounded-lg mb-3 text-white outline-none focus:border-blue-500 border border-transparent">
       <input type="password" id="auth-pass" placeholder="Contraseña" class="w-full bg-slate-700 p-3 rounded-lg mb-6 text-white outline-none focus:border-blue-500 border border-transparent">
-      <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg mb-3 transition shadow-lg">Iniciar Sesión</button>
-      <button onclick="register()" class="w-full bg-slate-700 hover:bg-slate-600 text-blue-400 font-bold py-3 rounded-lg transition border border-slate-600">Crear Cuenta</button>
+      <button id="btn-login" onclick="login()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg mb-3 transition shadow-lg">Iniciar Sesión</button>
+      <button id="btn-register" onclick="register()" class="w-full bg-slate-700 hover:bg-slate-600 text-blue-400 font-bold py-3 rounded-lg transition border border-slate-600">Crear Cuenta</button>
+    </div>
+  </div>
+
+  <!-- ================= MODAL DE REGISTRO DE EMPRESA ================= -->
+  <div id="modal-empresa" class="fixed inset-0 z-[150] bg-slate-900/95 hidden flex flex-col justify-center items-center p-4">
+    <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto no-scrollbar">
+      <h2 class="text-xl font-black text-blue-400 mb-4 text-center">Configura tu Empresa</h2>
+      <p class="text-xs text-slate-400 mb-4 text-center">Para usar el sistema debes registrar los datos de tu negocio.</p>
+      
+      <div class="space-y-3 mb-6">
+        <input type="text" id="emp-nombre" placeholder="Nombre Comercial (*)" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-blue-500 outline-none">
+        <input type="text" id="emp-nit" placeholder="NIT o CC" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-blue-500 outline-none">
+        <input type="text" id="emp-dir" placeholder="Dirección" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-blue-500 outline-none">
+        <input type="tel" id="emp-tel" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-blue-500 outline-none">
+        <button onclick="registrarEmpresa()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg text-sm">Crear Empresa</button>
+      </div>
+      
+      <div class="border-t border-slate-700 pt-4">
+        <p class="text-[10px] text-slate-400 mb-2 text-center uppercase tracking-wider">¿Ya tienes un equipo?</p>
+        <input type="text" id="emp-uuid" placeholder="Pega el Código UUID de la Empresa" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-blue-500 outline-none mb-2 text-center">
+        <button onclick="unirseEmpresa()" class="w-full bg-slate-700 hover:bg-slate-600 text-blue-400 border border-slate-600 font-bold py-2 rounded-lg text-sm">Unirse a Empresa</button>
+      </div>
     </div>
   </div>
 
@@ -88,14 +110,12 @@
           <button onclick="limpiarFiltroCaja()" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded text-slate-300 shadow">Ver Todo (Histórico)</button>
         </div>
         
-        <!-- Filtros Extendidos -->
         <div class="grid grid-cols-3 gap-2">
           <select id="filtro-tiempo-tipo" onchange="cambiarTipoFiltroTiempo()" class="bg-slate-700 text-xs p-2 rounded text-white border border-slate-600 outline-none focus:border-blue-500">
             <option value="dia">Por Día</option>
             <option value="mes">Por Mes</option>
             <option value="ano">Por Año</option>
           </select>
-          
           <div id="contenedor-filtro-fecha" class="col-span-2">
             <input type="date" id="filtro-balance-dia" onchange="cargarBalance()" class="w-full bg-slate-700 text-xs p-2 rounded text-white border border-slate-600 outline-none">
             <input type="month" id="filtro-balance-mes" onchange="cargarBalance()" class="w-full bg-slate-700 text-xs p-2 rounded text-white border border-slate-600 outline-none hidden">
@@ -139,7 +159,6 @@
         <button onclick="document.getElementById('filtro-deudas-fecha').value=''; cargarDeudas();" class="col-span-2 bg-slate-700 text-[10px] py-1 rounded text-slate-400 hover:bg-slate-600">Ver Todas las Deudas</button>
       </div>
 
-      <!-- Totales Globales -->
       <div id="resumen-deudas-cobrar" class="bg-amber-900/30 border border-amber-700/50 p-3 rounded-lg text-center">
         <p class="text-xs text-amber-400 font-bold uppercase">Gran Total por Cobrar</p>
         <p id="gran-total-cobrar" class="text-2xl font-black text-amber-500">$0</p>
@@ -166,7 +185,7 @@
         
         <div id="chat-ia-history" class="flex-1 overflow-y-auto space-y-4 py-4 pr-1 no-scrollbar">
            <div class="bg-slate-700/50 p-3 rounded-lg text-sm text-slate-200 w-5/6 rounded-tl-none border border-slate-600">
-              ¡Hola! Soy tu asistente de SOLTECH. Puedo decirte cuáles son los productos más vendidos, comparar ingresos, resumir tus deudas o darte análisis financieros. ¿En qué te ayudo hoy?
+              ¡Hola! Soy tu asistente de SOLTECH. Puedo decirte cuáles son los productos más vendidos, comparar ingresos o resumir tus deudas. ¿En qué te ayudo hoy?
            </div>
         </div>
 
@@ -234,15 +253,9 @@
             <div class="grid grid-cols-2 gap-2"><div><label class="text-xs text-slate-400">Cantidad</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="g-cantidad" value="1" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"></div><div><label class="text-xs text-slate-400">Costo Und.</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="g-precio" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"></div></div>
             <button type="button" onclick="agregarAlCarrito('g')" class="w-full mt-2 bg-rose-900 hover:bg-rose-800 text-rose-300 font-bold py-1.5 rounded shadow text-sm">➕ Agregar Gasto al Carrito</button>
           </div>
-          
           <div id="g-carrito-container" class="bg-slate-700 p-2 rounded min-h-[50px] max-h-40 overflow-y-auto no-scrollbar space-y-1"><p class="text-[10px] text-center text-slate-400 mt-2">Sin productos</p></div>
-          
-          <div class="mb-2">
-            <input type="number" inputmode="decimal" id="g-valor-libre" placeholder="Valor total (Si NO usaste carrito)" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none border border-rose-900/50">
-          </div>
-
+          <div class="mb-2"><input type="number" inputmode="decimal" id="g-valor-libre" placeholder="Valor total (Si NO usaste carrito)" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none border border-rose-900/50"></div>
           <div class="flex justify-between items-center"><span class="font-bold text-rose-400">TOTAL COMPRA:</span><span id="g-total-final" class="font-black text-xl text-white">$0</span></div>
-          
           <input type="text" id="g-detalles" placeholder="Concepto (Ej: Pago de luz)..." class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none">
           <div class="p-3 bg-slate-800 rounded-lg border border-slate-600 mt-2"><label class="flex items-center justify-between cursor-pointer"><span class="font-bold text-emerald-400 text-sm" id="lbl-credito-g">🟢 PAGO CONTADO</span><div class="relative"><input type="checkbox" id="g-es-deuda" class="sr-only" onchange="toggleCredito('g')"><div class="block bg-slate-600 w-12 h-7 rounded-full transition-colors" id="bg-credito-g"></div><div class="dot absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform" id="dot-credito-g"></div></div></label><div id="g-abono-container" class="mt-3 hidden"><label class="text-xs text-amber-400 font-bold">¿Cuánto abonó hoy?</label><input type="number" inputmode="decimal" pattern="[0-9]*" id="g-abono" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none mt-1"></div></div>
           <button type="button" onclick="guardarGasto()" class="w-full bg-rose-600 hover:bg-rose-500 py-3 rounded-lg font-bold shadow-lg uppercase tracking-wide">Guardar Gasto</button>
@@ -250,27 +263,20 @@
         
         <!-- EDICIÓN Y CREACIÓN DIR -->
         <form id="form-producto" class="space-y-3 hidden"><h3 id="p-titulo" class="font-bold text-amber-400">Producto</h3><input type="hidden" id="p-id"><input type="text" id="p-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><div class="grid grid-cols-2 gap-2"><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-compra" placeholder="P. Compra" class="bg-slate-700 p-2 rounded text-sm text-white outline-none"><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-venta" placeholder="P. Venta" class="bg-slate-700 p-2 rounded text-sm text-white outline-none"></div><input type="number" inputmode="decimal" pattern="[0-9]*" id="p-stock" placeholder="Cantidad Inicial" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><div><label class="text-xs text-slate-400">Imagen (Opcional)</label><input type="file" id="p-imagen" accept="image/*" class="w-full text-xs text-slate-300"></div><button type="button" onclick="guardarProducto()" class="w-full bg-amber-600 hover:bg-amber-500 py-3 rounded-lg font-bold shadow-lg uppercase tracking-wide">Guardar</button></form>
-        <form id="form-cliente" class="space-y-3 hidden"><h3 id="c-titulo" class="font-bold text-emerald-400">Cliente</h3><input type="hidden" id="c-id"><input type="text" id="c-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><input type="tel" id="c-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><button type="button" onclick="guardarCliente()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-lg font-bold shadow-lg uppercase tracking-wide">Guardar</button></form>
+        
+        <form id="form-cliente" class="space-y-3 hidden">
+           <h3 id="c-titulo" class="font-bold text-emerald-400">Cliente</h3><input type="hidden" id="c-id">
+           <input type="text" id="c-nombre" placeholder="Nombre Completo (*)" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none">
+           <input type="text" id="c-identificacion" placeholder="CC o NIT (Opcional)" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none">
+           <input type="tel" id="c-telefono" placeholder="Teléfono (Opcional)" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none">
+           <input type="text" id="c-direccion" placeholder="Dirección (Opcional)" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none">
+           <button type="button" onclick="guardarCliente()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-lg font-bold shadow-lg uppercase tracking-wide">Guardar</button>
+        </form>
+
         <form id="form-proveedor" class="space-y-3 hidden"><h3 id="prov-titulo" class="font-bold text-purple-400">Proveedor</h3><input type="hidden" id="prov-id"><input type="text" id="prov-nombre" placeholder="Nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><input type="tel" id="prov-telefono" placeholder="Teléfono" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none"><button type="button" onclick="guardarProveedor()" class="w-full bg-purple-600 hover:bg-purple-500 py-3 rounded-lg font-bold shadow-lg uppercase tracking-wide">Guardar</button></form>
       </div>
     </div>
   </main>
-
-  <!-- ================= PLANTILLA DEL COMPROBANTE ================= -->
-  <div id="plantilla-comprobante" class="bg-white text-black p-8 w-[400px] font-sans hidden absolute top-0 left-0 z-[-100]">
-      <div class="text-center mb-6">
-          <h1 class="font-black text-4xl tracking-widest text-slate-800">SOLTECH</h1>
-          <p class="text-sm text-slate-600 font-bold uppercase mt-1">Gestión Empresarial</p>
-          <p class="text-xs text-slate-500 mt-1">Dosquebradas, Risaralda</p>
-          <div class="border-b-2 border-dashed border-slate-400 mt-4"></div>
-      </div>
-      <div class="mb-4 text-sm" id="comprobante-info"></div>
-      <div class="border-b-2 border-dashed border-slate-400 mb-4"></div>
-      <div class="mb-4 text-sm font-mono space-y-1" id="comprobante-items"></div>
-      <div class="border-b-2 border-dashed border-slate-400 mb-4"></div>
-      <div class="text-right text-lg font-black text-slate-800" id="comprobante-total"></div>
-      <div class="text-center text-xs mt-10 text-slate-500 italic">¡Gracias por su confianza!</div>
-  </div>
 
   <!-- Navegación Inferior -->
   <nav class="fixed bottom-0 w-full bg-slate-800 border-t border-slate-700 flex justify-around p-2 pb-6 text-xs shadow-2xl z-10 hidden" id="main-nav">
@@ -288,7 +294,8 @@
     const supabaseKey = 'sb_publishable_7rrvQ2yvzVaiYLEqtgoa_w_GbrCRoAi';
     const db = createClient(supabaseUrl, supabaseKey);
 
-    let currentEmpresaId = null; // VARIABLE CLAVE PARA MULTI-TENANT
+    let currentEmpresaId = null; 
+    let currentEmpresaData = null; // Guardará la data de la empresa (Nombre, NIT, etc)
 
     const fmtMoneda = (v) => new Intl.NumberFormat('es-CO').format(v || 0);
     const gFecha = (fUTC) => { const d = new Date(fUTC); return new Date(d.getTime() - (d.getTimezoneOffset()*60000)).toISOString().split('T')[0]; };
@@ -301,57 +308,31 @@
       if(!e.target.closest('.relative')) document.querySelectorAll('ul[id$="-list"]').forEach(el => el.classList.add('hidden'));
     });
 
-    // 2. AUTENTICACIÓN Y SESIÓN
+    // 2. AUTENTICACIÓN, SESIÓN Y EMPRESA
     async function checkSession() {
       const { data: { session }, error: sessionError } = await db.auth.getSession();
       
       if (session) {
         let { data: perfil } = await db.from('perfiles').select('empresa_id').eq('id', session.user.id).single();
         
-        if (!perfil) {
-          const entrada = prompt(
-            "¡Bienvenido! Tu cuenta aún no tiene negocio asociado.\n\n" +
-            "• Para crear uno nuevo, escribe el nombre comercial (Ej. Mi Tienda).\n" +
-            "• Para unirte a uno, pega el Código UUID de la empresa:"
-          );
-
-          if (!entrada || entrada.trim() === "") {
-            alert("Debes asociar una empresa para usar el sistema.");
-            await db.auth.signOut(); location.reload(); return;
-          }
-
-          let empresaIdFinal = null;
-          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entrada.trim());
-
-          if (isUUID) {
-             empresaIdFinal = entrada.trim();
-          } else {
-             const { data: nuevaEmp, error: errEmp } = await db.from('empresas').insert([{ nombre: entrada.trim() }]).select().single();
-             if (errEmp) { alert("Error al crear empresa: " + errEmp.message); await db.auth.signOut(); location.reload(); return; }
-             empresaIdFinal = nuevaEmp.id;
-          }
-
-          const { error: errPerfil } = await db.from('perfiles').insert([{ 
-            id: session.user.id, 
-            empresa_id: empresaIdFinal, 
-            nombre_completo: session.user.email 
-          }]);
-
-          if (errPerfil) { 
-             alert("Error al vincular el perfil. Si pegaste un código, verifica que sea correcto."); 
-             await db.auth.signOut(); location.reload(); return; 
-          }
-          
-          currentEmpresaId = empresaIdFinal;
+        if (!perfil || !perfil.empresa_id) {
+          // Mostrar el nuevo Modal de Empresa en vez del prompt()
+          document.getElementById('auth-screen').classList.add('hidden');
+          document.getElementById('modal-empresa').classList.remove('hidden');
+          return;
         } else {
           currentEmpresaId = perfil.empresa_id;
+          // Cargar información de la empresa para facturas
+          const { data: empData } = await db.from('empresas').select('*').eq('id', currentEmpresaId).single();
+          currentEmpresaData = empData;
         }
 
         document.getElementById('auth-screen').classList.add('hidden'); 
+        document.getElementById('modal-empresa').classList.add('hidden'); 
         document.getElementById('main-app').classList.remove('hidden'); 
         document.getElementById('main-nav').classList.remove('hidden'); 
         
-        const btnLogin = document.querySelector('button[onclick="login()"]');
+        const btnLogin = document.getElementById('btn-login');
         if(btnLogin) btnLogin.innerText = "Iniciar Sesión";
         
         iniciarApp(); 
@@ -361,28 +342,55 @@
     }
 
     async function login() { 
-      const e = document.getElementById('auth-email').value; 
+      const e = document.getElementById('auth-email').value.trim(); 
       const p = document.getElementById('auth-pass').value; 
       if(!e || !p) return alert('Ingresa correo y contraseña'); 
-      const btn = document.querySelector('button[onclick="login()"]');
-      btn.innerText = "Cargando..."; 
-      const { error } = await db.auth.signInWithPassword({ email: e, password: p }); 
-      if(error) { alert('Error: ' + error.message); btn.innerText = "Iniciar Sesión"; } else { checkSession(); }
+      const btn = document.getElementById('btn-login');
+      if(btn) btn.innerText = "Cargando..."; 
+      try {
+         const { error } = await db.auth.signInWithPassword({ email: e, password: p }); 
+         if(error) { alert('Error: ' + error.message); if(btn) btn.innerText = "Iniciar Sesión"; } else { checkSession(); }
+      } catch (err) { alert('Error de conexión'); if(btn) btn.innerText = "Iniciar Sesión"; }
     }
 
     async function register() { 
-      const e = document.getElementById('auth-email').value; 
+      const e = document.getElementById('auth-email').value.trim(); 
       const p = document.getElementById('auth-pass').value; 
       if(!e || !p) return alert('Ingresa correo y contraseña primero.'); 
-      const btn = document.querySelector('button[onclick="register()"]');
-      btn.innerText = "Creando cuenta...";
+      const btn = document.getElementById('btn-register');
+      if(btn) btn.innerText = "Creando cuenta...";
       const { error } = await db.auth.signUp({ email: e, password: p }); 
       if(error) { alert('Error al registrar: ' + error.message); } else { alert('Registro exitoso. Haz clic en "Iniciar Sesión" para entrar.'); }
-      btn.innerText = "Crear Cuenta";
+      if(btn) btn.innerText = "Crear Cuenta";
     }
 
     async function logout() { await db.auth.signOut(); location.reload(); }
     window.onload = checkSession;
+
+    // LÓGICA DEL NUEVO MODAL DE EMPRESA
+    async function registrarEmpresa() {
+       const nom = document.getElementById('emp-nombre').value.trim();
+       const nit = document.getElementById('emp-nit').value.trim();
+       const dir = document.getElementById('emp-dir').value.trim();
+       const tel = document.getElementById('emp-tel').value.trim();
+       if(!nom) return alert("El nombre comercial es obligatorio.");
+
+       const { data: { session } } = await db.auth.getSession();
+       const { data: nuevaEmp, error: errEmp } = await db.from('empresas').insert([{ nombre: nom, nit: nit, direccion: dir, telefono: tel }]).select().single();
+       if (errEmp) return alert("Error al crear empresa: " + errEmp.message);
+       
+       await db.from('perfiles').upsert([{ id: session.user.id, empresa_id: nuevaEmp.id, nombre_completo: session.user.email }]);
+       location.reload();
+    }
+    
+    async function unirseEmpresa() {
+       const uuid = document.getElementById('emp-uuid').value.trim();
+       if(!uuid) return alert("Ingresa un UUID válido.");
+       const { data: { session } } = await db.auth.getSession();
+       const { error } = await db.from('perfiles').upsert([{ id: session.user.id, empresa_id: uuid, nombre_completo: session.user.email }]);
+       if (error) return alert("Error al unirse. Verifica que el código sea correcto.");
+       location.reload();
+    }
 
     // 3. INICIO Y NAVEGACIÓN
     function iniciarApp() {
@@ -410,9 +418,9 @@
 
     // BUSCADORES
     async function cargarDropdowns() {
-      const { data: c } = await db.from('clientes').select('*').order('nombre'); listasData.clientes = c || [];
-      const { data: p } = await db.from('productos').select('*').order('nombre'); listasData.productos = p || [];
-      const { data: pr } = await db.from('proveedores').select('*').order('nombre'); listasData.proveedores = pr || [];
+      const { data: c } = await db.from('clientes').select('*').eq('empresa_id', currentEmpresaId).order('nombre'); listasData.clientes = c || [];
+      const { data: p } = await db.from('productos').select('*').eq('empresa_id', currentEmpresaId).order('nombre'); listasData.productos = p || [];
+      const { data: pr } = await db.from('proveedores').select('*').eq('empresa_id', currentEmpresaId).order('nombre'); listasData.proveedores = pr || [];
       renderListaDropdown('vp-cliente-list', listasData.clientes, 'vp-cliente'); renderListaDropdown('vl-cliente-list', listasData.clientes, 'vl-cliente');
       renderListaDropdown('vp-producto-list', listasData.productos, 'vp-producto', true); renderListaDropdown('g-producto-list', listasData.productos, 'g-producto', true);
       renderListaDropdown('g-proveedor-list', listasData.proveedores, 'g-proveedor');
@@ -468,7 +476,6 @@
     async function procesarFlujoCaja(origen = 'caja') {
       let tFiltro = 'dia'; let fDia = ''; let fMes = ''; let fAno = '';
       
-      // Separamos filtros para que la pestaña de Inicio sea independiente de la de Caja
       if (origen === 'inicio') {
          fDia = document.getElementById('filtro-inicio').value;
       } else {
@@ -478,9 +485,9 @@
          fAno = document.getElementById('filtro-balance-ano') ? document.getElementById('filtro-balance-ano').value : '';
       }
 
-      const { data: vts } = await db.from('ventas').select('*, clientes(nombre)');
-      const { data: gts } = await db.from('gastos').select('*, proveedores(nombre)');
-      const { data: abs } = await db.from('pagos_abonos').select('*');
+      const { data: vts } = await db.from('ventas').select('*, clientes(nombre)').eq('empresa_id', currentEmpresaId);
+      const { data: gts } = await db.from('gastos').select('*, proveedores(nombre)').eq('empresa_id', currentEmpresaId);
+      const { data: abs } = await db.from('pagos_abonos').select('*').eq('empresa_id', currentEmpresaId);
 
       let inTotal = 0; let outTotal = 0; let countIn = 0; let countOut = 0; let movimientos = [];
 
@@ -553,11 +560,13 @@
     }
     function limpiarFiltroCaja() { document.getElementById('filtro-tiempo-tipo').value = 'dia'; document.getElementById('filtro-balance-dia').value = ''; cambiarTipoFiltroTiempo(); document.getElementById('filtro-tipo-caja').value = 'todos'; cargarBalance(); }
 
-    // GENERADOR DE COMPROBANTES (VERSIÓN MÓVIL SEGURA)
+    // GENERADOR DE COMPROBANTES CON ESTILO FACTURA (INVOICE BOX)
     async function generarComprobante(id, tabla) {
       if(tabla === 'pagos_abonos') return alert('El comprobante se genera desde la venta principal o el gasto.');
 
-      const {data: r} = await db.from(tabla).select(tabla==='ventas'?'*, clientes(nombre)':'*, proveedores(nombre)').eq('id', id).single();
+      // Extraemos la información incluyendo NIT y Dirección de los clientes
+      const selectTarget = tabla === 'ventas' ? '*, clientes(nombre, identificacion, direccion)' : '*, proveedores(nombre)';
+      const {data: r} = await db.from(tabla).select(selectTarget).eq('id', id).single();
       if(!r) return alert('No se encontró el registro.');
 
       let itemsHtml = '';
@@ -572,20 +581,41 @@
         itemsHtml = `<div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><span>1x ${r.detalles || 'Servicio'}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
       }
 
-      if(tabla==='ventas' && r.descuento > 0) itemsHtml += `<div style="display:flex; justify-content:space-between; font-size: 12px; margin-top: 5px;"><span>Descuento</span><span>-$${fmtMoneda(r.descuento)}</span></div>`;
+      if(tabla==='ventas' && r.descuento > 0) itemsHtml += `<div style="display:flex; justify-content:space-between; font-size: 12px; margin-top: 5px; color: #555;"><span>Descuento</span><span>-$${fmtMoneda(r.descuento)}</span></div>`;
 
       const total = tabla === 'ventas' ? (r.monto_final) : r.valor;
       let totalHtml = `<strong>TOTAL: $${fmtMoneda(total)}</strong>`;
       if(r.es_deuda) totalHtml += `<br><span style="font-size: 14px; font-weight: normal;">Abono: $${fmtMoneda(r.abono)}<br>Saldo: $${fmtMoneda(r.saldo_pendiente)}</span>`;
 
-      // Creamos una ventana emergente limpia para el ticket
+      // Armar la información del Cliente / Proveedor
+      let destinatarioHtml = `<p style="margin: 3px 0;"><strong>${tabla === 'ventas' ? 'Cliente' : 'Proveedor'}:</strong> ${tabla === 'ventas' ? (r.clientes?.nombre||'Mostrador') : (r.proveedores?.nombre||'General')}</p>`;
+      if (tabla === 'ventas' && r.clientes) {
+         if (r.clientes.identificacion) destinatarioHtml += `<p style="margin: 3px 0;"><strong>NIT/CC:</strong> ${r.clientes.identificacion}</p>`;
+         if (r.clientes.direccion) destinatarioHtml += `<p style="margin: 3px 0;"><strong>Dir:</strong> ${r.clientes.direccion}</p>`;
+      }
+
+      // Información Emisor (Empresa)
+      const empNombre = currentEmpresaData?.nombre || 'SOLTECH';
+      const empNit = currentEmpresaData?.nit ? `NIT: ${currentEmpresaData.nit}` : '';
+      const empDir = currentEmpresaData?.direccion || '';
+      const empTel = currentEmpresaData?.telefono ? `Tel: ${currentEmpresaData.telefono}` : '';
+
       const printWindow = window.open('', '_blank');
       printWindow.document.write(`
         <html>
         <head>
-          <title>Comprobante ${id.substring(0,6)}</title>
+          <title>Factura ${id.substring(0,6)}</title>
           <style>
-            body { font-family: monospace; padding: 20px; max-width: 320px; margin: 0 auto; color: black; background: white; }
+            body { font-family: monospace; color: black; background: #f0f0f0; margin: 0; padding: 20px; display: flex; justify-content: center; }
+            .invoice-box { 
+               background: white; 
+               max-width: 320px; 
+               width: 100%;
+               padding: 20px; 
+               border: 2px solid #222; 
+               border-radius: 8px;
+               box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            }
             .header { text-align: center; margin-bottom: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
             .info { margin-bottom: 15px; font-size: 14px; }
             .items { margin-bottom: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; font-size: 14px;}
@@ -594,27 +624,31 @@
           </style>
         </head>
         <body>
-          <div class="header">
-            <h2 style="margin:0; font-size: 24px;">SOLTECH</h2>
-            <p style="margin: 5px 0;">Gestión Empresarial</p>
-            <p style="margin: 5px 0; font-size: 12px;">Dosquebradas, Risaralda</p>
-          </div>
-          <div class="info">
-            <p style="margin: 3px 0;"><strong>Fecha:</strong> ${formatearFechaHora(r.fecha)}</p>
-            <p style="margin: 3px 0;"><strong>Tipo:</strong> ${tabla === 'ventas' ? 'Factura de Venta' : 'Comprobante de Gasto'}</p>
-            <p style="margin: 3px 0;"><strong>${tabla === 'ventas' ? 'Cliente' : 'Proveedor'}:</strong> ${tabla === 'ventas' ? (r.clientes?.nombre||'Mostrador') : (r.proveedores?.nombre||'General')}</p>
-          </div>
-          <div class="items">
-            ${itemsHtml}
-          </div>
-          <div class="total">
-            ${totalHtml}
-          </div>
-          <div class="footer">
-            ¡Gracias por su confianza!
+          <div class="invoice-box">
+             <div class="header">
+               <h2 style="margin:0; font-size: 24px; text-transform: uppercase;">${empNombre}</h2>
+               ${empNit ? `<p style="margin: 2px 0; font-size: 13px;">${empNit}</p>` : ''}
+               ${empDir ? `<p style="margin: 2px 0; font-size: 12px;">${empDir}</p>` : ''}
+               ${empTel ? `<p style="margin: 2px 0; font-size: 12px;">${empTel}</p>` : ''}
+             </div>
+             <div class="info">
+               <p style="margin: 3px 0; text-transform: uppercase;"><strong>${tabla === 'ventas' ? 'Factura de Venta' : 'Comprobante de Gasto'}</strong></p>
+               <p style="margin: 3px 0;"><strong>Fecha:</strong> ${formatearFechaHora(r.fecha)}</p>
+               <p style="margin: 3px 0;"><strong>No:</strong> ${id.substring(0,8).toUpperCase()}</p>
+               <br>
+               ${destinatarioHtml}
+             </div>
+             <div class="items">
+               ${itemsHtml}
+             </div>
+             <div class="total">
+               ${totalHtml}
+             </div>
+             <div class="footer">
+               ¡Gracias por su confianza!
+             </div>
           </div>
           <script>
-            // Dispara la impresión y cierra la ventana al terminar
             window.onload = function() { window.print(); window.close(); }
           <script>
         </body>
@@ -622,6 +656,7 @@
       `);
       printWindow.document.close();
     }
+
     // 5. DEUDAS CON TOTALES
     function cambiarPestanaDeudas(tipo) {
       document.getElementById('btn-cobrar').className = `flex-1 py-2 rounded-lg font-bold text-sm transition-all ${tipo==='cobrar'?'bg-amber-600 text-white shadow-lg':'bg-slate-800 border border-slate-600 text-slate-400'}`;
@@ -632,8 +667,8 @@
 
     async function cargarDeudas() {
       const fFecha = document.getElementById('filtro-deudas-fecha').value; const fOrden = document.getElementById('filtro-deudas-orden').value; const asc = fOrden === 'asc';
-      const queryV = db.from('ventas').select('*, clientes(nombre)').gt('saldo_pendiente', 0).order('fecha', {ascending: asc});
-      const queryG = db.from('gastos').select('*, proveedores(nombre)').gt('saldo_pendiente', 0).order('fecha', {ascending: asc});
+      const queryV = db.from('ventas').select('*, clientes(nombre)').eq('empresa_id', currentEmpresaId).gt('saldo_pendiente', 0).order('fecha', {ascending: asc});
+      const queryG = db.from('gastos').select('*, proveedores(nombre)').eq('empresa_id', currentEmpresaId).gt('saldo_pendiente', 0).order('fecha', {ascending: asc});
 
       let [resV, resG] = await Promise.all([queryV, queryG]); let vts = resV.data || []; let gts = resG.data || [];
       if(fFecha) { vts = vts.filter(x => gFecha(x.fecha) === fFecha); gts = gts.filter(x => gFecha(x.fecha) === fFecha); }
@@ -683,7 +718,7 @@
       const p = prompt(`Abono a ${nombreEntidad} (Deuda total: $${fmtMoneda(maxMonto)}):\nValor a abonar:`);
       if(!p || isNaN(p) || Number(p) <= 0) return; let montoRestante = Math.min(Number(p), maxMonto);
       const col = tabla === 'ventas' ? 'cliente_id' : 'proveedor_id';
-      const { data: deudas } = await db.from(tabla).select('*').eq(col, idEntidad).gt('saldo_pendiente', 0).order('fecha', {ascending: true});
+      const { data: deudas } = await db.from(tabla).select('*').eq('empresa_id', currentEmpresaId).eq(col, idEntidad).gt('saldo_pendiente', 0).order('fecha', {ascending: true});
       for(let d of deudas) {
         if(montoRestante <= 0) break; const aAbonar = Math.min(montoRestante, Number(d.saldo_pendiente)); montoRestante -= aAbonar;
         const payload = { monto: aAbonar, tipo: tabla==='ventas' ? 'COBRO_VENTA' : 'PAGO_GASTO', empresa_id: currentEmpresaId }; if(tabla==='ventas') payload.venta_id = d.id; else payload.gasto_id = d.id;
@@ -763,7 +798,6 @@
       let detallesFinal = document.getElementById('g-detalles').value;
       let valorLibre = Number(document.getElementById('g-valor-libre').value || 0);
 
-      // NUEVA LÓGICA: Permite Gastos con Carrito O Gasto Libre Manual
       if (carritoG.length > 0) {
          valorFinal = carritoG.reduce((a,b)=>a+b.subtotal, 0);
          detallesFinal = JSON.stringify(carritoG);
@@ -822,7 +856,7 @@
        }
     }
 
-    // 7. ASISTENTE IA (GEMINI) ACTUALIZADO PARA DEPURAR ERRORES
+    // 7. ASISTENTE IA (MODIFICADO PARA MANEJAR ERROR CORS)
     async function enviarMensajeIA() {
       const input = document.getElementById('ia-input');
       const text = input.value.trim();
@@ -834,34 +868,40 @@
       
       document.getElementById('ia-loading').classList.remove('hidden');
       
-      const { data: vts } = await db.from('ventas').select('fecha, tipo_venta, monto_final, detalles').limit(50).order('fecha', {ascending: false});
-      const { data: gts } = await db.from('gastos').select('fecha, valor, detalles').limit(50).order('fecha', {ascending: false});
+      const { data: vts } = await db.from('ventas').select('fecha, tipo_venta, monto_final, detalles').eq('empresa_id', currentEmpresaId).limit(50).order('fecha', {ascending: false});
+      const { data: gts } = await db.from('gastos').select('fecha, valor, detalles').eq('empresa_id', currentEmpresaId).limit(50).order('fecha', {ascending: false});
       const contextData = JSON.stringify({ ultimas_ventas: vts, ultimos_gastos: gts });
 
       const prompt = `Actúa como el analista financiero experto de SOLTECH. Aquí tienes un extracto de los datos JSON recientes de la empresa: ${contextData}. 
       Responde a la siguiente consulta del usuario de forma analítica, breve, clara y en español: "${text}"`;
 
       try {
-        const { data, error } = await db.functions.invoke('asistente-ia', {
-          body: { prompt: prompt }
+        const { data: { session } } = await db.auth.getSession();
+        
+        // Uso de fetch manual, es más seguro para lidiar con CORS desde el navegador
+        const response = await fetch(`${supabaseUrl}/functions/v1/asistente-ia`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': supabaseKey
+          },
+          body: JSON.stringify({ prompt: prompt })
         });
 
-        // Verificamos si la invocación de Edge Function falló
-        if (error) {
-           console.error("Error Edge Function:", error);
-           throw new Error(error.message || "Fallo la conexión con Supabase.");
+        if (!response.ok) {
+           const errText = await response.text();
+           throw new Error(`Error de servidor (${response.status}). ¡Revisa los corsHeaders en tu Edge Function de Supabase!`);
         }
 
-        // Verificamos si Google Gemini rechazó la llave dentro del payload
-        if (data && data.error) {
-           console.error("Error Google Gemini:", data.error);
-           throw new Error(data.error.message || "Tu API Key de Google fue rechazada (Verifica que no tenga restricciones activas).");
-        }
+        const data = await response.json();
+
+        if (data.error) throw new Error("Error de Google Gemini: " + data.error.message);
 
         const msg = data.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
         history.innerHTML += `<div class="bg-slate-700/50 p-3 rounded-lg text-sm text-slate-200 w-5/6 rounded-tl-none border border-slate-600 mt-2">${msg}</div>`;
       } catch (err) {
-        history.innerHTML += `<div class="bg-rose-900/50 p-3 rounded-lg text-[11px] text-rose-200 w-5/6 rounded-tl-none mt-2 border border-rose-800"><b>Error Detectado:</b><br>${err.message}</div>`;
+        history.innerHTML += `<div class="bg-rose-900/50 p-3 rounded-lg text-[11px] text-rose-200 w-5/6 rounded-tl-none mt-2 border border-rose-800"><b>Error Detectado:</b><br>${err.message}<br><br><span class="opacity-70">Asegúrate de haber configurado los headers CORS en Supabase Functions.</span></div>`;
       }
       
       document.getElementById('ia-loading').classList.add('hidden');
@@ -869,8 +909,22 @@
     }
 
     // DIRECTORIOS
-    async function guardarCliente() { const id = document.getElementById('c-id').value; const nom = document.getElementById('c-nombre').value; const tel = document.getElementById('c-telefono').value; if (!nom) return alert('Nombre obligatorio'); if (id) await db.from('clientes').update({ nombre: nom, telefono: tel }).eq('id', id); else await db.from('clientes').insert([{ nombre: nom, telefono: tel, empresa_id: currentEmpresaId }]); ocultarForm(); cargarListaClientes(); cargarDropdowns(); }
+    async function guardarCliente() { 
+       const id = document.getElementById('c-id').value; 
+       const nom = document.getElementById('c-nombre').value; 
+       const tel = document.getElementById('c-telefono').value; 
+       const ide = document.getElementById('c-identificacion').value; 
+       const dir = document.getElementById('c-direccion').value; 
+       if (!nom) return alert('Nombre obligatorio'); 
+       
+       const payload = { nombre: nom, telefono: tel, identificacion: ide, direccion: dir, empresa_id: currentEmpresaId };
+       if (id) await db.from('clientes').update(payload).eq('id', id); 
+       else await db.from('clientes').insert([payload]); 
+       ocultarForm(); cargarListaClientes(); cargarDropdowns(); 
+    }
+    
     async function guardarProveedor() { const id = document.getElementById('prov-id').value; const nom = document.getElementById('prov-nombre').value; const tel = document.getElementById('prov-telefono').value; if (!nom) return alert('Nombre obligatorio'); if (id) await db.from('proveedores').update({ nombre: nom, telefono: tel }).eq('id', id); else await db.from('proveedores').insert([{ nombre: nom, telefono: tel, empresa_id: currentEmpresaId }]); ocultarForm(); cargarListaProveedores(); cargarDropdowns(); }
+    
     async function guardarProducto() {
       const id = document.getElementById('p-id').value; const nom = document.getElementById('p-nombre').value; const cmp = Number(document.getElementById('p-compra').value||0); const vnt = Number(document.getElementById('p-venta').value||0); const stk = Number(document.getElementById('p-stock').value||0);
       if (!nom || !vnt) return alert('Nombre y precio de venta obligatorios');
@@ -881,9 +935,14 @@
       ocultarForm(); cargarInventario(); cargarDropdowns();
     }
 
-    async function cargarListaClientes() { const {data} = await db.from('clientes').select('*').order('nombre',{ascending:true}); document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${c.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarCliente('${c.id}','${c.nombre}','${c.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('clientes','${c.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin clientes registrados.</p></div>'; }
-    async function cargarListaProveedores() { const {data} = await db.from('proveedores').select('*').order('nombre',{ascending:true}); document.getElementById('lista-proveedores').innerHTML = data.map(p=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${p.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarProveedor('${p.id}','${p.nombre}','${p.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('proveedores','${p.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin proveedores registrados.</p></div>'; }
-    async function cargarInventario() { const {data} = await db.from('productos').select('*').order('nombre',{ascending:true}); document.getElementById('lista-inventario').innerHTML = data.map(p=>{ const img = p.imagen_url ? `<img src="${p.imagen_url}" class="w-12 h-12 object-cover rounded-lg shadow">` : `<div class="w-12 h-12 bg-slate-800 border border-slate-600 rounded-lg shadow flex items-center justify-center text-sm">📦</div>`; return `<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center gap-4 shadow-md">${img}<div class="flex-1"><p class="font-bold text-white leading-tight">${p.nombre}</p><p class="text-[11px] font-bold text-amber-400 mt-1 tracking-wide">STOCK: ${p.cantidad_disponible}</p></div><div class="text-right"><p class="text-emerald-400 font-black text-sm mb-2">$${fmtMoneda(p.precio_venta)}</p><div class="flex gap-2 justify-end"><button class="text-blue-400 font-bold bg-blue-950/50 px-2.5 py-1 rounded-md text-[10px] shadow" onclick="editarProducto('${p.id}','${p.nombre}',${p.precio_compra},${p.precio_venta},${p.cantidad_disponible})">EDITAR</button><button class="text-rose-400 bg-rose-950/50 px-2 py-1 rounded-md text-[10px] shadow" onclick="eliminarRegistro('productos','${p.id}')">🗑️</button></div></div></div>`}).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">El inventario está vacío.</p></div>'; }
+    async function cargarListaClientes() { 
+       const {data} = await db.from('clientes').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}); 
+       document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${c.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarCliente('${c.id}','${c.nombre}','${c.telefono||''}','${c.identificacion||''}','${c.direccion||''}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('clientes','${c.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin clientes registrados.</p></div>'; 
+    }
+    
+    async function cargarListaProveedores() { const {data} = await db.from('proveedores').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}); document.getElementById('lista-proveedores').innerHTML = data.map(p=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${p.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarProveedor('${p.id}','${p.nombre}','${p.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('proveedores','${p.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin proveedores registrados.</p></div>'; }
+    
+    async function cargarInventario() { const {data} = await db.from('productos').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}); document.getElementById('lista-inventario').innerHTML = data.map(p=>{ const img = p.imagen_url ? `<img src="${p.imagen_url}" class="w-12 h-12 object-cover rounded-lg shadow">` : `<div class="w-12 h-12 bg-slate-800 border border-slate-600 rounded-lg shadow flex items-center justify-center text-sm">📦</div>`; return `<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center gap-4 shadow-md">${img}<div class="flex-1"><p class="font-bold text-white leading-tight">${p.nombre}</p><p class="text-[11px] font-bold text-amber-400 mt-1 tracking-wide">STOCK: ${p.cantidad_disponible}</p></div><div class="text-right"><p class="text-emerald-400 font-black text-sm mb-2">$${fmtMoneda(p.precio_venta)}</p><div class="flex gap-2 justify-end"><button class="text-blue-400 font-bold bg-blue-950/50 px-2.5 py-1 rounded-md text-[10px] shadow" onclick="editarProducto('${p.id}','${p.nombre}',${p.precio_compra},${p.precio_venta},${p.cantidad_disponible})">EDITAR</button><button class="text-rose-400 bg-rose-950/50 px-2 py-1 rounded-md text-[10px] shadow" onclick="eliminarRegistro('productos','${p.id}')">🗑️</button></div></div></div>`}).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">El inventario está vacío.</p></div>'; }
 
     // HELPERS INTERFAZ
     function prepararFormulario(tipo, tituloManual=null, esEdit=false) { 
@@ -902,7 +961,15 @@
       if(['cliente', 'proveedor', 'producto'].includes(tipo)) { let p = tipo === 'proveedor' ? 'prov' : tipo.charAt(0); document.getElementById(`${p}-id`).value = ''; document.getElementById(`${p}-titulo`).innerText = `Nuevo ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`; }
     }
     
-    function editarCliente(id, nom, tel) { prepararFormulario('cliente'); document.getElementById('c-id').value = id; document.getElementById('c-nombre').value = nom; document.getElementById('c-telefono').value = tel!=='null'?tel:''; document.getElementById('c-titulo').innerText = 'Editar Cliente'; }
+    function editarCliente(id, nom, tel, ide, dir) { 
+       prepararFormulario('cliente'); 
+       document.getElementById('c-id').value = id; 
+       document.getElementById('c-nombre').value = nom; 
+       document.getElementById('c-telefono').value = tel!=='null'?tel:''; 
+       document.getElementById('c-identificacion').value = ide!=='null'?ide:''; 
+       document.getElementById('c-direccion').value = dir!=='null'?dir:''; 
+       document.getElementById('c-titulo').innerText = 'Editar Cliente'; 
+    }
     function editarProveedor(id, nom, tel) { prepararFormulario('proveedor'); document.getElementById('prov-id').value = id; document.getElementById('prov-nombre').value = nom; document.getElementById('prov-telefono').value = tel!=='null'?tel:''; document.getElementById('prov-titulo').innerText = 'Editar Proveedor'; }
     function editarProducto(id, nom, comp, vent, stk) { prepararFormulario('producto'); document.getElementById('p-id').value = id; document.getElementById('p-nombre').value = nom; document.getElementById('p-compra').value = comp; document.getElementById('p-venta').value = vent; document.getElementById('p-stock').value = stk; document.getElementById('p-titulo').innerText = 'Editar Producto'; }
     function ocultarForm() { document.getElementById('form-container').classList.add('hidden'); }
