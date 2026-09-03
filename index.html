@@ -60,12 +60,50 @@
     </div>
   </div>
 
+  <!-- ================= MODAL CONFIGURACIÓN / EDICIÓN DE EMPRESA EXISTENTE ================= -->
+  <div id="modal-config-empresa" class="fixed inset-0 z-[150] bg-slate-900/95 hidden flex flex-col justify-center items-center p-4">
+    <div class="bg-slate-800 p-6 rounded-2xl border border-slate-600 shadow-2xl w-full max-w-sm relative">
+      <button onclick="document.getElementById('modal-config-empresa').classList.add('hidden')" class="absolute top-3 right-4 text-2xl font-black text-slate-400 hover:text-white">&times;</button>
+      <h2 class="text-xl font-black text-blue-400 mb-2 text-center">Datos de la Empresa</h2>
+      <p class="text-[11px] text-slate-400 mb-4 text-center">Actualiza la información que aparecerá en tus facturas.</p>
+      
+      <div class="space-y-3 mb-4">
+        <div>
+          <label class="text-[10px] text-slate-400">Nombre Comercial (*)</label>
+          <input type="text" id="cfg-emp-nombre" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-blue-500 outline-none">
+        </div>
+        <div>
+          <label class="text-[10px] text-slate-400">NIT o CC</label>
+          <input type="text" id="cfg-emp-nit" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-blue-500 outline-none">
+        </div>
+        <div>
+          <label class="text-[10px] text-slate-400">Dirección</label>
+          <input type="text" id="cfg-emp-dir" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-blue-500 outline-none">
+        </div>
+        <div>
+          <label class="text-[10px] text-slate-400">Teléfono</label>
+          <input type="tel" id="cfg-emp-tel" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-blue-500 outline-none">
+        </div>
+      </div>
+
+      <div class="bg-slate-900/50 p-2.5 rounded border border-slate-700 mb-4 text-center">
+        <p class="text-[10px] text-slate-400">Código UUID de Empresa (Para compartir):</p>
+        <p id="cfg-emp-uuid-text" class="text-xs font-mono text-amber-400 select-all mt-1 break-all"></p>
+      </div>
+
+      <button onclick="guardarConfigEmpresa()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg text-sm uppercase tracking-wide">Guardar Cambios</button>
+    </div>
+  </div>
+
   <header class="p-4 bg-slate-800 border-b border-slate-700 sticky top-0 z-10 flex justify-between items-center shadow-md">
     <div>
        <h1 class="font-black text-lg text-blue-400 tracking-wider">SOLTECH</h1>
        <p class="text-[10px] text-slate-400">Control Financiero</p>
     </div>
-    <button onclick="logout()" class="text-xs bg-rose-600 hover:bg-rose-500 px-3 py-1.5 rounded-lg font-bold shadow">Cerrar Sesión</button>
+    <div class="flex items-center gap-2">
+       <button onclick="abrirConfigEmpresa()" class="text-xs bg-slate-700 hover:bg-slate-600 text-blue-400 px-3 py-1.5 rounded-lg font-bold shadow border border-slate-600">⚙️ Empresa</button>
+       <button onclick="logout()" class="text-xs bg-rose-600 hover:bg-rose-500 px-3 py-1.5 rounded-lg font-bold shadow">Cerrar Sesión</button>
+    </div>
   </header>
 
   <main class="p-4 max-w-lg mx-auto relative hidden" id="main-app">
@@ -295,7 +333,7 @@
     const db = createClient(supabaseUrl, supabaseKey);
 
     let currentEmpresaId = null; 
-    let currentEmpresaData = null; // Guardará la data de la empresa (Nombre, NIT, etc)
+    let currentEmpresaData = null; 
 
     const fmtMoneda = (v) => new Intl.NumberFormat('es-CO').format(v || 0);
     const gFecha = (fUTC) => { const d = new Date(fUTC); return new Date(d.getTime() - (d.getTimezoneOffset()*60000)).toISOString().split('T')[0]; };
@@ -316,13 +354,11 @@
         let { data: perfil } = await db.from('perfiles').select('empresa_id').eq('id', session.user.id).single();
         
         if (!perfil || !perfil.empresa_id) {
-          // Mostrar el nuevo Modal de Empresa en vez del prompt()
           document.getElementById('auth-screen').classList.add('hidden');
           document.getElementById('modal-empresa').classList.remove('hidden');
           return;
         } else {
           currentEmpresaId = perfil.empresa_id;
-          // Cargar información de la empresa para facturas
           const { data: empData } = await db.from('empresas').select('*').eq('id', currentEmpresaId).single();
           currentEmpresaData = empData;
         }
@@ -367,7 +403,6 @@
     async function logout() { await db.auth.signOut(); location.reload(); }
     window.onload = checkSession;
 
-    // LÓGICA DEL NUEVO MODAL DE EMPRESA
     async function registrarEmpresa() {
        const nom = document.getElementById('emp-nombre').value.trim();
        const nit = document.getElementById('emp-nit').value.trim();
@@ -390,6 +425,40 @@
        const { error } = await db.from('perfiles').upsert([{ id: session.user.id, empresa_id: uuid, nombre_completo: session.user.email }]);
        if (error) return alert("Error al unirse. Verifica que el código sea correcto.");
        location.reload();
+    }
+
+    // GESTIÓN DE CONFIGURACIÓN DE EMPRESA EXISTENTE
+    function abrirConfigEmpresa() {
+       if (!currentEmpresaData) return alert('No hay datos de empresa cargados.');
+       document.getElementById('cfg-emp-nombre').value = currentEmpresaData.nombre || '';
+       document.getElementById('cfg-emp-nit').value = currentEmpresaData.nit || '';
+       document.getElementById('cfg-emp-dir').value = currentEmpresaData.direccion || '';
+       document.getElementById('cfg-emp-tel').value = currentEmpresaData.telefono || '';
+       document.getElementById('cfg-emp-uuid-text').innerText = currentEmpresaId;
+       document.getElementById('modal-config-empresa').classList.remove('hidden');
+    }
+
+    async function guardarConfigEmpresa() {
+       const nom = document.getElementById('cfg-emp-nombre').value.trim();
+       const nit = document.getElementById('cfg-emp-nit').value.trim();
+       const dir = document.getElementById('cfg-emp-dir').value.trim();
+       const tel = document.getElementById('cfg-emp-tel').value.trim();
+       if (!nom) return alert('El nombre comercial es obligatorio.');
+
+       const { error } = await db.from('empresas').update({
+          nombre: nom,
+          nit: nit,
+          direccion: dir,
+          telefono: tel
+       }).eq('id', currentEmpresaId);
+
+       if (error) {
+          return alert('Error al actualizar: ' + error.message);
+       }
+
+       currentEmpresaData = { ...currentEmpresaData, nombre: nom, nit, direccion: dir, telefono: tel };
+       alert('¡Datos de la empresa actualizados con éxito!');
+       document.getElementById('modal-config-empresa').classList.add('hidden');
     }
 
     // 3. INICIO Y NAVEGACIÓN
@@ -564,7 +633,6 @@
     async function generarComprobante(id, tabla) {
       if(tabla === 'pagos_abonos') return alert('El comprobante se genera desde la venta principal o el gasto.');
 
-      // Extraemos la información incluyendo NIT y Dirección de los clientes
       const selectTarget = tabla === 'ventas' ? '*, clientes(nombre, identificacion, direccion)' : '*, proveedores(nombre)';
       const {data: r} = await db.from(tabla).select(selectTarget).eq('id', id).single();
       if(!r) return alert('No se encontró el registro.');
@@ -587,14 +655,12 @@
       let totalHtml = `<strong>TOTAL: $${fmtMoneda(total)}</strong>`;
       if(r.es_deuda) totalHtml += `<br><span style="font-size: 14px; font-weight: normal;">Abono: $${fmtMoneda(r.abono)}<br>Saldo: $${fmtMoneda(r.saldo_pendiente)}</span>`;
 
-      // Armar la información del Cliente / Proveedor
       let destinatarioHtml = `<p style="margin: 3px 0;"><strong>${tabla === 'ventas' ? 'Cliente' : 'Proveedor'}:</strong> ${tabla === 'ventas' ? (r.clientes?.nombre||'Mostrador') : (r.proveedores?.nombre||'General')}</p>`;
       if (tabla === 'ventas' && r.clientes) {
          if (r.clientes.identificacion) destinatarioHtml += `<p style="margin: 3px 0;"><strong>NIT/CC:</strong> ${r.clientes.identificacion}</p>`;
          if (r.clientes.direccion) destinatarioHtml += `<p style="margin: 3px 0;"><strong>Dir:</strong> ${r.clientes.direccion}</p>`;
       }
 
-      // Información Emisor (Empresa)
       const empNombre = currentEmpresaData?.nombre || 'SOLTECH';
       const empNit = currentEmpresaData?.nit ? `NIT: ${currentEmpresaData.nit}` : '';
       const empDir = currentEmpresaData?.direccion || '';
@@ -856,7 +922,7 @@
        }
     }
 
-    // 7. ASISTENTE IA (MODIFICADO PARA MANEJAR ERROR CORS)
+    // 7. ASISTENTE IA (CON URL CORREGIDA A clever-endpoint)
     async function enviarMensajeIA() {
       const input = document.getElementById('ia-input');
       const text = input.value.trim();
@@ -878,7 +944,6 @@
       try {
         const { data: { session } } = await db.auth.getSession();
         
-        // Uso de fetch manual, es más seguro para lidiar con CORS desde el navegador
         const response = await fetch(`${supabaseUrl}/functions/v1/clever-endpoint`, {
           method: 'POST',
           headers: {
@@ -891,7 +956,7 @@
 
         if (!response.ok) {
            const errText = await response.text();
-           throw new Error(`Error de servidor (${response.status}). ¡Revisa los corsHeaders en tu Edge Function de Supabase!`);
+           throw new Error(`Error de servidor (${response.status}): ${errText}`);
         }
 
         const data = await response.json();
@@ -901,7 +966,7 @@
         const msg = data.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
         history.innerHTML += `<div class="bg-slate-700/50 p-3 rounded-lg text-sm text-slate-200 w-5/6 rounded-tl-none border border-slate-600 mt-2">${msg}</div>`;
       } catch (err) {
-        history.innerHTML += `<div class="bg-rose-900/50 p-3 rounded-lg text-[11px] text-rose-200 w-5/6 rounded-tl-none mt-2 border border-rose-800"><b>Error Detectado:</b><br>${err.message}<br><br><span class="opacity-70">Asegúrate de haber configurado los headers CORS en Supabase Functions.</span></div>`;
+        history.innerHTML += `<div class="bg-rose-900/50 p-3 rounded-lg text-[11px] text-rose-200 w-5/6 rounded-tl-none mt-2 border border-rose-800"><b>Error Detectado:</b><br>${err.message}</div>`;
       }
       
       document.getElementById('ia-loading').classList.add('hidden');
@@ -937,7 +1002,7 @@
 
     async function cargarListaClientes() { 
        const {data} = await db.from('clientes').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}); 
-       document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${c.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarCliente('${c.id}','${c.nombre}','${c.telefono||''}','${c.identificacion||''}','${c.direccion||''}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('clientes','${c.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin clientes registrados.</p></div>'; 
+       document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${c.telefono||'Sin teléfono'} ${c.identificacion ? ' | CC/NIT: '+c.identificacion : ''}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarCliente('${c.id}','${c.nombre}','${c.telefono||''}','${c.identificacion||''}','${c.direccion||''}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('clientes','${c.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin clientes registrados.</p></div>'; 
     }
     
     async function cargarListaProveedores() { const {data} = await db.from('proveedores').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}); document.getElementById('lista-proveedores').innerHTML = data.map(p=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${p.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarProveedor('${p.id}','${p.nombre}','${p.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('proveedores','${p.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin proveedores registrados.</p></div>'; }
