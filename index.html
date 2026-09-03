@@ -8,6 +8,8 @@
   <title>SOLTECH - Control Financiero</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Librería para generar PDFs y JPGs de los comprobantes -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -31,8 +33,8 @@
       <p class="text-center text-slate-400 text-sm mb-6 uppercase tracking-widest">Gestión Empresarial</p>
       <input type="email" id="auth-email" placeholder="Correo electrónico" class="w-full bg-slate-700 p-3 rounded-lg mb-3 text-white outline-none focus:border-blue-500 border border-transparent">
       <input type="password" id="auth-pass" placeholder="Contraseña" class="w-full bg-slate-700 p-3 rounded-lg mb-6 text-white outline-none focus:border-blue-500 border border-transparent">
-      <button id="btn-login-elem" onclick="login()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg mb-3 transition shadow-lg">Iniciar Sesión</button>
-      <button id="btn-reg-elem" onclick="register()" class="w-full bg-slate-700 hover:bg-slate-600 text-blue-400 font-bold py-3 rounded-lg transition border border-slate-600">Crear Cuenta</button>
+      <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg mb-3 transition shadow-lg">Iniciar Sesión</button>
+      <button onclick="register()" class="w-full bg-slate-700 hover:bg-slate-600 text-blue-400 font-bold py-3 rounded-lg transition border border-slate-600">Crear Cuenta</button>
     </div>
   </div>
 
@@ -254,6 +256,22 @@
     </div>
   </main>
 
+  <!-- ================= PLANTILLA DEL COMPROBANTE ================= -->
+  <div id="plantilla-comprobante" class="bg-white text-black p-8 w-[400px] font-sans hidden absolute top-0 left-0 z-[-100]">
+      <div class="text-center mb-6">
+          <h1 class="font-black text-4xl tracking-widest text-slate-800">SOLTECH</h1>
+          <p class="text-sm text-slate-600 font-bold uppercase mt-1">Gestión Empresarial</p>
+          <p class="text-xs text-slate-500 mt-1">Dosquebradas, Risaralda</p>
+          <div class="border-b-2 border-dashed border-slate-400 mt-4"></div>
+      </div>
+      <div class="mb-4 text-sm" id="comprobante-info"></div>
+      <div class="border-b-2 border-dashed border-slate-400 mb-4"></div>
+      <div class="mb-4 text-sm font-mono space-y-1" id="comprobante-items"></div>
+      <div class="border-b-2 border-dashed border-slate-400 mb-4"></div>
+      <div class="text-right text-lg font-black text-slate-800" id="comprobante-total"></div>
+      <div class="text-center text-xs mt-10 text-slate-500 italic">¡Gracias por su confianza!</div>
+  </div>
+
   <!-- Navegación Inferior -->
   <nav class="fixed bottom-0 w-full bg-slate-800 border-t border-slate-700 flex justify-around p-2 pb-6 text-xs shadow-2xl z-10 hidden" id="main-nav">
     <button onclick="cambiarVista('inicio')" id="nav-inicio" class="nav-btn text-blue-400 flex flex-col items-center gap-1 transition-colors"><span class="text-lg">📊</span><span>Inicio</span></button>
@@ -343,46 +361,24 @@
     }
 
     async function login() { 
-      const e = document.getElementById('auth-email').value.trim(); 
+      const e = document.getElementById('auth-email').value; 
       const p = document.getElementById('auth-pass').value; 
       if(!e || !p) return alert('Ingresa correo y contraseña'); 
-      
-      const btn = document.getElementById('btn-login-elem');
-      if(btn) btn.innerText = "Cargando..."; 
-      
-      try {
-        const { data, error } = await db.auth.signInWithPassword({ email: e, password: p }); 
-        if(error) { 
-           alert('Error al iniciar sesión: ' + error.message); 
-           if(btn) btn.innerText = "Iniciar Sesión"; 
-        } else { 
-           checkSession(); 
-        }
-      } catch(err) {
-        alert('Error de conexión: ' + err.message);
-        if(btn) btn.innerText = "Iniciar Sesión";
-      }
+      const btn = document.querySelector('button[onclick="login()"]');
+      btn.innerText = "Cargando..."; 
+      const { error } = await db.auth.signInWithPassword({ email: e, password: p }); 
+      if(error) { alert('Error: ' + error.message); btn.innerText = "Iniciar Sesión"; } else { checkSession(); }
     }
 
     async function register() { 
-      const e = document.getElementById('auth-email').value.trim(); 
+      const e = document.getElementById('auth-email').value; 
       const p = document.getElementById('auth-pass').value; 
       if(!e || !p) return alert('Ingresa correo y contraseña primero.'); 
-      
-      const btn = document.getElementById('btn-reg-elem');
-      if(btn) btn.innerText = "Creando cuenta...";
-
-      try {
-        const { data, error } = await db.auth.signUp({ email: e, password: p }); 
-        if(error) { 
-           alert('Error al registrar: ' + error.message); 
-        } else { 
-           alert('¡Registro exitoso! Ahora haz clic en "Iniciar Sesión".'); 
-        }
-      } catch(err) {
-        alert('Error de conexión: ' + err.message);
-      }
-      if(btn) btn.innerText = "Crear Cuenta";
+      const btn = document.querySelector('button[onclick="register()"]');
+      btn.innerText = "Creando cuenta...";
+      const { error } = await db.auth.signUp({ email: e, password: p }); 
+      if(error) { alert('Error al registrar: ' + error.message); } else { alert('Registro exitoso. Haz clic en "Iniciar Sesión" para entrar.'); }
+      btn.innerText = "Crear Cuenta";
     }
 
     async function logout() { await db.auth.signOut(); location.reload(); }
@@ -412,11 +408,11 @@
       else { bg.classList.replace('bg-amber-500', 'bg-slate-600'); dot.classList.remove('translate-x-5'); lbl.innerText = '🟢 PAGO DE CONTADO'; lbl.classList.replace('text-amber-400', 'text-emerald-400'); abono.classList.add('hidden'); document.getElementById(`${prefijo}-abono`).value = ''; }
     }
 
-    // BUSCADORES CON FILTRADO MULTI-TENANT SEGURO
+    // BUSCADORES
     async function cargarDropdowns() {
-      const { data: c } = await db.from('clientes').select('*').eq('empresa_id', currentEmpresaId).order('nombre'); listasData.clientes = c || [];
-      const { data: p } = await db.from('productos').select('*').eq('empresa_id', currentEmpresaId).order('nombre'); listasData.productos = p || [];
-      const { data: pr } = await db.from('proveedores').select('*').eq('empresa_id', currentEmpresaId).order('nombre'); listasData.proveedores = pr || [];
+      const { data: c } = await db.from('clientes').select('*').order('nombre'); listasData.clientes = c || [];
+      const { data: p } = await db.from('productos').select('*').order('nombre'); listasData.productos = p || [];
+      const { data: pr } = await db.from('proveedores').select('*').order('nombre'); listasData.proveedores = pr || [];
       renderListaDropdown('vp-cliente-list', listasData.clientes, 'vp-cliente'); renderListaDropdown('vl-cliente-list', listasData.clientes, 'vl-cliente');
       renderListaDropdown('vp-producto-list', listasData.productos, 'vp-producto', true); renderListaDropdown('g-producto-list', listasData.productos, 'g-producto', true);
       renderListaDropdown('g-proveedor-list', listasData.proveedores, 'g-proveedor');
@@ -460,7 +456,7 @@
       else { document.getElementById('g-total-final').innerText = '$' + fmtMoneda(sub); }
     }
 
-    // 4. FLUJO DE CAJA Y BALANCE AVANZADO CON FILTRADO DE EMPRESA
+    // 4. FLUJO DE CAJA Y BALANCE AVANZADO
     function cambiarTipoFiltroTiempo() {
        const val = document.getElementById('filtro-tiempo-tipo').value;
        document.getElementById('filtro-balance-dia').classList.toggle('hidden', val !== 'dia');
@@ -472,6 +468,7 @@
     async function procesarFlujoCaja(origen = 'caja') {
       let tFiltro = 'dia'; let fDia = ''; let fMes = ''; let fAno = '';
       
+      // Separamos filtros para que la pestaña de Inicio sea independiente de la de Caja
       if (origen === 'inicio') {
          fDia = document.getElementById('filtro-inicio').value;
       } else {
@@ -481,9 +478,9 @@
          fAno = document.getElementById('filtro-balance-ano') ? document.getElementById('filtro-balance-ano').value : '';
       }
 
-      const { data: vts } = await db.from('ventas').select('*, clientes(nombre)').eq('empresa_id', currentEmpresaId);
-      const { data: gts } = await db.from('gastos').select('*, proveedores(nombre)').eq('empresa_id', currentEmpresaId);
-      const { data: abs } = await db.from('pagos_abonos').select('*').eq('empresa_id', currentEmpresaId);
+      const { data: vts } = await db.from('ventas').select('*, clientes(nombre)');
+      const { data: gts } = await db.from('gastos').select('*, proveedores(nombre)');
+      const { data: abs } = await db.from('pagos_abonos').select('*');
 
       let inTotal = 0; let outTotal = 0; let countIn = 0; let countOut = 0; let movimientos = [];
 
@@ -556,75 +553,71 @@
     }
     function limpiarFiltroCaja() { document.getElementById('filtro-tiempo-tipo').value = 'dia'; document.getElementById('filtro-balance-dia').value = ''; cambiarTipoFiltroTiempo(); document.getElementById('filtro-tipo-caja').value = 'todos'; cargarBalance(); }
 
-    // GENERADOR DE COMPROBANTES (TICKET NATIVO DE IMPRESIÓN)
+    // GENERADOR DE COMPROBANTES (VERSIÓN MÓVIL SEGURA)
     async function generarComprobante(id, tabla) {
       if(tabla === 'pagos_abonos') return alert('El comprobante se genera desde la venta principal o el gasto.');
-
+      
       const {data: r} = await db.from(tabla).select(tabla==='ventas'?'*, clientes(nombre)':'*, proveedores(nombre)').eq('id', id).single();
       if(!r) return alert('No se encontró el registro.');
+      
+      const elInfo = document.getElementById('comprobante-info');
+      const elItems = document.getElementById('comprobante-items');
+      const elTotal = document.getElementById('comprobante-total');
+
+      elInfo.innerHTML = `
+        <p><strong>Fecha:</strong> ${formatearFechaHora(r.fecha)}</p>
+        <p><strong>Tipo:</strong> ${tabla === 'ventas' ? 'Factura de Venta' : 'Comprobante de Gasto'}</p>
+        <p><strong>${tabla === 'ventas' ? 'Cliente' : 'Proveedor'}:</strong> ${tabla === 'ventas' ? (r.clientes?.nombre||'Mostrador') : (r.proveedores?.nombre||'General')}</p>
+      `;
 
       let itemsHtml = '';
       if(r.detalles && r.detalles.startsWith('[')) {
         try {
            const items = JSON.parse(r.detalles);
-           items.forEach(i => { itemsHtml += `<div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><span>${i.cantidad}x ${i.nombre}</span><span>$${fmtMoneda(i.subtotal)}</span></div>`; });
+           items.forEach(i => { itemsHtml += `<div class="flex justify-between"><span>${i.cantidad}x ${i.nombre.substring(0,15)}</span><span>$${fmtMoneda(i.subtotal)}</span></div>`; });
         } catch(e) {
-           itemsHtml = `<div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><span>1x ${r.detalles}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
+           itemsHtml = `<div class="flex justify-between"><span>1x ${r.detalles}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
         }
       } else {
-        itemsHtml = `<div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><span>1x ${r.detalles || 'Servicio'}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
+        itemsHtml = `<div class="flex justify-between"><span>1x ${r.detalles || 'Servicio'}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
       }
-
-      if(tabla==='ventas' && r.descuento > 0) itemsHtml += `<div style="display:flex; justify-content:space-between; font-size: 12px; margin-top: 5px;"><span>Descuento</span><span>-$${fmtMoneda(r.descuento)}</span></div>`;
-
+      
+      if(tabla==='ventas' && r.descuento > 0) itemsHtml += `<div class="flex justify-between text-xs mt-1"><span>Descuento</span><span>-$${fmtMoneda(r.descuento)}</span></div>`;
+      elItems.innerHTML = itemsHtml;
+      
       const total = tabla === 'ventas' ? (r.monto_final) : r.valor;
-      let totalHtml = `<strong>TOTAL: $${fmtMoneda(total)}</strong>`;
-      if(r.es_deuda) totalHtml += `<br><span style="font-size: 14px; font-weight: normal;">Abono: $${fmtMoneda(r.abono)}<br>Saldo: $${fmtMoneda(r.saldo_pendiente)}</span>`;
+      elTotal.innerHTML = `TOTAL: $${fmtMoneda(total)}`;
+      if(r.es_deuda) elTotal.innerHTML += `<br><span class="text-sm font-normal">Abono: $${fmtMoneda(r.abono)}<br>Saldo: $${fmtMoneda(r.saldo_pendiente)}</span>`;
 
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <html>
-        <head>
-          <title>Comprobante ${id.substring(0,6)}</title>
-          <style>
-            body { font-family: monospace; padding: 20px; max-width: 320px; margin: 0 auto; color: black; background: white; }
-            .header { text-align: center; margin-bottom: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-            .info { margin-bottom: 15px; font-size: 14px; }
-            .items { margin-bottom: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; font-size: 14px;}
-            .total { text-align: right; font-size: 16px; margin-bottom: 20px; }
-            .footer { text-align: center; font-size: 12px; font-style: italic; border-top: 1px dashed #000; padding-top: 10px;}
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h2 style="margin:0; font-size: 24px;">SOLTECH</h2>
-            <p style="margin: 5px 0;">Gestión Empresarial</p>
-            <p style="margin: 5px 0; font-size: 12px;">Dosquebradas, Risaralda</p>
-          </div>
-          <div class="info">
-            <p style="margin: 3px 0;"><strong>Fecha:</strong> ${formatearFechaHora(r.fecha)}</p>
-            <p style="margin: 3px 0;"><strong>Tipo:</strong> ${tabla === 'ventas' ? 'Factura de Venta' : 'Comprobante de Gasto'}</p>
-            <p style="margin: 3px 0;"><strong>${tabla === 'ventas' ? 'Cliente' : 'Proveedor'}:</strong> ${tabla === 'ventas' ? (r.clientes?.nombre||'Mostrador') : (r.proveedores?.nombre||'General')}</p>
-          </div>
-          <div class="items">
-            ${itemsHtml}
-          </div>
-          <div class="total">
-            ${totalHtml}
-          </div>
-          <div class="footer">
-            ¡Gracias por su confianza!
-          </div>
-          <script>
-            window.onload = function() { window.print(); window.close(); }
-          </script>
-        </body>
-        </html>
-      `);
-      printWindow.document.close();
+      const elemento = document.getElementById('plantilla-comprobante');
+      
+      // Truco: Quitamos el hidden, lo hacemos muy transparente pero lo dejamos en pantalla 
+      // para obligar a iOS a procesarlo gráficamente sin molestar al usuario.
+      elemento.classList.remove('hidden');
+      elemento.style.opacity = '0.01';
+
+      // Le damos a iOS 300ms obligatorios para renderizar
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const opt = { 
+        margin: 5, 
+        filename: `Comprobante_${id.substring(0,6)}.pdf`, 
+        image: { type: 'jpeg', quality: 0.98 }, 
+        html2canvas: { scale: 2, useCORS: true, windowWidth: 400 }, 
+        jsPDF: { unit: 'mm', format: [80, 150], orientation: 'portrait' } 
+      };
+      
+      try {
+        await html2pdf().set(opt).from(elemento).save();
+      } catch(e) { 
+        console.error(e); alert('❌ Hubo un error al generar el PDF.'); 
+      } finally {
+        // Restauramos los valores
+        elemento.classList.add('hidden');
+        elemento.style.opacity = '1';
+      }
     }
-
-    // 5. DEUDAS CON TOTALES Y FILTRADO POR EMPRESA
+    // 5. DEUDAS CON TOTALES
     function cambiarPestanaDeudas(tipo) {
       document.getElementById('btn-cobrar').className = `flex-1 py-2 rounded-lg font-bold text-sm transition-all ${tipo==='cobrar'?'bg-amber-600 text-white shadow-lg':'bg-slate-800 border border-slate-600 text-slate-400'}`;
       document.getElementById('btn-pagar').className = `flex-1 py-2 rounded-lg font-bold text-sm transition-all ${tipo==='pagar'?'bg-purple-600 text-white shadow-lg':'bg-slate-800 border border-slate-600 text-slate-400'}`;
@@ -634,8 +627,8 @@
 
     async function cargarDeudas() {
       const fFecha = document.getElementById('filtro-deudas-fecha').value; const fOrden = document.getElementById('filtro-deudas-orden').value; const asc = fOrden === 'asc';
-      const queryV = db.from('ventas').select('*, clientes(nombre)').eq('empresa_id', currentEmpresaId).gt('saldo_pendiente', 0).order('fecha', {ascending: asc});
-      const queryG = db.from('gastos').select('*, proveedores(nombre)').eq('empresa_id', currentEmpresaId).gt('saldo_pendiente', 0).order('fecha', {ascending: asc});
+      const queryV = db.from('ventas').select('*, clientes(nombre)').gt('saldo_pendiente', 0).order('fecha', {ascending: asc});
+      const queryG = db.from('gastos').select('*, proveedores(nombre)').gt('saldo_pendiente', 0).order('fecha', {ascending: asc});
 
       let [resV, resG] = await Promise.all([queryV, queryG]); let vts = resV.data || []; let gts = resG.data || [];
       if(fFecha) { vts = vts.filter(x => gFecha(x.fecha) === fFecha); gts = gts.filter(x => gFecha(x.fecha) === fFecha); }
@@ -685,7 +678,7 @@
       const p = prompt(`Abono a ${nombreEntidad} (Deuda total: $${fmtMoneda(maxMonto)}):\nValor a abonar:`);
       if(!p || isNaN(p) || Number(p) <= 0) return; let montoRestante = Math.min(Number(p), maxMonto);
       const col = tabla === 'ventas' ? 'cliente_id' : 'proveedor_id';
-      const { data: deudas } = await db.from(tabla).select('*').eq('empresa_id', currentEmpresaId).eq(col, idEntidad).gt('saldo_pendiente', 0).order('fecha', {ascending: true});
+      const { data: deudas } = await db.from(tabla).select('*').eq(col, idEntidad).gt('saldo_pendiente', 0).order('fecha', {ascending: true});
       for(let d of deudas) {
         if(montoRestante <= 0) break; const aAbonar = Math.min(montoRestante, Number(d.saldo_pendiente)); montoRestante -= aAbonar;
         const payload = { monto: aAbonar, tipo: tabla==='ventas' ? 'COBRO_VENTA' : 'PAGO_GASTO', empresa_id: currentEmpresaId }; if(tabla==='ventas') payload.venta_id = d.id; else payload.gasto_id = d.id;
@@ -765,6 +758,7 @@
       let detallesFinal = document.getElementById('g-detalles').value;
       let valorLibre = Number(document.getElementById('g-valor-libre').value || 0);
 
+      // NUEVA LÓGICA: Permite Gastos con Carrito O Gasto Libre Manual
       if (carritoG.length > 0) {
          valorFinal = carritoG.reduce((a,b)=>a+b.subtotal, 0);
          detallesFinal = JSON.stringify(carritoG);
@@ -823,7 +817,7 @@
        }
     }
 
-    // 7. ASISTENTE IA (GEMINI)
+    // 7. ASISTENTE IA (GEMINI) ACTUALIZADO PARA DEPURAR ERRORES
     async function enviarMensajeIA() {
       const input = document.getElementById('ia-input');
       const text = input.value.trim();
@@ -835,34 +829,29 @@
       
       document.getElementById('ia-loading').classList.remove('hidden');
       
-      const { data: vts } = await db.from('ventas').select('fecha, tipo_venta, monto_final, detalles').eq('empresa_id', currentEmpresaId).limit(50).order('fecha', {ascending: false});
-      const { data: gts } = await db.from('gastos').select('fecha, valor, detalles').eq('empresa_id', currentEmpresaId).limit(50).order('fecha', {ascending: false});
+      const { data: vts } = await db.from('ventas').select('fecha, tipo_venta, monto_final, detalles').limit(50).order('fecha', {ascending: false});
+      const { data: gts } = await db.from('gastos').select('fecha, valor, detalles').limit(50).order('fecha', {ascending: false});
       const contextData = JSON.stringify({ ultimas_ventas: vts, ultimos_gastos: gts });
 
       const prompt = `Actúa como el analista financiero experto de SOLTECH. Aquí tienes un extracto de los datos JSON recientes de la empresa: ${contextData}. 
       Responde a la siguiente consulta del usuario de forma analítica, breve, clara y en español: "${text}"`;
 
       try {
-        const { data: { session } } = await db.auth.getSession();
-        
-        const response = await fetch(`${supabaseUrl}/functions/v1/asistente-ia`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-            'apikey': supabaseKey
-          },
-          body: JSON.stringify({ prompt: prompt })
+        const { data, error } = await db.functions.invoke('asistente-ia', {
+          body: { prompt: prompt }
         });
 
-        if (!response.ok) {
-           const errText = await response.text();
-           throw new Error(`HTTP ${response.status}: ${errText}`);
+        // Verificamos si la invocación de Edge Function falló
+        if (error) {
+           console.error("Error Edge Function:", error);
+           throw new Error(error.message || "Fallo la conexión con Supabase.");
         }
 
-        const data = await response.json();
-
-        if (data.error) throw new Error("Error de Gemini: " + data.error.message);
+        // Verificamos si Google Gemini rechazó la llave dentro del payload
+        if (data && data.error) {
+           console.error("Error Google Gemini:", data.error);
+           throw new Error(data.error.message || "Tu API Key de Google fue rechazada (Verifica que no tenga restricciones activas).");
+        }
 
         const msg = data.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
         history.innerHTML += `<div class="bg-slate-700/50 p-3 rounded-lg text-sm text-slate-200 w-5/6 rounded-tl-none border border-slate-600 mt-2">${msg}</div>`;
@@ -874,7 +863,7 @@
       history.scrollTop = history.scrollHeight;
     }
 
-    // DIRECTORIOS CON FILTRADO DE EMPRESA
+    // DIRECTORIOS
     async function guardarCliente() { const id = document.getElementById('c-id').value; const nom = document.getElementById('c-nombre').value; const tel = document.getElementById('c-telefono').value; if (!nom) return alert('Nombre obligatorio'); if (id) await db.from('clientes').update({ nombre: nom, telefono: tel }).eq('id', id); else await db.from('clientes').insert([{ nombre: nom, telefono: tel, empresa_id: currentEmpresaId }]); ocultarForm(); cargarListaClientes(); cargarDropdowns(); }
     async function guardarProveedor() { const id = document.getElementById('prov-id').value; const nom = document.getElementById('prov-nombre').value; const tel = document.getElementById('prov-telefono').value; if (!nom) return alert('Nombre obligatorio'); if (id) await db.from('proveedores').update({ nombre: nom, telefono: tel }).eq('id', id); else await db.from('proveedores').insert([{ nombre: nom, telefono: tel, empresa_id: currentEmpresaId }]); ocultarForm(); cargarListaProveedores(); cargarDropdowns(); }
     async function guardarProducto() {
@@ -887,9 +876,9 @@
       ocultarForm(); cargarInventario(); cargarDropdowns();
     }
 
-    async function cargarListaClientes() { const {data} = await db.from('clientes').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}); document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${c.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarCliente('${c.id}','${c.nombre}','${c.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('clientes','${c.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin clientes registrados.</p></div>'; }
-    async function cargarListaProveedores() { const {data} = await db.from('proveedores').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}); document.getElementById('lista-proveedores').innerHTML = data.map(p=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${p.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarProveedor('${p.id}','${p.nombre}','${p.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('proveedores','${p.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin proveedores registrados.</p></div>'; }
-    async function cargarInventario() { const {data} = await db.from('productos').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}); document.getElementById('lista-inventario').innerHTML = data.map(p=>{ const img = p.imagen_url ? `<img src="${p.imagen_url}" class="w-12 h-12 object-cover rounded-lg shadow">` : `<div class="w-12 h-12 bg-slate-800 border border-slate-600 rounded-lg shadow flex items-center justify-center text-sm">📦</div>`; return `<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center gap-4 shadow-md">${img}<div class="flex-1"><p class="font-bold text-white leading-tight">${p.nombre}</p><p class="text-[11px] font-bold text-amber-400 mt-1 tracking-wide">STOCK: ${p.cantidad_disponible}</p></div><div class="text-right"><p class="text-emerald-400 font-black text-sm mb-2">$${fmtMoneda(p.precio_venta)}</p><div class="flex gap-2 justify-end"><button class="text-blue-400 font-bold bg-blue-950/50 px-2.5 py-1 rounded-md text-[10px] shadow" onclick="editarProducto('${p.id}','${p.nombre}',${p.precio_compra},${p.precio_venta},${p.cantidad_disponible})">EDITAR</button><button class="text-rose-400 bg-rose-950/50 px-2 py-1 rounded-md text-[10px] shadow" onclick="eliminarRegistro('productos','${p.id}')">🗑️</button></div></div></div>`}).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">El inventario está vacío.</p></div>'; }
+    async function cargarListaClientes() { const {data} = await db.from('clientes').select('*').order('nombre',{ascending:true}); document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${c.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarCliente('${c.id}','${c.nombre}','${c.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('clientes','${c.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin clientes registrados.</p></div>'; }
+    async function cargarListaProveedores() { const {data} = await db.from('proveedores').select('*').order('nombre',{ascending:true}); document.getElementById('lista-proveedores').innerHTML = data.map(p=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${p.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarProveedor('${p.id}','${p.nombre}','${p.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('proveedores','${p.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin proveedores registrados.</p></div>'; }
+    async function cargarInventario() { const {data} = await db.from('productos').select('*').order('nombre',{ascending:true}); document.getElementById('lista-inventario').innerHTML = data.map(p=>{ const img = p.imagen_url ? `<img src="${p.imagen_url}" class="w-12 h-12 object-cover rounded-lg shadow">` : `<div class="w-12 h-12 bg-slate-800 border border-slate-600 rounded-lg shadow flex items-center justify-center text-sm">📦</div>`; return `<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center gap-4 shadow-md">${img}<div class="flex-1"><p class="font-bold text-white leading-tight">${p.nombre}</p><p class="text-[11px] font-bold text-amber-400 mt-1 tracking-wide">STOCK: ${p.cantidad_disponible}</p></div><div class="text-right"><p class="text-emerald-400 font-black text-sm mb-2">$${fmtMoneda(p.precio_venta)}</p><div class="flex gap-2 justify-end"><button class="text-blue-400 font-bold bg-blue-950/50 px-2.5 py-1 rounded-md text-[10px] shadow" onclick="editarProducto('${p.id}','${p.nombre}',${p.precio_compra},${p.precio_venta},${p.cantidad_disponible})">EDITAR</button><button class="text-rose-400 bg-rose-950/50 px-2 py-1 rounded-md text-[10px] shadow" onclick="eliminarRegistro('productos','${p.id}')">🗑️</button></div></div></div>`}).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">El inventario está vacío.</p></div>'; }
 
     // HELPERS INTERFAZ
     function prepararFormulario(tipo, tituloManual=null, esEdit=false) { 
