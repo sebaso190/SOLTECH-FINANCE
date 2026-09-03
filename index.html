@@ -879,7 +879,7 @@
         const { data: { session } } = await db.auth.getSession();
         
         // Uso de fetch manual, es más seguro para lidiar con CORS desde el navegador
-        const response = await fetch(`${supabaseUrl}/functions/v1/asistente-ia`, {
+        const response = await fetch(`${supabaseUrl}/functions/v1/clever-endpoint`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
