@@ -556,66 +556,71 @@
     // GENERADOR DE COMPROBANTES (VERSIÓN MÓVIL SEGURA)
     async function generarComprobante(id, tabla) {
       if(tabla === 'pagos_abonos') return alert('El comprobante se genera desde la venta principal o el gasto.');
-      
+
       const {data: r} = await db.from(tabla).select(tabla==='ventas'?'*, clientes(nombre)':'*, proveedores(nombre)').eq('id', id).single();
       if(!r) return alert('No se encontró el registro.');
-      
-      const elInfo = document.getElementById('comprobante-info');
-      const elItems = document.getElementById('comprobante-items');
-      const elTotal = document.getElementById('comprobante-total');
-
-      elInfo.innerHTML = `
-        <p><strong>Fecha:</strong> ${formatearFechaHora(r.fecha)}</p>
-        <p><strong>Tipo:</strong> ${tabla === 'ventas' ? 'Factura de Venta' : 'Comprobante de Gasto'}</p>
-        <p><strong>${tabla === 'ventas' ? 'Cliente' : 'Proveedor'}:</strong> ${tabla === 'ventas' ? (r.clientes?.nombre||'Mostrador') : (r.proveedores?.nombre||'General')}</p>
-      `;
 
       let itemsHtml = '';
       if(r.detalles && r.detalles.startsWith('[')) {
         try {
            const items = JSON.parse(r.detalles);
-           items.forEach(i => { itemsHtml += `<div class="flex justify-between"><span>${i.cantidad}x ${i.nombre.substring(0,15)}</span><span>$${fmtMoneda(i.subtotal)}</span></div>`; });
+           items.forEach(i => { itemsHtml += `<div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><span>${i.cantidad}x ${i.nombre}</span><span>$${fmtMoneda(i.subtotal)}</span></div>`; });
         } catch(e) {
-           itemsHtml = `<div class="flex justify-between"><span>1x ${r.detalles}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
+           itemsHtml = `<div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><span>1x ${r.detalles}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
         }
       } else {
-        itemsHtml = `<div class="flex justify-between"><span>1x ${r.detalles || 'Servicio'}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
+        itemsHtml = `<div style="display:flex; justify-content:space-between; margin-bottom: 5px;"><span>1x ${r.detalles || 'Servicio'}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
       }
-      
-      if(tabla==='ventas' && r.descuento > 0) itemsHtml += `<div class="flex justify-between text-xs mt-1"><span>Descuento</span><span>-$${fmtMoneda(r.descuento)}</span></div>`;
-      elItems.innerHTML = itemsHtml;
-      
+
+      if(tabla==='ventas' && r.descuento > 0) itemsHtml += `<div style="display:flex; justify-content:space-between; font-size: 12px; margin-top: 5px;"><span>Descuento</span><span>-$${fmtMoneda(r.descuento)}</span></div>`;
+
       const total = tabla === 'ventas' ? (r.monto_final) : r.valor;
-      elTotal.innerHTML = `TOTAL: $${fmtMoneda(total)}`;
-      if(r.es_deuda) elTotal.innerHTML += `<br><span class="text-sm font-normal">Abono: $${fmtMoneda(r.abono)}<br>Saldo: $${fmtMoneda(r.saldo_pendiente)}</span>`;
+      let totalHtml = `<strong>TOTAL: $${fmtMoneda(total)}</strong>`;
+      if(r.es_deuda) totalHtml += `<br><span style="font-size: 14px; font-weight: normal;">Abono: $${fmtMoneda(r.abono)}<br>Saldo: $${fmtMoneda(r.saldo_pendiente)}</span>`;
 
-      const elemento = document.getElementById('plantilla-comprobante');
-      
-      // Truco: Quitamos el hidden, lo hacemos muy transparente pero lo dejamos en pantalla 
-      // para obligar a iOS a procesarlo gráficamente sin molestar al usuario.
-      elemento.classList.remove('hidden');
-      elemento.style.opacity = '0.01';
-
-      // Le damos a iOS 300ms obligatorios para renderizar
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const opt = { 
-        margin: 5, 
-        filename: `Comprobante_${id.substring(0,6)}.pdf`, 
-        image: { type: 'jpeg', quality: 0.98 }, 
-        html2canvas: { scale: 2, useCORS: true, windowWidth: 400 }, 
-        jsPDF: { unit: 'mm', format: [80, 150], orientation: 'portrait' } 
-      };
-      
-      try {
-        await html2pdf().set(opt).from(elemento).save();
-      } catch(e) { 
-        console.error(e); alert('❌ Hubo un error al generar el PDF.'); 
-      } finally {
-        // Restauramos los valores
-        elemento.classList.add('hidden');
-        elemento.style.opacity = '1';
-      }
+      // Creamos una ventana emergente limpia para el ticket
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+        <head>
+          <title>Comprobante ${id.substring(0,6)}</title>
+          <style>
+            body { font-family: monospace; padding: 20px; max-width: 320px; margin: 0 auto; color: black; background: white; }
+            .header { text-align: center; margin-bottom: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+            .info { margin-bottom: 15px; font-size: 14px; }
+            .items { margin-bottom: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; font-size: 14px;}
+            .total { text-align: right; font-size: 16px; margin-bottom: 20px; }
+            .footer { text-align: center; font-size: 12px; font-style: italic; border-top: 1px dashed #000; padding-top: 10px;}
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h2 style="margin:0; font-size: 24px;">SOLTECH</h2>
+            <p style="margin: 5px 0;">Gestión Empresarial</p>
+            <p style="margin: 5px 0; font-size: 12px;">Dosquebradas, Risaralda</p>
+          </div>
+          <div class="info">
+            <p style="margin: 3px 0;"><strong>Fecha:</strong> ${formatearFechaHora(r.fecha)}</p>
+            <p style="margin: 3px 0;"><strong>Tipo:</strong> ${tabla === 'ventas' ? 'Factura de Venta' : 'Comprobante de Gasto'}</p>
+            <p style="margin: 3px 0;"><strong>${tabla === 'ventas' ? 'Cliente' : 'Proveedor'}:</strong> ${tabla === 'ventas' ? (r.clientes?.nombre||'Mostrador') : (r.proveedores?.nombre||'General')}</p>
+          </div>
+          <div class="items">
+            ${itemsHtml}
+          </div>
+          <div class="total">
+            ${totalHtml}
+          </div>
+          <div class="footer">
+            ¡Gracias por su confianza!
+          </div>
+          <script>
+            // Dispara la impresión y cierra la ventana al terminar
+            window.onload = function() { window.print(); window.close(); }
+          <script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
     }
     // 5. DEUDAS CON TOTALES
     function cambiarPestanaDeudas(tipo) {
