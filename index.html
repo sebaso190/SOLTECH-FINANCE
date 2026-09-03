@@ -256,9 +256,8 @@
     </div>
   </main>
 
-  <!-- ================= PLANTILLA DEL COMPROBANTE (FUERA DE PANTALLA) ================= -->
-  <!-- Usamos fixed -left-[9999px] para que la librería html2pdf lo pueda capturar instantáneamente sin bloqueos móviles -->
-  <div id="plantilla-comprobante" class="fixed -left-[9999px] top-0 bg-white text-black p-8 w-[400px] font-sans opacity-0 pointer-events-none z-[-1]">
+  <!-- ================= PLANTILLA DEL COMPROBANTE ================= -->
+  <div id="plantilla-comprobante" class="bg-white text-black p-8 w-[400px] font-sans hidden absolute top-0 left-0 z-[-100]">
       <div class="text-center mb-6">
           <h1 class="font-black text-4xl tracking-widest text-slate-800">SOLTECH</h1>
           <p class="text-sm text-slate-600 font-bold uppercase mt-1">Gestión Empresarial</p>
@@ -554,7 +553,7 @@
     }
     function limpiarFiltroCaja() { document.getElementById('filtro-tiempo-tipo').value = 'dia'; document.getElementById('filtro-balance-dia').value = ''; cambiarTipoFiltroTiempo(); document.getElementById('filtro-tipo-caja').value = 'todos'; cargarBalance(); }
 
-    // GENERADOR DE COMPROBANTES (SIN BLOQUEO MÓVIL)
+    // GENERADOR DE COMPROBANTES (VERSIÓN MÓVIL SEGURA)
     async function generarComprobante(id, tabla) {
       if(tabla === 'pagos_abonos') return alert('El comprobante se genera desde la venta principal o el gasto.');
       
@@ -590,15 +589,21 @@
       elTotal.innerHTML = `TOTAL: $${fmtMoneda(total)}`;
       if(r.es_deuda) elTotal.innerHTML += `<br><span class="text-sm font-normal">Abono: $${fmtMoneda(r.abono)}<br>Saldo: $${fmtMoneda(r.saldo_pendiente)}</span>`;
 
-      // Como el elemento ya está rendereado pero fuera de pantalla, html2pdf lo procesa al instante sin el timeout que bloquea móviles.
       const elemento = document.getElementById('plantilla-comprobante');
-      elemento.style.opacity = '1';
+      
+      // Truco: Quitamos el hidden, lo hacemos muy transparente pero lo dejamos en pantalla 
+      // para obligar a iOS a procesarlo gráficamente sin molestar al usuario.
+      elemento.classList.remove('hidden');
+      elemento.style.opacity = '0.01';
+
+      // Le damos a iOS 300ms obligatorios para renderizar
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       const opt = { 
         margin: 5, 
         filename: `Comprobante_${id.substring(0,6)}.pdf`, 
         image: { type: 'jpeg', quality: 0.98 }, 
-        html2canvas: { scale: 2, useCORS: true, logging: false }, 
+        html2canvas: { scale: 2, useCORS: true, windowWidth: 400 }, 
         jsPDF: { unit: 'mm', format: [80, 150], orientation: 'portrait' } 
       };
       
@@ -607,10 +612,11 @@
       } catch(e) { 
         console.error(e); alert('❌ Hubo un error al generar el PDF.'); 
       } finally {
-        elemento.style.opacity = '0';
+        // Restauramos los valores
+        elemento.classList.add('hidden');
+        elemento.style.opacity = '1';
       }
     }
-
     // 5. DEUDAS CON TOTALES
     function cambiarPestanaDeudas(tipo) {
       document.getElementById('btn-cobrar').className = `flex-1 py-2 rounded-lg font-bold text-sm transition-all ${tipo==='cobrar'?'bg-amber-600 text-white shadow-lg':'bg-slate-800 border border-slate-600 text-slate-400'}`;
