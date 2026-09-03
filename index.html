@@ -8,7 +8,6 @@
   <title>SOLTECH - Control Financiero</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Librería para generar PDFs y JPGs de los comprobantes -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -326,7 +325,6 @@
   </nav>
 
   <script>
-    // 1. CREDENCIALES SUPABASE Y VARIABLES GLOBALES
     const { createClient } = supabase;
     const supabaseUrl = 'https://jmidlrztyzzmauroxuuf.supabase.co'; 
     const supabaseKey = 'sb_publishable_7rrvQ2yvzVaiYLEqtgoa_w_GbrCRoAi';
@@ -346,7 +344,6 @@
       if(!e.target.closest('.relative')) document.querySelectorAll('ul[id$="-list"]').forEach(el => el.classList.add('hidden'));
     });
 
-    // 2. AUTENTICACIÓN, SESIÓN Y EMPRESA
     async function checkSession() {
       const { data: { session }, error: sessionError } = await db.auth.getSession();
       
@@ -427,7 +424,6 @@
        location.reload();
     }
 
-    // GESTIÓN DE CONFIGURACIÓN DE EMPRESA EXISTENTE
     function abrirConfigEmpresa() {
        if (!currentEmpresaData) return alert('No hay datos de empresa cargados.');
        document.getElementById('cfg-emp-nombre').value = currentEmpresaData.nombre || '';
@@ -452,16 +448,13 @@
           telefono: tel
        }).eq('id', currentEmpresaId);
 
-       if (error) {
-          return alert('Error al actualizar: ' + error.message);
-       }
+       if (error) return alert('Error al actualizar: ' + error.message);
 
        currentEmpresaData = { ...currentEmpresaData, nombre: nom, nit, direccion: dir, telefono: tel };
        alert('¡Datos de la empresa actualizados con éxito!');
        document.getElementById('modal-config-empresa').classList.add('hidden');
     }
 
-    // 3. INICIO Y NAVEGACIÓN
     function iniciarApp() {
       const hoy = new Date().toISOString().split('T')[0];
       document.getElementById('filtro-inicio').value = hoy; document.getElementById('filtro-balance-dia').value = hoy;
@@ -485,7 +478,6 @@
       else { bg.classList.replace('bg-amber-500', 'bg-slate-600'); dot.classList.remove('translate-x-5'); lbl.innerText = '🟢 PAGO DE CONTADO'; lbl.classList.replace('text-amber-400', 'text-emerald-400'); abono.classList.add('hidden'); document.getElementById(`${prefijo}-abono`).value = ''; }
     }
 
-    // BUSCADORES (Con .limit(1000) para evitar límite por defecto de 100 filas)
     async function cargarDropdowns() {
       const { data: c } = await db.from('clientes').select('*').eq('empresa_id', currentEmpresaId).order('nombre').limit(1000); listasData.clientes = c || [];
       const { data: p } = await db.from('productos').select('*').eq('empresa_id', currentEmpresaId).order('nombre').limit(1000); listasData.productos = p || [];
@@ -508,7 +500,6 @@
       if(prefijo === 'g-producto' && id) { const p = listasData.productos.find(x=>x.id===id); if(p) { document.getElementById('g-precio').value = p.precio_compra; } }
     }
 
-    // CARRITOS
     function agregarAlCarrito(prefijo) {
       const pId = document.getElementById(`${prefijo}-producto-id`).value; const cant = Number(document.getElementById(`${prefijo}-cantidad`).value); const precio = Number(document.getElementById(`${prefijo}-precio`).value);
       if(!pId || cant < 1 || !precio) return alert('Verifica producto, cantidad y precio.');
@@ -533,7 +524,6 @@
       else { document.getElementById('g-total-final').innerText = '$' + fmtMoneda(sub); }
     }
 
-    // 4. FLUJO DE CAJA Y BALANCE AVANZADO (Con límites ampliados)
     function cambiarTipoFiltroTiempo() {
        const val = document.getElementById('filtro-tiempo-tipo').value;
        document.getElementById('filtro-balance-dia').classList.toggle('hidden', val !== 'dia');
@@ -629,7 +619,9 @@
     }
     function limpiarFiltroCaja() { document.getElementById('filtro-tiempo-tipo').value = 'dia'; document.getElementById('filtro-balance-dia').value = ''; cambiarTipoFiltroTiempo(); document.getElementById('filtro-tipo-caja').value = 'todos'; cargarBalance(); }
 
-    // GENERADOR DE COMPROBANTES CON TAMAÑO DINÁMICO
+    // ==========================================
+    // CÓDIGO CORREGIDO DE IMPRESIÓN (TAMAÑO)
+    // ==========================================
     async function generarComprobante(id, tabla) {
       if(tabla === 'pagos_abonos') return alert('El comprobante se genera desde la venta principal o el gasto.');
 
@@ -672,17 +664,28 @@
         <head>
           <title>Factura ${id.substring(0,6)}</title>
           <style>
-            body { font-family: monospace; color: black; background: #f0f0f0; margin: 0; padding: 20px; display: flex; justify-content: center; }
+            /* EL SECRETO ESTÁ EN ALIGN-ITEMS: FLEX-START */
+            body { 
+               font-family: monospace; 
+               color: black; 
+               background: #f0f0f0; 
+               margin: 0; 
+               padding: 20px; 
+               display: flex; 
+               justify-content: center; 
+               align-items: flex-start; /* Evita que se estire al 100% de alto */
+            }
             .invoice-box { 
                background: white; 
                width: fit-content; 
                min-width: 320px; 
                max-width: 500px;
-               height: auto;
+               height: max-content; /* Se ajusta solo a su contenido */
                padding: 20px; 
                border: 2px solid #222; 
                border-radius: 8px;
                box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+               box-sizing: border-box;
             }
             .header { text-align: center; margin-bottom: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
             .info { margin-bottom: 15px; font-size: 14px; }
@@ -725,7 +728,6 @@
       printWindow.document.close();
     }
 
-    // 5. DEUDAS CON TOTALES (Límites ampliados)
     function cambiarPestanaDeudas(tipo) {
       document.getElementById('btn-cobrar').className = `flex-1 py-2 rounded-lg font-bold text-sm transition-all ${tipo==='cobrar'?'bg-amber-600 text-white shadow-lg':'bg-slate-800 border border-slate-600 text-slate-400'}`;
       document.getElementById('btn-pagar').className = `flex-1 py-2 rounded-lg font-bold text-sm transition-all ${tipo==='pagar'?'bg-purple-600 text-white shadow-lg':'bg-slate-800 border border-slate-600 text-slate-400'}`;
@@ -795,7 +797,6 @@
       cargarDeudas(); cargarBalance(); actualizarDashboard();
     }
 
-    // 6. GUARDAR (CON MANEJO MULTIPRODUCTO EN COMPRAS/GASTOS)
     async function restaurarStock(tabla, recordId) {
        const {data: rec} = await db.from(tabla).select('*').eq('id', recordId).single(); if(!rec) return;
        if (rec.detalles && rec.detalles.startsWith('[')) {
@@ -924,7 +925,6 @@
        }
     }
 
-    // 7. ASISTENTE IA
     async function enviarMensajeIA() {
       const input = document.getElementById('ia-input');
       const text = input.value.trim();
@@ -975,7 +975,6 @@
       history.scrollTop = history.scrollHeight;
     }
 
-    // DIRECTORIOS (Límites ampliados a 1000)
     async function guardarCliente() { 
        const id = document.getElementById('c-id').value; 
        const nom = document.getElementById('c-nombre').value; 
@@ -990,7 +989,16 @@
        ocultarForm(); cargarListaClientes(); cargarDropdowns(); 
     }
     
-    async function guardarProveedor() { const id = document.getElementById('prov-id').value; const nom = document.getElementById('prov-nombre').value; const tel = document.getElementById('prov-telefono').value; if (!nom) return alert('Nombre obligatorio'); if (id) await db.from('proveedores').update({ nombre: nom, telefono: tel }).eq('id', id); else await db.from('proveedores').insert([{ nombre: nom, telefono: tel, empresa_id: currentEmpresaId }]); ocultarForm(); cargarListaProveedores(); cargarDropdowns(); }
+    async function guardarProveedor() { 
+       const id = document.getElementById('prov-id').value; 
+       const nom = document.getElementById('prov-nombre').value; 
+       const tel = document.getElementById('prov-telefono').value; 
+       if (!nom) return alert('Nombre obligatorio'); 
+       const payload = { nombre: nom, telefono: tel, empresa_id: currentEmpresaId };
+       if (id) await db.from('proveedores').update(payload).eq('id', id); 
+       else await db.from('proveedores').insert([payload]); 
+       ocultarForm(); cargarListaProveedores(); cargarDropdowns(); 
+    }
     
     async function guardarProducto() {
       const id = document.getElementById('p-id').value; const nom = document.getElementById('p-nombre').value; const cmp = Number(document.getElementById('p-compra').value||0); const vnt = Number(document.getElementById('p-venta').value||0); const stk = Number(document.getElementById('p-stock').value||0);
@@ -1007,11 +1015,16 @@
        document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${c.telefono||'Sin teléfono'} ${c.identificacion ? ' | CC/NIT: '+c.identificacion : ''}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarCliente('${c.id}','${c.nombre}','${c.telefono||''}','${c.identificacion||''}','${c.direccion||''}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('clientes','${c.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin clientes registrados.</p></div>'; 
     }
     
-    async function cargarListaProveedores() { const {data} = await db.from('proveedores').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}).limit(1000); document.getElementById('lista-proveedores').innerHTML = data.map(p=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${p.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarProveedor('${p.id}','${p.nombre}','${p.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('proveedores','${p.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin proveedores registrados.</p></div>'; }
+    async function cargarListaProveedores() { 
+       const {data} = await db.from('proveedores').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}).limit(1000); 
+       document.getElementById('lista-proveedores').innerHTML = data.map(p=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center shadow-md"><div class="flex-1"><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${p.telefono||'Sin teléfono'}</p></div><div><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs mr-2 shadow" onclick="editarProveedor('${p.id}','${p.nombre}','${p.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('proveedores','${p.id}')">🗑️</button></div></div>`).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin proveedores registrados.</p></div>'; 
+    }
     
-    async function cargarInventario() { const {data} = await db.from('productos').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}).limit(1000); document.getElementById('lista-inventario').innerHTML = data.map(p=>{ const img = p.imagen_url ? `<img src="${p.imagen_url}" class="w-12 h-12 object-cover rounded-lg shadow">` : `<div class="w-12 h-12 bg-slate-800 border border-slate-600 rounded-lg shadow flex items-center justify-center text-sm">📦</div>`; return `<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center gap-4 shadow-md">${img}<div class="flex-1"><p class="font-bold text-white leading-tight">${p.nombre}</p><p class="text-[11px] font-bold text-amber-400 mt-1 tracking-wide">STOCK: ${p.cantidad_disponible}</p></div><div class="text-right"><p class="text-emerald-400 font-black text-sm mb-2">$${fmtMoneda(p.precio_venta)}</p><div class="flex gap-2 justify-end"><button class="text-blue-400 font-bold bg-blue-950/50 px-2.5 py-1 rounded-md text-[10px] shadow" onclick="editarProducto('${p.id}','${p.nombre}',${p.precio_compra},${p.precio_venta},${p.cantidad_disponible})">EDITAR</button><button class="text-rose-400 bg-rose-950/50 px-2 py-1 rounded-md text-[10px] shadow" onclick="eliminarRegistro('productos','${p.id}')">🗑️</button></div></div></div>`}).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">El inventario está vacío.</p></div>'; }
+    async function cargarInventario() { 
+       const {data} = await db.from('productos').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}).limit(1000); 
+       document.getElementById('lista-inventario').innerHTML = data.map(p=>{ const img = p.imagen_url ? `<img src="${p.imagen_url}" class="w-12 h-12 object-cover rounded-lg shadow">` : `<div class="w-12 h-12 bg-slate-800 border border-slate-600 rounded-lg shadow flex items-center justify-center text-sm">📦</div>`; return `<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 flex justify-between items-center gap-4 shadow-md">${img}<div class="flex-1"><p class="font-bold text-white leading-tight">${p.nombre}</p><p class="text-[11px] font-bold text-amber-400 mt-1 tracking-wide">STOCK: ${p.cantidad_disponible}</p></div><div class="text-right"><p class="text-emerald-400 font-black text-sm mb-2">$${fmtMoneda(p.precio_venta)}</p><div class="flex gap-2 justify-end"><button class="text-blue-400 font-bold bg-blue-950/50 px-2.5 py-1 rounded-md text-[10px] shadow" onclick="editarProducto('${p.id}','${p.nombre}',${p.precio_compra},${p.precio_venta},${p.cantidad_disponible})">EDITAR</button><button class="text-rose-400 bg-rose-950/50 px-2 py-1 rounded-md text-[10px] shadow" onclick="eliminarRegistro('productos','${p.id}')">🗑️</button></div></div></div>`}).join('') || '<div class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">El inventario está vacío.</p></div>'; 
+    }
 
-    // HELPERS INTERFAZ
     function prepararFormulario(tipo, tituloManual=null, esEdit=false) { 
       const form = document.getElementById(`form-${tipo}`); form.reset(); document.getElementById('form-container').classList.remove('hidden'); 
       ['venta-prod','venta-libre','gasto','producto','cliente','proveedor'].forEach(f=>document.getElementById(`form-${f}`).classList.add('hidden')); form.classList.remove('hidden'); 
