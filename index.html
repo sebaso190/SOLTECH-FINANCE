@@ -223,7 +223,7 @@
           <button type="button" onclick="guardarVentaLibre()" class="w-full bg-cyan-600 hover:bg-cyan-500 py-3 rounded-lg font-bold shadow-lg uppercase tracking-wide">Guardar Venta</button>
         </form>
 
-        <!-- GASTO MULTIPRODUCTO -->
+        <!-- GASTO MULTIPRODUCTO / LIBRE -->
         <form id="form-gasto" class="space-y-3 hidden"><h3 class="font-bold text-rose-400" id="g-titulo-form">Registrar Gasto / Compra</h3><input type="hidden" id="g-edit-id">
           <input type="datetime-local" id="g-fecha" class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-rose-500">
           <div class="relative"><input type="text" id="g-proveedor-search" placeholder="🏢 Buscar Proveedor..." class="w-full bg-slate-700 p-2 rounded text-sm text-white focus:border-rose-500" oninput="filtrarLista('g-proveedor-list', this.value)" onfocus="mostrarLista('g-proveedor-list')"><input type="hidden" id="g-proveedor-id"><ul id="g-proveedor-list" class="hidden absolute z-50 w-full bg-slate-600 mt-1 max-h-32 overflow-y-auto rounded shadow-lg text-sm border border-slate-500"></ul></div>
@@ -236,6 +236,11 @@
           </div>
           
           <div id="g-carrito-container" class="bg-slate-700 p-2 rounded min-h-[50px] max-h-40 overflow-y-auto no-scrollbar space-y-1"><p class="text-[10px] text-center text-slate-400 mt-2">Sin productos</p></div>
+          
+          <div class="mb-2">
+            <input type="number" inputmode="decimal" id="g-valor-libre" placeholder="Valor total (Si NO usaste carrito)" class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none border border-rose-900/50">
+          </div>
+
           <div class="flex justify-between items-center"><span class="font-bold text-rose-400">TOTAL COMPRA:</span><span id="g-total-final" class="font-black text-xl text-white">$0</span></div>
           
           <input type="text" id="g-detalles" placeholder="Concepto (Ej: Pago de luz)..." class="w-full bg-slate-700 p-2 rounded text-sm text-white outline-none">
@@ -251,8 +256,9 @@
     </div>
   </main>
 
-  <!-- ================= PLANTILLA DEL COMPROBANTE OCULTA ================= -->
-  <div id="plantilla-comprobante" class="hidden absolute top-0 left-0 bg-white text-black p-8 w-[400px] font-sans">
+  <!-- ================= PLANTILLA DEL COMPROBANTE (FUERA DE PANTALLA) ================= -->
+  <!-- Usamos fixed -left-[9999px] para que la librería html2pdf lo pueda capturar instantáneamente sin bloqueos móviles -->
+  <div id="plantilla-comprobante" class="fixed -left-[9999px] top-0 bg-white text-black p-8 w-[400px] font-sans opacity-0 pointer-events-none z-[-1]">
       <div class="text-center mb-6">
           <h1 class="font-black text-4xl tracking-widest text-slate-800">SOLTECH</h1>
           <p class="text-sm text-slate-600 font-bold uppercase mt-1">Gestión Empresarial</p>
@@ -277,19 +283,18 @@
   </nav>
 
   <script>
-    // 1. CREDENCIALES SUPABASE (¡Pega tus claves aquí!)
+    // 1. CREDENCIALES SUPABASE Y VARIABLES GLOBALES
     const { createClient } = supabase;
     const supabaseUrl = 'https://jmidlrztyzzmauroxuuf.supabase.co'; 
     const supabaseKey = 'sb_publishable_7rrvQ2yvzVaiYLEqtgoa_w_GbrCRoAi';
     const db = createClient(supabaseUrl, supabaseKey);
 
-    let currentEmpresaId = null; // <--- NUEVA VARIABLE MULTI-TENANT
+    let currentEmpresaId = null; // VARIABLE CLAVE PARA MULTI-TENANT
 
     const fmtMoneda = (v) => new Intl.NumberFormat('es-CO').format(v || 0);
     const gFecha = (fUTC) => { const d = new Date(fUTC); return new Date(d.getTime() - (d.getTimezoneOffset()*60000)).toISOString().split('T')[0]; };
     const formatearFechaHora = (f) => { const d = new Date(f); return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`; };
 
-    // VARIABLES GLOBALES (CARRITOS Y DROPDOWNS)
     let carritoVP = []; let carritoG = [];
     let listasData = { clientes: [], proveedores: [], productos: [] };
 
@@ -297,64 +302,47 @@
       if(!e.target.closest('.relative')) document.querySelectorAll('ul[id$="-list"]').forEach(el => el.classList.add('hidden'));
     });
 
-    // 2. AUTENTICACIÓN
+    // 2. AUTENTICACIÓN Y SESIÓN
     async function checkSession() {
-      const { data: { session } } = await db.auth.getSession();
+      const { data: { session }, error: sessionError } = await db.auth.getSession();
+      
       if (session) {
         let { data: perfil } = await db.from('perfiles').select('empresa_id').eq('id', session.user.id).single();
         
-        // Si el usuario no tiene una empresa vinculada en la tabla perfiles
         if (!perfil) {
           const entrada = prompt(
-            "Tu cuenta no tiene una empresa asociada.\n\n" +
-            "• Si deseas unirte a un negocio existente, pega aquí su ID (UUID).\n" +
-            "• Si deseas crear un negocio nuevo, escribe el nombre comercial:"
+            "¡Bienvenido! Tu cuenta aún no tiene negocio asociado.\n\n" +
+            "• Para crear uno nuevo, escribe el nombre comercial (Ej. Mi Tienda).\n" +
+            "• Para unirte a uno, pega el Código UUID de la empresa:"
           );
 
           if (!entrada || entrada.trim() === "") {
-            alert("Es obligatorio asociar una empresa para usar el sistema.");
-            await logout();
-            return;
+            alert("Debes asociar una empresa para usar el sistema.");
+            await db.auth.signOut(); location.reload(); return;
           }
 
           let empresaIdFinal = null;
-          // Validar si el texto ingresado tiene formato de UUID (ID de empresa)
-          const esUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(entrada.trim());
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entrada.trim());
 
-          if (esUuid) {
-            // Verificar si esa empresa realmente existe en la base de datos
-            const { data: empresaExiste } = await db.from('empresas').select('id').eq('id', entrada.trim()).single();
-            if (empresaExiste) {
-              empresaIdFinal = empresaExiste.id;
-            } else {
-              alert("El ID ingresado no corresponde a ninguna empresa registrada. Se creará una nueva empresa con ese texto.");
-              const { data: nuevaEmp } = await db.from('empresas').insert([{ nombre: entrada.trim() }]).select().single();
-              empresaIdFinal = nuevaEmp.id;
-            }
+          if (isUUID) {
+             empresaIdFinal = entrada.trim();
           } else {
-            // Lo que escribió el usuario es un nombre comercial, creamos la empresa
-            const { data: nuevaEmp, error: errEmp } = await db.from('empresas').insert([{ nombre: entrada.trim() }]).select().single();
-            if (errEmp) {
-              alert("Error creando la empresa: " + errEmp.message);
-              await logout();
-              return;
-            }
-            empresaIdFinal = nuevaEmp.id;
+             const { data: nuevaEmp, error: errEmp } = await db.from('empresas').insert([{ nombre: entrada.trim() }]).select().single();
+             if (errEmp) { alert("Error al crear empresa: " + errEmp.message); await db.auth.signOut(); location.reload(); return; }
+             empresaIdFinal = nuevaEmp.id;
           }
 
-          // Crear el registro en la tabla perfiles asociando al usuario con la empresa elegida o creada
           const { error: errPerfil } = await db.from('perfiles').insert([{ 
             id: session.user.id, 
             empresa_id: empresaIdFinal, 
             nombre_completo: session.user.email 
           }]);
 
-          if (errPerfil) {
-            alert("Error asociando tu perfil: " + errPerfil.message);
-            await logout();
-            return;
+          if (errPerfil) { 
+             alert("Error al vincular el perfil. Si pegaste un código, verifica que sea correcto."); 
+             await db.auth.signOut(); location.reload(); return; 
           }
-
+          
           currentEmpresaId = empresaIdFinal;
         } else {
           currentEmpresaId = perfil.empresa_id;
@@ -363,35 +351,37 @@
         document.getElementById('auth-screen').classList.add('hidden'); 
         document.getElementById('main-app').classList.remove('hidden'); 
         document.getElementById('main-nav').classList.remove('hidden'); 
+        
+        const btnLogin = document.querySelector('button[onclick="login()"]');
+        if(btnLogin) btnLogin.innerText = "Iniciar Sesión";
+        
         iniciarApp(); 
       } else { 
         document.getElementById('auth-screen').classList.remove('hidden'); 
       }
     }
-    async function login() { const e = document.getElementById('auth-email').value; const p = document.getElementById('auth-pass').value; if(!e || !p) return alert('Ingresa credenciales'); const { error } = await db.auth.signInWithPassword({ email: e, password: p }); if(error) alert('Error: ' + error.message); else checkSession(); }
-    async function register() {
+
+    async function login() { 
       const e = document.getElementById('auth-email').value; 
       const p = document.getElementById('auth-pass').value; 
-      const nombreEmpresa = prompt("¡Bienvenido a SOLTECH! Ingresa el nombre comercial de tu negocio (Empresa):");
-      
-      if(!e || !p || !nombreEmpresa) return alert('Todos los datos son obligatorios');
-      
-      // 1. Crear usuario en Auth
-      const { data: authData, error: authError } = await db.auth.signUp({ email: e, password: p }); 
-      if(authError) return alert('Error: ' + authError.message);
-      
-      const userId = authData.user.id;
-
-      // 2. Crear la Empresa
-      const { data: empresaData, error: empError } = await db.from('empresas').insert([{ nombre: nombreEmpresa }]).select().single();
-      if(empError) return alert('Error creando la empresa: ' + empError.message);
-
-      // 3. Vincular usuario a la empresa en la tabla perfiles
-      const { error: perfilError } = await db.from('perfiles').insert([{ id: userId, empresa_id: empresaData.id, nombre_completo: e }]);
-      if(perfilError) return alert('Error asociando perfil: ' + perfilError.message);
-
-      alert('¡Registro exitoso! Ya puedes iniciar sesión.');
+      if(!e || !p) return alert('Ingresa correo y contraseña'); 
+      const btn = document.querySelector('button[onclick="login()"]');
+      btn.innerText = "Cargando..."; 
+      const { error } = await db.auth.signInWithPassword({ email: e, password: p }); 
+      if(error) { alert('Error: ' + error.message); btn.innerText = "Iniciar Sesión"; } else { checkSession(); }
     }
+
+    async function register() { 
+      const e = document.getElementById('auth-email').value; 
+      const p = document.getElementById('auth-pass').value; 
+      if(!e || !p) return alert('Ingresa correo y contraseña primero.'); 
+      const btn = document.querySelector('button[onclick="register()"]');
+      btn.innerText = "Creando cuenta...";
+      const { error } = await db.auth.signUp({ email: e, password: p }); 
+      if(error) { alert('Error al registrar: ' + error.message); } else { alert('Registro exitoso. Haz clic en "Iniciar Sesión" para entrar.'); }
+      btn.innerText = "Crear Cuenta";
+    }
+
     async function logout() { await db.auth.signOut(); location.reload(); }
     window.onload = checkSession;
 
@@ -442,7 +432,7 @@
       if(prefijo === 'g-producto' && id) { const p = listasData.productos.find(x=>x.id===id); if(p) { document.getElementById('g-precio').value = p.precio_compra; } }
     }
 
-    // CARRITOS (VENTAS Y GASTOS MULTIPRODUCTO)
+    // CARRITOS
     function agregarAlCarrito(prefijo) {
       const pId = document.getElementById(`${prefijo}-producto-id`).value; const cant = Number(document.getElementById(`${prefijo}-cantidad`).value); const precio = Number(document.getElementById(`${prefijo}-precio`).value);
       if(!pId || cant < 1 || !precio) return alert('Verifica producto, cantidad y precio.');
@@ -479,7 +469,7 @@
     async function procesarFlujoCaja(origen = 'caja') {
       let tFiltro = 'dia'; let fDia = ''; let fMes = ''; let fAno = '';
       
-      // Separamos la lógica: si viene de inicio, usa su propio filtro. Si no, usa los de la caja.
+      // Separamos filtros para que la pestaña de Inicio sea independiente de la de Caja
       if (origen === 'inicio') {
          fDia = document.getElementById('filtro-inicio').value;
       } else {
@@ -540,20 +530,14 @@
     }
 
     async function actualizarDashboard() {
-      const res = await procesarFlujoCaja('inicio'); // Indicamos que viene del Dashboard
-      document.getElementById('inicio-ingresos').innerText = fmtMoneda(res.inTotal); 
-      document.getElementById('inicio-egresos').innerText = fmtMoneda(res.outTotal); 
-      document.getElementById('inicio-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
+      const res = await procesarFlujoCaja('inicio');
+      document.getElementById('inicio-ingresos').innerText = fmtMoneda(res.inTotal); document.getElementById('inicio-egresos').innerText = fmtMoneda(res.outTotal); document.getElementById('inicio-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
     }
 
     async function cargarBalance() {
-      const tipoFiltro = document.getElementById('filtro-tipo-caja').value; 
-      const res = await procesarFlujoCaja('caja'); // Indicamos que viene de la Caja
-      document.getElementById('bal-ingresos').innerText = fmtMoneda(res.inTotal); 
-      document.getElementById('bal-egresos').innerText = fmtMoneda(res.outTotal); 
-      document.getElementById('bal-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
-      document.getElementById('bal-count-in').innerText = res.countIn; 
-      document.getElementById('bal-count-out').innerText = res.countOut;
+      const tipoFiltro = document.getElementById('filtro-tipo-caja').value; const res = await procesarFlujoCaja('caja');
+      document.getElementById('bal-ingresos').innerText = fmtMoneda(res.inTotal); document.getElementById('bal-egresos').innerText = fmtMoneda(res.outTotal); document.getElementById('bal-neto').innerText = fmtMoneda(res.inTotal - res.outTotal);
+      document.getElementById('bal-count-in').innerText = res.countIn; document.getElementById('bal-count-out').innerText = res.countOut;
 
       let movsFiltrados = res.movimientos; if (tipoFiltro !== 'todos') movsFiltrados = res.movimientos.filter(m => m.tipo === tipoFiltro);
       document.getElementById('lista-caja-movimientos').innerHTML = movsFiltrados.map(m => {
@@ -564,16 +548,18 @@
              <div class="text-right font-black tracking-wide ${isEn ? 'text-emerald-400' : 'text-rose-400'}">${sig}${fmtMoneda(m.monto)}</div>
           </div>
           <p class="text-[11px] text-slate-400 font-mono mt-2 mb-2">${m.sub}</p>
-          <div class="flex justify-end gap-1 border-t border-slate-700/50 pt-2"><button onclick="('${m.id}', '${m.tabla}')" class="text-xs font-bold text-slate-300 bg-slate-700 px-3 py-1 rounded shadow">📄 Comprobante</button><button onclick="editarTransaccion('${m.tabla}', '${m.id}')" class="text-xs bg-blue-900/50 text-blue-300 px-3 py-1 rounded shadow">✏️</button><button onclick="eliminarRegistro('${m.tabla}', '${m.id}')" class="text-xs bg-rose-900/50 text-rose-400 px-3 py-1 rounded shadow">🗑️</button></div>
+          <div class="flex justify-end gap-1 border-t border-slate-700/50 pt-2"><button onclick="generarComprobante('${m.id}', '${m.tabla}')" class="text-xs font-bold text-slate-300 bg-slate-700 px-3 py-1 rounded shadow">📄 Comprobante</button><button onclick="editarTransaccion('${m.tabla}', '${m.id}')" class="text-xs bg-blue-900/50 text-blue-300 px-3 py-1 rounded shadow">✏️</button><button onclick="eliminarRegistro('${m.tabla}', '${m.id}')" class="text-xs bg-rose-900/50 text-rose-400 px-3 py-1 rounded shadow">🗑️</button></div>
         </div>`;
       }).join('') || '<div class="text-center p-6 bg-slate-800 rounded-xl border border-slate-700"><p class="text-sm text-slate-400">No hay movimientos.</p></div>';
     }
     function limpiarFiltroCaja() { document.getElementById('filtro-tiempo-tipo').value = 'dia'; document.getElementById('filtro-balance-dia').value = ''; cambiarTipoFiltroTiempo(); document.getElementById('filtro-tipo-caja').value = 'todos'; cargarBalance(); }
 
-    // GENERADOR DE COMPROBANTES
+    // GENERADOR DE COMPROBANTES (SIN BLOQUEO MÓVIL)
     async function generarComprobante(id, tabla) {
       if(tabla === 'pagos_abonos') return alert('El comprobante se genera desde la venta principal o el gasto.');
+      
       const {data: r} = await db.from(tabla).select(tabla==='ventas'?'*, clientes(nombre)':'*, proveedores(nombre)').eq('id', id).single();
+      if(!r) return alert('No se encontró el registro.');
       
       const elInfo = document.getElementById('comprobante-info');
       const elItems = document.getElementById('comprobante-items');
@@ -587,8 +573,12 @@
 
       let itemsHtml = '';
       if(r.detalles && r.detalles.startsWith('[')) {
-        const items = JSON.parse(r.detalles);
-        items.forEach(i => { itemsHtml += `<div class="flex justify-between"><span>${i.cantidad}x ${i.nombre.substring(0,15)}</span><span>$${fmtMoneda(i.subtotal)}</span></div>`; });
+        try {
+           const items = JSON.parse(r.detalles);
+           items.forEach(i => { itemsHtml += `<div class="flex justify-between"><span>${i.cantidad}x ${i.nombre.substring(0,15)}</span><span>$${fmtMoneda(i.subtotal)}</span></div>`; });
+        } catch(e) {
+           itemsHtml = `<div class="flex justify-between"><span>1x ${r.detalles}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
+        }
       } else {
         itemsHtml = `<div class="flex justify-between"><span>1x ${r.detalles || 'Servicio'}</span><span>$${fmtMoneda(tabla==='ventas'?r.monto_bruto:r.valor)}</span></div>`;
       }
@@ -600,19 +590,27 @@
       elTotal.innerHTML = `TOTAL: $${fmtMoneda(total)}`;
       if(r.es_deuda) elTotal.innerHTML += `<br><span class="text-sm font-normal">Abono: $${fmtMoneda(r.abono)}<br>Saldo: $${fmtMoneda(r.saldo_pendiente)}</span>`;
 
-      // Convertir a PDF
+      // Como el elemento ya está rendereado pero fuera de pantalla, html2pdf lo procesa al instante sin el timeout que bloquea móviles.
       const elemento = document.getElementById('plantilla-comprobante');
-      elemento.classList.remove('hidden');
+      elemento.style.opacity = '1';
       
-      const opt = { margin: 0, filename: `Comprobante_${id.substring(0,6)}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: [80, 150], orientation: 'portrait' } };
+      const opt = { 
+        margin: 5, 
+        filename: `Comprobante_${id.substring(0,6)}.pdf`, 
+        image: { type: 'jpeg', quality: 0.98 }, 
+        html2canvas: { scale: 2, useCORS: true, logging: false }, 
+        jsPDF: { unit: 'mm', format: [80, 150], orientation: 'portrait' } 
+      };
       
       try {
         await html2pdf().set(opt).from(elemento).save();
-        alert('PDF descargado. Puedes enviarlo por WhatsApp adjuntando el archivo.');
-      } catch(e) { console.error(e); }
-      elemento.classList.add('hidden');
+      } catch(e) { 
+        console.error(e); alert('❌ Hubo un error al generar el PDF.'); 
+      } finally {
+        elemento.style.opacity = '0';
+      }
     }
-    
+
     // 5. DEUDAS CON TOTALES
     function cambiarPestanaDeudas(tipo) {
       document.getElementById('btn-cobrar').className = `flex-1 py-2 rounded-lg font-bold text-sm transition-all ${tipo==='cobrar'?'bg-amber-600 text-white shadow-lg':'bg-slate-800 border border-slate-600 text-slate-400'}`;
@@ -661,7 +659,7 @@
     async function pagarDeuda(tabla, id, maxMonto) {
       const p = prompt(`Valor a abonar (Máx: $${fmtMoneda(maxMonto)}):`);
       if(!p || isNaN(p) || Number(p) <= 0) return; const monto = Math.min(Number(p), maxMonto);
-      const payload = { monto, tipo: tabla==='ventas' ? 'COBRO_VENTA' : 'PAGO_GASTO' };
+      const payload = { monto, tipo: tabla==='ventas' ? 'COBRO_VENTA' : 'PAGO_GASTO', empresa_id: currentEmpresaId };
       if(tabla==='ventas') payload.venta_id = id; else payload.gasto_id = id;
       await db.from('pagos_abonos').insert([payload]);
       const { data } = await db.from(tabla).select('abono').eq('id', id).single();
@@ -677,7 +675,7 @@
       const { data: deudas } = await db.from(tabla).select('*').eq(col, idEntidad).gt('saldo_pendiente', 0).order('fecha', {ascending: true});
       for(let d of deudas) {
         if(montoRestante <= 0) break; const aAbonar = Math.min(montoRestante, Number(d.saldo_pendiente)); montoRestante -= aAbonar;
-        const payload = { monto: aAbonar, tipo: tabla==='ventas' ? 'COBRO_VENTA' : 'PAGO_GASTO' }; if(tabla==='ventas') payload.venta_id = d.id; else payload.gasto_id = d.id;
+        const payload = { monto: aAbonar, tipo: tabla==='ventas' ? 'COBRO_VENTA' : 'PAGO_GASTO', empresa_id: currentEmpresaId }; if(tabla==='ventas') payload.venta_id = d.id; else payload.gasto_id = d.id;
         await db.from('pagos_abonos').insert([payload]); await db.from(tabla).update({ abono: Number(d.abono) + aAbonar }).eq('id', d.id);
       }
       cargarDeudas(); cargarBalance(); actualizarDashboard();
@@ -691,7 +689,6 @@
           for(let item of items) { 
              const {data:p} = await db.from('productos').select('cantidad_disponible').eq('id', item.id).single(); 
              if(p) {
-                // Si es venta devuelvo al stock (+), si fue un gasto/compra resto del stock (-)
                 const nStock = tabla==='ventas' ? p.cantidad_disponible + item.cantidad : p.cantidad_disponible - item.cantidad;
                 await db.from('productos').update({cantidad_disponible: nStock}).eq('id', item.id); 
              }
@@ -705,7 +702,6 @@
           for(let item of items) { 
              const p = listasData.productos.find(x=>x.id===item.id); 
              if(p) {
-                // Venta resta (-), Gasto/Compra suma (+)
                 const nStock = tabla==='ventas' ? p.cantidad_disponible - item.cantidad : p.cantidad_disponible + item.cantidad;
                 await db.from('productos').update({cantidad_disponible: nStock}).eq('id', item.id); 
              }
@@ -746,15 +742,25 @@
     }
 
     async function guardarGasto() {
-      const editId = document.getElementById('g-edit-id').value; const fInp = document.getElementById('g-fecha').value; const provId = document.getElementById('g-proveedor-id').value;
-      const es_deuda = document.getElementById('g-es-deuda').checked; const abono = Number(document.getElementById('g-abono').value||0);
-      let valorFinal = 0; let detallesFinal = document.getElementById('g-detalles').value;
+      const editId = document.getElementById('g-edit-id').value; 
+      const fInp = document.getElementById('g-fecha').value; 
+      const provId = document.getElementById('g-proveedor-id').value;
+      const es_deuda = document.getElementById('g-es-deuda').checked; 
+      const abono = Number(document.getElementById('g-abono').value||0);
+      
+      let valorFinal = 0; 
+      let detallesFinal = document.getElementById('g-detalles').value;
+      let valorLibre = Number(document.getElementById('g-valor-libre').value || 0);
 
+      // NUEVA LÓGICA: Permite Gastos con Carrito O Gasto Libre Manual
       if (carritoG.length > 0) {
          valorFinal = carritoG.reduce((a,b)=>a+b.subtotal, 0);
          detallesFinal = JSON.stringify(carritoG);
+      } else if (valorLibre > 0) {
+         valorFinal = valorLibre;
+         if (!detallesFinal) detallesFinal = 'Gasto / Servicio general';
       } else {
-         return alert('Debes agregar al menos un producto/concepto al carrito del gasto.');
+         return alert('Debes agregar productos al carrito o ingresar el "Valor total" manualmente.');
       }
       
       const payload = { proveedor_id: provId||null, valor: valorFinal, es_deuda, abono: es_deuda?abono:0, detalles: detallesFinal, empresa_id: currentEmpresaId };
@@ -794,12 +800,18 @@
        } else if (tabla === 'gastos') {
           prepararFormulario('gasto', 'Editar Gasto', true); document.getElementById('g-edit-id').value = r.id; document.getElementById('g-fecha').value = r.fecha.substring(0,16);
           if(r.proveedor_id) { const p=listasData.proveedores.find(x=>x.id===r.proveedor_id); seleccionarDropdown('g-proveedor', r.proveedor_id, p.nombre); }
-          if(r.detalles && r.detalles.startsWith('[')) carritoG = JSON.parse(r.detalles); else carritoG = [{id:'', nombre: r.detalles||'Gasto', cantidad: 1, precio: r.valor, subtotal: r.valor}];
+          if(r.detalles && r.detalles.startsWith('[')) {
+             carritoG = JSON.parse(r.detalles);
+          } else {
+             carritoG = [];
+             document.getElementById('g-valor-libre').value = r.valor;
+             document.getElementById('g-detalles').value = r.detalles;
+          }
           renderCarrito('g'); document.getElementById('g-es-deuda').checked = r.es_deuda; toggleCredito('g'); document.getElementById('g-abono').value = r.abono;
        }
     }
 
-    // 7. ASISTENTE IA (GEMINI)
+    // 7. ASISTENTE IA (GEMINI) ACTUALIZADO PARA DEPURAR ERRORES
     async function enviarMensajeIA() {
       const input = document.getElementById('ia-input');
       const text = input.value.trim();
@@ -811,7 +823,6 @@
       
       document.getElementById('ia-loading').classList.remove('hidden');
       
-      // Recopilar contexto financiero rápido de la base de datos
       const { data: vts } = await db.from('ventas').select('fecha, tipo_venta, monto_final, detalles').limit(50).order('fecha', {ascending: false});
       const { data: gts } = await db.from('gastos').select('fecha, valor, detalles').limit(50).order('fecha', {ascending: false});
       const contextData = JSON.stringify({ ultimas_ventas: vts, ultimos_gastos: gts });
@@ -820,19 +831,28 @@
       Responde a la siguiente consulta del usuario de forma analítica, breve, clara y en español: "${text}"`;
 
       try {
-        // Llamada segura a la Edge Function alojada en Supabase
         const { data, error } = await db.functions.invoke('asistente-ia', {
           body: { prompt: prompt }
         });
 
-        if (error) throw error;
+        // Verificamos si la invocación de Edge Function falló
+        if (error) {
+           console.error("Error Edge Function:", error);
+           throw new Error(error.message || "Fallo la conexión con Supabase.");
+        }
+
+        // Verificamos si Google Gemini rechazó la llave dentro del payload
+        if (data && data.error) {
+           console.error("Error Google Gemini:", data.error);
+           throw new Error(data.error.message || "Tu API Key de Google fue rechazada (Verifica que no tenga restricciones activas).");
+        }
 
         const msg = data.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
         history.innerHTML += `<div class="bg-slate-700/50 p-3 rounded-lg text-sm text-slate-200 w-5/6 rounded-tl-none border border-slate-600 mt-2">${msg}</div>`;
       } catch (err) {
-        history.innerHTML += `<div class="bg-rose-900/50 p-3 rounded-lg text-sm text-rose-200 w-5/6 rounded-tl-none mt-2">Error procesando el análisis. Verifica tu conexión.</div>`;
-        console.error(err);
+        history.innerHTML += `<div class="bg-rose-900/50 p-3 rounded-lg text-[11px] text-rose-200 w-5/6 rounded-tl-none mt-2 border border-rose-800"><b>Error Detectado:</b><br>${err.message}</div>`;
       }
+      
       document.getElementById('ia-loading').classList.add('hidden');
       history.scrollTop = history.scrollHeight;
     }
