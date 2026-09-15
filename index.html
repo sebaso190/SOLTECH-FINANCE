@@ -63,9 +63,9 @@
     <div class="bg-slate-800 p-6 rounded-2xl border border-amber-500 shadow-2xl w-full max-w-sm text-center relative">
       <button onclick="cerrarRecuperacionOTP()" class="absolute top-3 right-4 text-2xl font-black text-slate-400 hover:text-white">&times;</button>
       <h2 class="text-xl font-black text-amber-400 mb-2">Recuperar Contraseña</h2>
-      <p class="text-[11px] text-slate-400 mb-4">Hemos enviado un código de 6 dígitos a tu correo. Ingrésalo aquí junto con tu nueva contraseña.</p>
+      <p class="text-[11px] text-slate-400 mb-4">Hemos enviado un código de 8 dígitos a tu correo. Ingrésalo aquí junto con tu nueva contraseña.</p>
       
-      <input type="text" id="otp-codigo" placeholder="Código de 6 dígitos" maxlength="6" inputmode="numeric" pattern="[0-9]*" class="w-full bg-slate-700 p-3 rounded-lg mb-3 text-center text-xl font-bold tracking-[0.5em] text-amber-400 outline-none focus:border-amber-500 border border-transparent">
+      <input type="text" id="otp-codigo" placeholder="Código de 8 dígitos" maxlength="8" inputmode="numeric" pattern="[0-9]*" class="w-full bg-slate-700 p-3 rounded-lg mb-3 text-center text-xl font-bold tracking-[0.25em] text-amber-400 outline-none focus:border-amber-500 border border-transparent">
       
       <input type="password" id="otp-nueva-pass" placeholder="Nueva contraseña (mínimo 6 caracteres)" class="w-full bg-slate-700 p-3 rounded-lg mb-6 text-white outline-none focus:border-amber-500 border border-transparent text-sm">
       
@@ -626,7 +626,7 @@ async function verificarYCambiarPassword() {
   const newPass = document.getElementById('otp-nueva-pass').value;
   const btn = document.getElementById('btn-confirmar-otp');
 
-  if (token.length !== 6) return alert('El código debe tener exactamente 6 dígitos.');
+  if (token.length !== 8) return alert('El código debe tener exactamente 8 dígitos.');
   if (!newPass || newPass.length < 6) return alert('La nueva contraseña debe tener al menos 6 caracteres.');
 
   btn.innerText = "Verificando...";
