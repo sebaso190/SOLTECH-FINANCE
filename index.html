@@ -9,6 +9,19 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
+    /* Regla de respaldo: Si falla Tailwind, oculta los modales y elementos con class="hidden" */
+  .hidden { 
+    display: none !important; 
+  }
+  
+  /* Estilos básicos de contingencia por si no carga la CDN */
+  body { 
+    font-family: system-ui, -apple-system, sans-serif; 
+    background-color: #0f172a; 
+    color: #f8fafc; 
+  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .loader-dots div { animation-timing-function: cubic-bezier(0, 1, 1, 0); }
