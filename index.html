@@ -9,7 +9,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* Regla de respaldo: Si falla Tailwind, oculta modales por seguridad */
     .hidden { display: none !important; }
     body { font-family: system-ui, -apple-system, sans-serif; background-color: #0f172a; color: #f8fafc; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -26,15 +25,13 @@
 </head>
 <body class="pb-24 overflow-x-hidden">
 
-  <!-- ================= SPLASH/LOADING SCREEN ================= -->
-  <div id="splash-screen" class="fixed inset-0 z-[200] bg-slate-900 flex flex-col justify-center items-center p-6 transition-opacity duration-300">
+  <!-- ================= SPLASH/LOADING SCREEN CON DETECTOR DE ERRORES ================= -->
+  <div id="splash-screen" class="fixed inset-0 z-[500] bg-slate-900 flex flex-col justify-center items-center p-6 transition-opacity duration-300">
     <h1 class="text-4xl font-black text-center text-blue-400 mb-2 tracking-widest animate-pulse">SOLTECH</h1>
     <p class="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-4">Verificando sesión...</p>
     <div class="mt-4 loader-dots relative w-16 h-5">
-      <div class="absolute top-1 w-2.5 h-2.5 rounded-full bg-blue-400"></div>
-      <div class="absolute top-1 w-2.5 h-2.5 rounded-full bg-blue-400"></div>
-      <div class="absolute top-1 w-2.5 h-2.5 rounded-full bg-blue-400"></div>
-      <div class="absolute top-1 w-2.5 h-2.5 rounded-full bg-blue-400"></div>
+      <div class="absolute top-1 w-2.5 h-2.5 rounded-full bg-blue-400"></div><div class="absolute top-1 w-2.5 h-2.5 rounded-full bg-blue-400"></div>
+      <div class="absolute top-1 w-2.5 h-2.5 rounded-full bg-blue-400"></div><div class="absolute top-1 w-2.5 h-2.5 rounded-full bg-blue-400"></div>
     </div>
   </div>
 
@@ -48,7 +45,6 @@
       <button id="btn-login" onclick="login()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg mb-3 transition shadow-lg">Iniciar Sesión</button>
       <button id="btn-register" onclick="register()" class="w-full bg-slate-700 hover:bg-slate-600 text-blue-400 font-bold py-3 rounded-lg transition border border-slate-600">Crear Cuenta</button>
       
-      <!-- BOTÓN DE RECUPERACIÓN Y SOPORTE -->
       <div class="flex justify-between items-center mt-4 border-t border-slate-700 pt-4">
         <button onclick="solicitarRecuperacionOTP()" class="text-xs text-slate-400 hover:text-white underline transition">¿Olvidó su clave?</button>
         <button onclick="contactarSoporte()" class="text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 transition">💬 Soporte WhatsApp</button>
@@ -289,7 +285,7 @@
       </div>
     </div>
 
-    <!-- ================= MODAL ABONO (TECLADO NUMÉRICO) ================= -->
+    <!-- ================= MODAL ABONO ================= -->
     <div id="modal-abono" class="fixed inset-0 z-[250] bg-slate-900/95 hidden flex flex-col justify-center items-center p-4">
       <div class="bg-slate-800 p-6 rounded-2xl border border-slate-600 shadow-2xl w-full max-w-xs relative text-center">
         <h3 id="modal-abono-titulo" class="text-lg font-black text-blue-400 mb-1">Abonar a Deuda</h3>
@@ -304,7 +300,6 @@
 
   </main>
 
-  <!-- Navegación Inferior -->
   <nav class="fixed bottom-0 w-full bg-slate-800 border-t border-slate-700 flex justify-around p-2 pb-6 text-xs shadow-2xl z-10 hidden" id="main-nav">
     <button onclick="cambiarVista('inicio')" id="nav-inicio" class="nav-btn text-blue-400 flex flex-col items-center gap-1 transition-colors"><span class="text-lg">📊</span><span>Inicio</span></button>
     <button onclick="cambiarVista('inventario')" id="nav-inventario" class="nav-btn text-slate-400 flex flex-col items-center gap-1 transition-colors"><span class="text-lg">📦</span><span>Inventario</span></button>
@@ -314,14 +309,33 @@
   </nav>
 
   <script>
-    const { createClient } = supabase;
-    const supabaseUrl = 'https://jmidlrztyzzmauroxuuf.supabase.co'; 
-    const supabaseKey = 'sb_publishable_7rrvQ2yvzVaiYLEqtgoa_w_GbrCRoAi';
-    const db = createClient(supabaseUrl, supabaseKey);
+    // ==========================================
+    // 1. SISTEMA DE DETECCIÓN DE ERRORES (ESCUDO)
+    // ==========================================
+    window.onerror = function(msg, url, line) {
+      const splash = document.getElementById('splash-screen');
+      if (splash) {
+        splash.classList.remove('hidden');
+        splash.innerHTML = `<div class="bg-slate-800 p-6 rounded-2xl border-2 border-rose-500 shadow-2xl w-full max-w-sm text-center m-4"><h3 class="text-rose-400 font-bold mb-2 uppercase tracking-wide">Error Detectado</h3><p class="text-xs text-slate-300 break-words mb-4 text-left">${msg}<br><br>Línea: ${line}</p><button onclick="location.reload()" class="w-full bg-rose-600 text-white font-bold py-3 rounded-lg">Reintentar</button></div>`;
+      }
+    };
+    window.addEventListener('unhandledrejection', function(e) {
+      const splash = document.getElementById('splash-screen');
+      if (splash) {
+        splash.classList.remove('hidden');
+        splash.innerHTML = `<div class="bg-slate-800 p-6 rounded-2xl border-2 border-rose-500 shadow-2xl w-full max-w-sm text-center m-4"><h3 class="text-rose-400 font-bold mb-2 uppercase tracking-wide">Error de Conexión</h3><p class="text-xs text-slate-300 break-words mb-4 text-left">${e.reason}</p><button onclick="location.reload()" class="w-full bg-rose-600 text-white font-bold py-3 rounded-lg">Reintentar</button></div>`;
+      }
+    });
 
+    // ==========================================
+    // 2. VARIABLES GLOBALES
+    // ==========================================
+    let db;
     let currentEmpresaId = null; let currentEmpresaData = null; 
+    let carritoVP = []; let carritoG = [];
+    let listasData = { clientes: [], proveedores: [], productos: [] };
+    
     const fmtMoneda = (v) => new Intl.NumberFormat('es-CO').format(v || 0);
-
     const obtenerFechaLocal = (d = new Date()) => { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
     const obtenerFechaHoraLocal = (d = new Date()) => { return obtenerFechaLocal(d) + 'T' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
     const formatearFechaHora = (fUTC) => { const d = new Date(fUTC); return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`; };
@@ -336,22 +350,34 @@
       });
     }
 
-    let carritoVP = []; let carritoG = [];
-    let listasData = { clientes: [], proveedores: [], productos: [] };
-
     document.addEventListener('click', (e) => { if(!e.target.closest('.relative')) document.querySelectorAll('ul[id$="-list"]').forEach(el => el.classList.add('hidden')); });
 
     // ==========================================
-    // NUEVO SISTEMA DE ARRANQUE Y SESIÓN BLINDADO
+    // 3. INICIALIZACIÓN BLINDADA
     // ==========================================
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        if (typeof supabase === 'undefined') {
+          throw new Error("No se pudo descargar la conexión de base de datos. Verifica si tienes activado 'Bloquear todas las cookies' o un AdBlocker estricto.");
+        }
+        
+        const supabaseUrl = 'https://jmidlrztyzzmauroxuuf.supabase.co'; 
+        const supabaseKey = 'sb_publishable_7rrvQ2yvzVaiYLEqtgoa_w_GbrCRoAi';
+        db = supabase.createClient(supabaseUrl, supabaseKey);
+
+        await checkSession();
+      } catch (err) {
+        // Disparar nuestro cuadro de error rojo si algo explota
+        throw err;
+      }
+    });
+
     async function checkSession() {
       try {
-        // Obtenemos la sesión actual de Supabase
-        const { data: { session }, error } = await db.auth.getSession();
+        const { data: { session } } = await db.auth.getSession();
         
         if (session) {
           let { data: perfil } = await db.from('perfiles').select('empresa_id').eq('id', session.user.id).single();
-          
           if (!perfil || !perfil.empresa_id) { 
             document.getElementById('auth-screen').classList.add('hidden'); 
             document.getElementById('modal-empresa').classList.remove('hidden'); 
@@ -367,68 +393,28 @@
             iniciarApp(); 
           }
         } else { 
-          // Si no hay sesión, mostramos el login
           document.getElementById('auth-screen').classList.remove('hidden'); 
         }
       } catch (err) {
-        console.error("Error al validar la sesión:", err);
         document.getElementById('auth-screen').classList.remove('hidden'); 
+        throw err;
       } finally {
-        // EL SEGURO: Pase lo que pase (éxito o error), siempre quitamos la pantalla de carga al final
         const splash = document.getElementById('splash-screen');
         if (splash) splash.classList.add('hidden');
       }
     }
 
-    // Reemplazamos el viejo "window.onload = checkSession;" por este:
-    // Arranca instantáneamente sin esperar recursos externos pesados
-    document.addEventListener('DOMContentLoaded', checkSession);
-
-    async function login() { const e = document.getElementById('auth-email').value.trim(); const p = document.getElementById('auth-pass').value; if(!e || !p) return alert('Ingresa correo y contraseña'); document.getElementById('btn-login').innerText = "Cargando..."; try { const { error } = await db.auth.signInWithPassword({ email: e, password: p }); if(error) { alert('Error: ' + error.message); document.getElementById('btn-login').innerText = "Iniciar Sesión"; } else { checkSession(); } } catch (err) { alert('Error'); document.getElementById('btn-login').innerText = "Iniciar Sesión"; } }
+    // ==========================================
+    // RESTO DE FUNCIONES DE LA APP
+    // ==========================================
+    async function login() { const e = document.getElementById('auth-email').value.trim(); const p = document.getElementById('auth-pass').value; if(!e || !p) return alert('Ingresa correo y contraseña'); document.getElementById('btn-login').innerText = "Cargando..."; try { const { error } = await db.auth.signInWithPassword({ email: e, password: p }); if(error) { alert('Error: ' + error.message); document.getElementById('btn-login').innerText = "Iniciar Sesión"; } else { document.getElementById('splash-screen').classList.remove('hidden'); await checkSession(); } } catch (err) { alert('Error'); document.getElementById('btn-login').innerText = "Iniciar Sesión"; } }
     async function register() { const e = document.getElementById('auth-email').value.trim(); const p = document.getElementById('auth-pass').value; if(!e || !p) return alert('Ingresa datos.'); document.getElementById('btn-register').innerText = "Creando..."; const { error } = await db.auth.signUp({ email: e, password: p }); if(error) { alert('Error: ' + error.message); } else { alert('Registro exitoso. Inicia sesión.'); } document.getElementById('btn-register').innerText = "Crear Cuenta"; }
     async function logout() { await db.auth.signOut(); location.reload(); }
-    window.onload = checkSession;
 
-    // ==========================================
-    // 2. WHATSAPP DE SOPORTE PERSONALIZADO
-    // ==========================================
-    function contactarSoporte() { 
-      const email = document.getElementById('auth-email').value.trim(); 
-      let mensaje = "Hola, necesito ayuda para acceder a mi cuenta de SOLTECH."; 
-      if (email) { mensaje += ` Mi correo es: ${email}`; } 
-      const numeroSoporte = "573012878516"; 
-      const url = `https://wa.me/${numeroSoporte}?text=${encodeURIComponent(mensaje)}`; 
-      window.open(url, '_blank'); 
-    }
+    function contactarSoporte() { const email = document.getElementById('auth-email').value.trim(); let mensaje = "Hola, necesito ayuda para acceder a mi cuenta de SOLTECH."; if (email) { mensaje += ` Mi correo es: ${email}`; } const numeroSoporte = "573012878516"; const url = `https://wa.me/${numeroSoporte}?text=${encodeURIComponent(mensaje)}`; window.open(url, '_blank'); }
 
-    async function solicitarRecuperacionOTP() {
-      const email = document.getElementById('auth-email').value.trim();
-      if (!email) return alert('⚠️ Por favor, escribe tu correo electrónico en la casilla primero.');
-      const confirmar = confirm(`¿Enviar código de recuperación a ${email}?`); if (!confirmar) return;
-      const { error } = await db.auth.resetPasswordForEmail(email);
-      if (error) {
-        if (error.message.includes('sending recovery email') || error.message.includes('not found')) {
-          const irSoporte = confirm('⚠️ Este correo no tiene una cuenta activa o aún no ha sido verificada.\n\n¿Deseas contactar a Soporte por WhatsApp para que te ayuden a activar tu cuenta?');
-          if (irSoporte) contactarSoporte();
-        } else if (error.status === 429 || error.message.includes('rate limit')) { alert('⚠️ Demasiados intentos. Espera unos minutos e intenta de nuevo.'); } 
-        else { alert('⚠️ Error: ' + error.message); }
-      } else {
-        alert('¡Código enviado! Revisa tu bandeja de entrada o Spam.'); document.getElementById('auth-screen').classList.add('hidden'); document.getElementById('modal-recuperacion-otp').classList.remove('hidden');
-      }
-    }
-
-    async function verificarYCambiarPassword() {
-      const email = document.getElementById('auth-email').value.trim(); const token = document.getElementById('otp-codigo').value.trim(); const newPass = document.getElementById('otp-nueva-pass').value; const btn = document.getElementById('btn-confirmar-otp');
-      if (token.length !== 8) return alert('El código debe tener exactamente 8 dígitos.');
-      if (!newPass || newPass.length < 6) return alert('La nueva contraseña debe tener al menos 6 caracteres.');
-      btn.innerText = "Verificando...";
-      const { error: errorOtp } = await db.auth.verifyOtp({ email: email, token: token, type: 'recovery' });
-      if (errorOtp) { btn.innerText = "Verificar y Cambiar"; return alert('Error al verificar el código: ' + errorOtp.message); }
-      const { error: errorUpdate } = await db.auth.updateUser({ password: newPass });
-      if (errorUpdate) { btn.innerText = "Verificar y Cambiar"; return alert('Error al guardar la nueva contraseña: ' + errorUpdate.message); }
-      alert('¡Contraseña actualizada con éxito!'); document.getElementById('modal-recuperacion-otp').classList.add('hidden'); document.getElementById('otp-codigo').value = ''; document.getElementById('otp-nueva-pass').value = ''; checkSession();
-    }
-
+    async function solicitarRecuperacionOTP() { const email = document.getElementById('auth-email').value.trim(); if (!email) return alert('⚠️ Por favor, escribe tu correo electrónico en la casilla primero.'); const confirmar = confirm(`¿Enviar código de recuperación a ${email}?`); if (!confirmar) return; const { error } = await db.auth.resetPasswordForEmail(email); if (error) { if (error.message.includes('sending recovery email') || error.message.includes('not found')) { const irSoporte = confirm('⚠️ Este correo no tiene una cuenta activa.\n\n¿Deseas contactar a Soporte por WhatsApp?'); if (irSoporte) contactarSoporte(); } else if (error.status === 429 || error.message.includes('rate limit')) { alert('⚠️ Demasiados intentos. Espera unos minutos e intenta de nuevo.'); } else { alert('⚠️ Error: ' + error.message); } } else { alert('¡Código enviado! Revisa tu bandeja de entrada o Spam.'); document.getElementById('auth-screen').classList.add('hidden'); document.getElementById('modal-recuperacion-otp').classList.remove('hidden'); } }
+    async function verificarYCambiarPassword() { const email = document.getElementById('auth-email').value.trim(); const token = document.getElementById('otp-codigo').value.trim(); const newPass = document.getElementById('otp-nueva-pass').value; const btn = document.getElementById('btn-confirmar-otp'); if (token.length !== 8) return alert('El código debe tener exactamente 8 dígitos.'); if (!newPass || newPass.length < 6) return alert('La nueva contraseña debe tener al menos 6 caracteres.'); btn.innerText = "Verificando..."; const { error: errorOtp } = await db.auth.verifyOtp({ email: email, token: token, type: 'recovery' }); if (errorOtp) { btn.innerText = "Verificar y Cambiar"; return alert('Error al verificar el código: ' + errorOtp.message); } const { error: errorUpdate } = await db.auth.updateUser({ password: newPass }); if (errorUpdate) { btn.innerText = "Verificar y Cambiar"; return alert('Error al guardar la nueva contraseña: ' + errorUpdate.message); } alert('¡Contraseña actualizada con éxito!'); document.getElementById('modal-recuperacion-otp').classList.add('hidden'); document.getElementById('otp-codigo').value = ''; document.getElementById('otp-nueva-pass').value = ''; document.getElementById('splash-screen').classList.remove('hidden'); await checkSession(); }
     function cerrarRecuperacionOTP() { document.getElementById('modal-recuperacion-otp').classList.add('hidden'); document.getElementById('auth-screen').classList.remove('hidden'); }
 
     async function registrarEmpresa() { const nom = document.getElementById('emp-nombre').value.trim(); const nit = document.getElementById('emp-nit').value.trim(); const dir = document.getElementById('emp-dir').value.trim(); const tel = document.getElementById('emp-tel').value.trim(); if(!nom) return alert("Nombre obligatorio."); const { data: { session } } = await db.auth.getSession(); const { data: nuevaEmp, error } = await db.from('empresas').insert([{ nombre: nom, nit: nit, direccion: dir, telefono: tel }]).select().single(); if(error) return alert("Error al crear."); await db.from('perfiles').upsert([{ id: session.user.id, empresa_id: nuevaEmp.id, nombre_completo: session.user.email }]); location.reload(); }
@@ -436,32 +422,9 @@
     function abrirConfigEmpresa() { document.getElementById('cfg-emp-nombre').value = currentEmpresaData.nombre||''; document.getElementById('cfg-emp-nit').value = currentEmpresaData.nit||''; document.getElementById('cfg-emp-dir').value = currentEmpresaData.direccion||''; document.getElementById('cfg-emp-tel').value = currentEmpresaData.telefono||''; document.getElementById('cfg-emp-uuid-text').innerText = currentEmpresaId; document.getElementById('modal-config-empresa').classList.remove('hidden'); }
     async function guardarConfigEmpresa() { const nom = document.getElementById('cfg-emp-nombre').value.trim(); const nit = document.getElementById('cfg-emp-nit').value.trim(); const dir = document.getElementById('cfg-emp-dir').value.trim(); const tel = document.getElementById('cfg-emp-tel').value.trim(); if (!nom) return alert('Nombre obligatorio.'); await db.from('empresas').update({ nombre: nom, nit: nit, direccion: dir, telefono: tel }).eq('id', currentEmpresaId); currentEmpresaData = { ...currentEmpresaData, nombre: nom, nit, direccion: dir, telefono: tel }; document.getElementById('modal-config-empresa').classList.add('hidden'); }
 
-    function iniciarApp() { 
-      const hoy = obtenerFechaLocal(); 
-      document.getElementById('filtro-inicio').value = hoy; 
-      document.getElementById('filtro-balance-dia').value = hoy; 
-      cargarDropdowns(); cambiarVista('inicio'); 
-    }
+    function iniciarApp() { const hoy = obtenerFechaLocal(); document.getElementById('filtro-inicio').value = hoy; document.getElementById('filtro-balance-dia').value = hoy; cargarDropdowns(); cambiarVista('inicio'); }
 
-    // ==========================================
-    // 3. CAMBIAR VISTA DE GASTOS DIRECTO A "PAGAR"
-    // ==========================================
-    function cambiarVista(vista, subVista = null) { 
-      document.querySelectorAll('.vista-seccion').forEach(el => el.classList.add('hidden')); 
-      document.getElementById(`view-${vista}`).classList.remove('hidden'); 
-      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-blue-400', 'text-slate-400')); 
-      if(document.getElementById(`nav-${vista}`)) document.getElementById(`nav-${vista}`).classList.replace('text-slate-400', 'text-blue-400'); 
-      
-      if(vista === 'inicio') actualizarDashboard(); 
-      if(vista === 'balance') cargarBalance(); 
-      if(vista === 'deudas') { 
-        cargarDeudas(); 
-        cambiarPestanaDeudas(subVista || 'cobrar'); 
-      } 
-      if(vista === 'inventario') { cargarInventario(); document.getElementById('buscar-inv').value = ''; } 
-      if(vista === 'clientes') { cargarListaClientes(); document.getElementById('buscar-cli').value = ''; } 
-      if(vista === 'proveedores') { cargarListaProveedores(); document.getElementById('buscar-prov').value = ''; } 
-    }
+    function cambiarVista(vista, subVista = null) { document.querySelectorAll('.vista-seccion').forEach(el => el.classList.add('hidden')); document.getElementById(`view-${vista}`).classList.remove('hidden'); document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-blue-400', 'text-slate-400')); if(document.getElementById(`nav-${vista}`)) document.getElementById(`nav-${vista}`).classList.replace('text-slate-400', 'text-blue-400'); if(vista === 'inicio') actualizarDashboard(); if(vista === 'balance') cargarBalance(); if(vista === 'deudas') { cargarDeudas(); cambiarPestanaDeudas(subVista || 'cobrar'); } if(vista === 'inventario') { cargarInventario(); document.getElementById('buscar-inv').value = ''; } if(vista === 'clientes') { cargarListaClientes(); document.getElementById('buscar-cli').value = ''; } if(vista === 'proveedores') { cargarListaProveedores(); document.getElementById('buscar-prov').value = ''; } }
 
     function toggleCredito(prefijo) { const isChecked = document.getElementById(`${prefijo}-es-deuda`).checked; const bg = document.getElementById(`bg-credito-${prefijo}`); const dot = document.getElementById(`dot-credito-${prefijo}`); const lbl = document.getElementById(`lbl-credito-${prefijo}`); const abono = document.getElementById(`${prefijo}-abono-container`); if(isChecked) { bg.classList.replace('bg-slate-600', 'bg-amber-500'); dot.classList.add('translate-x-5'); lbl.innerText = '🟠 A CRÉDITO (DEBE)'; lbl.classList.replace('text-emerald-400', 'text-amber-400'); abono.classList.remove('hidden'); } else { bg.classList.replace('bg-amber-500', 'bg-slate-600'); dot.classList.remove('translate-x-5'); lbl.innerText = '🟢 PAGO DE CONTADO'; lbl.classList.replace('text-amber-400', 'text-emerald-400'); abono.classList.add('hidden'); document.getElementById(`${prefijo}-abono`).value = ''; } }
 
@@ -601,9 +564,6 @@
       printWindow.document.close();
     }
 
-    // ==========================================
-    // 1. SOLUCIÓN BUG "POR PAGAR" (CHOQUE CON TAILWIND)
-    // ==========================================
     function cambiarPestanaDeudas(tipo) { 
       document.getElementById('btn-cobrar').className = `flex-1 py-2 rounded-lg font-bold text-sm transition-all ${tipo==='cobrar'?'bg-amber-600 text-white shadow-lg':'bg-slate-800 border border-slate-600 text-slate-400'}`; 
       document.getElementById('btn-pagar').className = `flex-1 py-2 rounded-lg font-bold text-sm transition-all ${tipo==='pagar'?'bg-purple-600 text-white shadow-lg':'bg-slate-800 border border-slate-600 text-slate-400'}`; 
@@ -627,12 +587,10 @@
       let [resV, resG] = await Promise.all([queryV, queryG]); let vts = resV.data || []; let gts = resG.data || [];
       if(fFecha) { vts = vts.filter(x => obtenerFechaLocal(new Date(x.fecha)) === fFecha); gts = gts.filter(x => obtenerFechaLocal(new Date(x.fecha)) === fFecha); }
       
-      // VENTAS POR COBRAR
       let htmlC=''; let granTotalC = 0; const porCliente = vts.reduce((acc, v) => { const k = v.cliente_id || 'null'; acc[k] = acc[k] || []; acc[k].push(v); return acc; }, {});
       Object.keys(porCliente).forEach(cId => { const ventasCl = porCliente[cId]; const nombreCl = ventasCl[0].clientes?.nombre || 'Venta Libre'; let cTotal = 0; let mHtml = ''; ventasCl.forEach(v => { cTotal += Number(v.saldo_pendiente); granTotalC += Number(v.saldo_pendiente); let sub = (v.detalles && v.detalles.startsWith('[')) ? JSON.parse(v.detalles).map(x=>`${x.cantidad}x ${x.nombre}`).join(', ') : (v.detalles || 'Venta Libre'); mHtml += `<div class="pl-3 border-l-2 border-slate-600 mt-3 flex justify-between items-start gap-2"><div class="flex-1 min-w-0"><p class="text-[10px] text-slate-400 font-mono">${formatearFechaHora(v.fecha)}</p><p class="text-[11px] text-slate-200 mt-0.5 font-bold break-words whitespace-normal leading-tight">${sub}</p><p class="text-amber-400 font-bold text-sm mt-0.5">$${fmtMoneda(v.saldo_pendiente)}</p></div><div class="flex gap-1 shrink-0 flex-wrap justify-end"><button onclick="editarTransaccion('ventas', '${v.id}')" class="text-xs text-blue-300 bg-blue-900/50 px-2 py-1.5 rounded shadow">✏️</button><button onclick="pagarDeuda('ventas', '${v.id}', ${v.saldo_pendiente})" class="text-xs font-bold text-amber-100 bg-amber-700/60 px-2 py-1.5 rounded shadow">Abonar</button><button onclick="eliminarRegistro('ventas', '${v.id}')" class="text-xs text-rose-300 bg-rose-900/50 px-2 py-1.5 rounded shadow">🗑️</button></div></div>`; }); htmlC += `<div class="bg-slate-700/30 p-4 rounded-xl border border-slate-700 shadow-md mb-4"><div class="flex justify-between items-center border-b border-slate-600 pb-2"><h3 class="font-bold text-white text-base">${nombreCl}</h3><span class="font-black text-amber-500 text-base">$${fmtMoneda(cTotal)}</span></div>${mHtml}<button onclick="pagarDeudaGeneral('ventas', '${cId}', '${nombreCl}', ${cTotal})" class="w-full mt-4 bg-amber-600 hover:bg-amber-500 py-2 rounded-lg text-sm font-bold shadow">Abono General</button></div>`; });
       document.getElementById('lista-deudas-cobrar').innerHTML = htmlC || '<div id="empty-msg-cobrar" class="text-center text-sm text-slate-400 p-4">No hay deudas por cobrar.</div>'; document.getElementById('gran-total-cobrar').innerText = '$' + fmtMoneda(granTotalC);
       
-      // GASTOS POR PAGAR
       let htmlP=''; let granTotalP = 0; const porProv = gts.reduce((acc, g) => { const k = g.proveedor_id || 'null'; acc[k] = acc[k] || []; acc[k].push(g); return acc; }, {});
       Object.keys(porProv).forEach(pId => { const gastosPr = porProv[pId]; const nombrePr = gastosPr[0].proveedores?.nombre || 'Gasto General'; let pTotal = 0; let mHtml = ''; gastosPr.forEach(g => { pTotal += Number(g.saldo_pendiente); granTotalP += Number(g.saldo_pendiente); const sub = (g.detalles && g.detalles.startsWith('[')) ? JSON.parse(g.detalles).map(x=>`${x.cantidad}x ${x.nombre}`).join(', ') : (g.detalles || 'Gasto'); mHtml += `<div class="pl-3 border-l-2 border-slate-600 mt-3 flex justify-between items-start gap-2"><div class="flex-1 min-w-0"><p class="text-[10px] text-slate-400 font-mono">${formatearFechaHora(g.fecha)}</p><p class="text-[11px] text-slate-200 mt-0.5 font-bold break-words whitespace-normal leading-tight">${sub}</p><p class="text-purple-400 font-bold text-sm mt-0.5">$${fmtMoneda(g.saldo_pendiente)}</p></div><div class="flex gap-1 shrink-0 flex-wrap justify-end"><button onclick="editarTransaccion('gastos', '${g.id}')" class="text-xs text-blue-300 bg-blue-900/50 px-2 py-1.5 rounded shadow">✏️</button><button onclick="pagarDeuda('gastos', '${g.id}', ${g.saldo_pendiente})" class="text-xs font-bold text-purple-100 bg-purple-700/60 px-2 py-1.5 rounded shadow">Abonar</button><button onclick="eliminarRegistro('gastos', '${g.id}')" class="text-xs text-rose-300 bg-rose-900/50 px-2 py-1.5 rounded shadow">🗑️</button></div></div>`; }); htmlP += `<div class="bg-slate-700/30 p-4 rounded-xl border border-slate-700 shadow-md mb-4"><div class="flex justify-between items-center border-b border-slate-600 pb-2"><h3 class="font-bold text-white text-base">${nombrePr}</h3><span class="font-black text-purple-500 text-base">$${fmtMoneda(pTotal)}</span></div>${mHtml}<button onclick="pagarDeudaGeneral('gastos', '${pId}', '${nombrePr}', ${pTotal})" class="w-full mt-4 bg-purple-600 hover:bg-purple-500 py-2 rounded-lg text-sm font-bold shadow">Abono General</button></div>`; });
       document.getElementById('lista-deudas-pagar').innerHTML = htmlP || '<div id="empty-msg-pagar" class="text-center text-sm text-slate-400 p-4">No hay deudas por pagar.</div>'; document.getElementById('gran-total-pagar').innerText = '$' + fmtMoneda(granTotalP);
@@ -683,8 +641,8 @@
     async function guardarProveedor() { const id = document.getElementById('prov-id').value; const nom = document.getElementById('prov-nombre').value; const tel = document.getElementById('prov-telefono').value; if (!nom) return alert('Nombre obligatorio'); const payload = { nombre: nom, telefono: tel, empresa_id: currentEmpresaId }; if (id) await db.from('proveedores').update(payload).eq('id', id); else await db.from('proveedores').insert([payload]); ocultarForm(); cargarListaProveedores(); cargarDropdowns(); }
     async function guardarProducto() { const id = document.getElementById('p-id').value; const nom = document.getElementById('p-nombre').value; const cmp = Number(document.getElementById('p-compra').value||0); const vnt = Number(document.getElementById('p-venta').value||0); const stk = Number(document.getElementById('p-stock').value||0); if (!nom || !vnt) return alert('Nombre y precio obligatorios'); const fileInput = document.getElementById('p-imagen'); let imgBase64 = null; if (fileInput.files.length > 0) { imgBase64 = await new Promise(res => { const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.readAsDataURL(fileInput.files[0]); }); } const payload = { nombre: nom, precio_compra: cmp, precio_venta: vnt, cantidad_disponible: stk, empresa_id: currentEmpresaId }; if(imgBase64) payload.imagen_url = imgBase64; if (id) await db.from('productos').update(payload).eq('id', id); else await db.from('productos').insert([payload]); ocultarForm(); cargarInventario(); cargarDropdowns(); }
 
-    async function cargarListaClientes() { const {data} = await db.from('clientes').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}).limit(1000); document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 shadow-md flex flex-col"><div class="flex justify-between items-start mb-3"><div><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${c.telefono||'Sin teléfono'} ${c.identificacion ? ' | CC: '+c.identificacion : ''}</p></div><div class="flex gap-1"><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs shadow" onclick="editarCliente('${c.id}','${c.nombre.replace(/'/g, "\\'") सरपंच}','${c.telefono||''}','${c.identificacion||''}','${c.direccion||''}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('clientes','${c.id}')">🗑️</button></div></div><button class="w-full text-amber-400 font-bold bg-amber-950/50 py-2 rounded-lg text-xs shadow border border-amber-900/30" onclick="verHistorialCliente('${c.id}','${c.nombre.replace(/'/g, "\\'")}')">📜 Ver Historial de Compras</button></div>`).join('') || '<div id="empty-msg-cli" class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin clientes.</p></div>'; }
-    async function cargarListaProveedores() { const {data} = await db.from('proveedores').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}).limit(1000); document.getElementById('lista-proveedores').innerHTML = data.map(p=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 shadow-md flex flex-col"><div class="flex justify-between items-start mb-3"><div><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${p.telefono||'Sin teléfono'}</p></div><div class="flex gap-1"><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs shadow" onclick="editarProveedor('${p.id}','${p.nombre.replace(/'/g, "\\'")}')','${p.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('proveedores','${p.id}')">🗑️</button></div></div><button class="w-full text-amber-400 font-bold bg-amber-950/50 py-2 rounded-lg text-xs shadow border border-amber-900/30" onclick="verHistorialProveedor('${p.id}','${p.nombre.replace(/'/g, "\\'")}')">📜 Ver Historial de Gastos</button></div>`).join('') || '<div id="empty-msg-prov" class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin proveedores.</p></div>'; }
+    async function cargarListaClientes() { const {data} = await db.from('clientes').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}).limit(1000); document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 shadow-md flex flex-col"><div class="flex justify-between items-start mb-3"><div><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${c.telefono||'Sin teléfono'} ${c.identificacion ? ' | CC: '+c.identificacion : ''}</p></div><div class="flex gap-1"><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs shadow" onclick="editarCliente('${c.id}','${c.nombre.replace(/'/g, "\\'")}','${c.telefono||''}','${c.identificacion||''}','${c.direccion||''}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('clientes','${c.id}')">🗑️</button></div></div><button class="w-full text-amber-400 font-bold bg-amber-950/50 py-2 rounded-lg text-xs shadow border border-amber-900/30" onclick="verHistorialCliente('${c.id}','${c.nombre.replace(/'/g, "\\'")}')">📜 Ver Historial de Compras</button></div>`).join('') || '<div id="empty-msg-cli" class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin clientes.</p></div>'; }
+    async function cargarListaProveedores() { const {data} = await db.from('proveedores').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}).limit(1000); document.getElementById('lista-proveedores').innerHTML = data.map(p=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 shadow-md flex flex-col"><div class="flex justify-between items-start mb-3"><div><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${p.telefono||'Sin teléfono'}</p></div><div class="flex gap-1"><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs shadow" onclick="editarProveedor('${p.id}','${p.nombre.replace(/'/g, "\\'")}','${p.telefono||''}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('proveedores','${p.id}')">🗑️</button></div></div><button class="w-full text-amber-400 font-bold bg-amber-950/50 py-2 rounded-lg text-xs shadow border border-amber-900/30" onclick="verHistorialProveedor('${p.id}','${p.nombre.replace(/'/g, "\\'")}')">📜 Ver Historial de Gastos</button></div>`).join('') || '<div id="empty-msg-prov" class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin proveedores.</p></div>'; }
 
     async function verHistorialCliente(id, nombre) { document.getElementById('modal-historial').classList.remove('hidden'); document.getElementById('historial-titulo').innerText = 'Historial: ' + nombre; document.getElementById('historial-lista').innerHTML = '<p class="text-center text-slate-400 text-sm mt-4">Cargando...</p>'; const {data} = await db.from('ventas').select('*').eq('cliente_id', id).order('fecha', {ascending: false}); let html = ''; let total = 0; if(!data || data.length === 0) { html = '<p class="text-center text-slate-400 text-sm mt-4">No hay compras registradas.</p>'; } else { data.forEach(v => { total += Number(v.monto_final); const sub = (v.detalles && v.detalles.startsWith('[')) ? JSON.parse(v.detalles).map(x=>`${x.cantidad}x ${x.nombre}`).join(', ') : (v.detalles || 'Venta Libre'); html += `<div class="bg-slate-900/50 p-3 rounded-lg border border-slate-600"><div class="flex justify-between items-start"><p class="text-[10px] text-slate-400 font-mono">${formatearFechaHora(v.fecha)}</p><p class="text-xs font-bold text-emerald-400">$${fmtMoneda(v.monto_final)}</p></div><p class="text-xs text-slate-200 mt-1 break-words whitespace-normal">${sub}</p></div>`; }); } document.getElementById('historial-total').innerText = '$' + fmtMoneda(total); document.getElementById('historial-lista').innerHTML = html; }
     async function verHistorialProveedor(id, nombre) { document.getElementById('modal-historial').classList.remove('hidden'); document.getElementById('historial-titulo').innerText = 'Historial: ' + nombre; document.getElementById('historial-lista').innerHTML = '<p class="text-center text-slate-400 text-sm mt-4">Cargando...</p>'; const {data} = await db.from('gastos').select('*').eq('proveedor_id', id).order('fecha', {ascending: false}); let html = ''; let total = 0; if(!data || data.length === 0) { html = '<p class="text-center text-slate-400 text-sm mt-4">No hay gastos registrados.</p>'; } else { data.forEach(g => { total += Number(g.valor); const sub = (g.detalles && g.detalles.startsWith('[')) ? JSON.parse(g.detalles).map(x=>`${x.cantidad}x ${x.nombre}`).join(', ') : (g.detalles || 'Gasto General'); html += `<div class="bg-slate-900/50 p-3 rounded-lg border border-slate-600"><div class="flex justify-between items-start"><p class="text-[10px] text-slate-400 font-mono">${formatearFechaHora(g.fecha)}</p><p class="text-xs font-bold text-rose-400">$${fmtMoneda(g.valor)}</p></div><p class="text-xs text-slate-200 mt-1 break-words whitespace-normal">${sub}</p></div>`; }); } document.getElementById('historial-total').innerText = '$' + fmtMoneda(total); document.getElementById('historial-lista').innerHTML = html; }
