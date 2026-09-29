@@ -26,8 +26,20 @@
 </head>
 <body class="pb-24 overflow-x-hidden">
 
+  <!-- ================= SPLASH/LOADING SCREEN ================= -->
+  <div id="splash-screen" class="fixed inset-0 z-[200] bg-slate-900 flex flex-col justify-center items-center p-6 transition-opacity duration-300">
+    <h1 class="text-4xl font-black text-center text-blue-400 mb-2 tracking-widest animate-pulse">SOLTECH</h1>
+    <p class="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-4">Verificando sesión...</p>
+    <div class="mt-4 loader-dots relative w-16 h-5">
+      <div class="absolute top-1 w-2.5 h-2.5 rounded-full bg-blue-400"></div>
+      <div class="absolute top-1 w-2.5 h-2.5 rounded-full bg-blue-400"></div>
+      <div class="absolute top-1 w-2.5 h-2.5 rounded-full bg-blue-400"></div>
+      <div class="absolute top-1 w-2.5 h-2.5 rounded-full bg-blue-400"></div>
+    </div>
+  </div>
+
   <!-- ================= PANTALLA DE AUTENTICACIÓN ================= -->
-  <div id="auth-screen" class="fixed inset-0 z-[100] bg-slate-900 flex flex-col justify-center items-center p-6">
+  <div id="auth-screen" class="fixed inset-0 z-[100] bg-slate-900 flex flex-col justify-center items-center p-6 hidden">
     <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-sm">
       <h1 class="text-4xl font-black text-center text-blue-400 mb-2 tracking-widest">SOLTECH</h1>
       <p class="text-center text-slate-400 text-sm mb-6 uppercase tracking-widest">Gestión Empresarial</p>
@@ -36,7 +48,7 @@
       <button id="btn-login" onclick="login()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg mb-3 transition shadow-lg">Iniciar Sesión</button>
       <button id="btn-register" onclick="register()" class="w-full bg-slate-700 hover:bg-slate-600 text-blue-400 font-bold py-3 rounded-lg transition border border-slate-600">Crear Cuenta</button>
       
-      <!-- NUEVO BOTÓN DE RECUPERACIÓN Y SOPORTE -->
+      <!-- BOTÓN DE RECUPERACIÓN Y SOPORTE -->
       <div class="flex justify-between items-center mt-4 border-t border-slate-700 pt-4">
         <button onclick="solicitarRecuperacionOTP()" class="text-xs text-slate-400 hover:text-white underline transition">¿Olvidó su clave?</button>
         <button onclick="contactarSoporte()" class="text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 transition">💬 Soporte WhatsApp</button>
@@ -179,7 +191,7 @@
       <div id="resumen-deudas-cobrar" class="bg-amber-900/30 border border-amber-700/50 p-3 rounded-lg text-center"><p class="text-xs text-amber-400 font-bold uppercase">Gran Total por Cobrar</p><p id="gran-total-cobrar" class="text-2xl font-black text-amber-500">$0</p></div>
       <div id="resumen-deudas-pagar" class="bg-purple-900/30 border border-purple-700/50 p-3 rounded-lg text-center hidden"><p class="text-xs text-purple-400 font-bold uppercase">Gran Total por Pagar</p><p id="gran-total-pagar" class="text-2xl font-black text-purple-500">$0</p></div>
 
-      <div id="lista-deudas-cobrar" class="space-y-4 block"></div>
+      <div id="lista-deudas-cobrar" class="space-y-4"></div>
       <div id="lista-deudas-pagar" class="space-y-4 hidden"></div>
     </section>
 
@@ -310,14 +322,10 @@
     let currentEmpresaId = null; let currentEmpresaData = null; 
     const fmtMoneda = (v) => new Intl.NumberFormat('es-CO').format(v || 0);
 
-    // ==========================================
-    // NUEVO SISTEMA DE FECHAS (ZONA HORARIA LOCAL STRICTA)
-    // ==========================================
     const obtenerFechaLocal = (d = new Date()) => { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
     const obtenerFechaHoraLocal = (d = new Date()) => { return obtenerFechaLocal(d) + 'T' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
     const formatearFechaHora = (fUTC) => { const d = new Date(fUTC); return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`; };
     
-    // Función de buscador local universal
     function buscadorLocal(inputId, listId) {
       const text = document.getElementById(inputId).value.toLowerCase();
       const items = document.getElementById(listId).children;
@@ -333,15 +341,33 @@
 
     document.addEventListener('click', (e) => { if(!e.target.closest('.relative')) document.querySelectorAll('ul[id$="-list"]').forEach(el => el.classList.add('hidden')); });
 
+    // ==========================================
+    // 4. MEJORA DE SESIÓN: OCULTAR EL "FLASH" EN iPHONE
+    // ==========================================
     async function checkSession() {
+      const splash = document.getElementById('splash-screen');
+      if (splash) splash.classList.add('hidden'); // Ocultar animación de carga
+      
       const { data: { session } } = await db.auth.getSession();
       if (session) {
         let { data: perfil } = await db.from('perfiles').select('empresa_id').eq('id', session.user.id).single();
-        if (!perfil || !perfil.empresa_id) { document.getElementById('auth-screen').classList.add('hidden'); document.getElementById('modal-empresa').classList.remove('hidden'); return; } 
-        else { currentEmpresaId = perfil.empresa_id; const { data: empData } = await db.from('empresas').select('*').eq('id', currentEmpresaId).single(); currentEmpresaData = empData; }
-        document.getElementById('auth-screen').classList.add('hidden'); document.getElementById('modal-empresa').classList.add('hidden'); document.getElementById('main-app').classList.remove('hidden'); document.getElementById('main-nav').classList.remove('hidden'); 
+        if (!perfil || !perfil.empresa_id) { 
+          document.getElementById('auth-screen').classList.add('hidden'); 
+          document.getElementById('modal-empresa').classList.remove('hidden'); 
+          return; 
+        } else { 
+          currentEmpresaId = perfil.empresa_id; 
+          const { data: empData } = await db.from('empresas').select('*').eq('id', currentEmpresaId).single(); 
+          currentEmpresaData = empData; 
+        }
+        document.getElementById('auth-screen').classList.add('hidden'); 
+        document.getElementById('modal-empresa').classList.add('hidden'); 
+        document.getElementById('main-app').classList.remove('hidden'); 
+        document.getElementById('main-nav').classList.remove('hidden'); 
         iniciarApp(); 
-      } else { document.getElementById('auth-screen').classList.remove('hidden'); }
+      } else { 
+        document.getElementById('auth-screen').classList.remove('hidden'); // Solo mostrar si no hay sesión
+      }
     }
 
     async function login() { const e = document.getElementById('auth-email').value.trim(); const p = document.getElementById('auth-pass').value; if(!e || !p) return alert('Ingresa correo y contraseña'); document.getElementById('btn-login').innerText = "Cargando..."; try { const { error } = await db.auth.signInWithPassword({ email: e, password: p }); if(error) { alert('Error: ' + error.message); document.getElementById('btn-login').innerText = "Iniciar Sesión"; } else { checkSession(); } } catch (err) { alert('Error'); document.getElementById('btn-login').innerText = "Iniciar Sesión"; } }
@@ -349,7 +375,17 @@
     async function logout() { await db.auth.signOut(); location.reload(); }
     window.onload = checkSession;
 
-    function contactarSoporte() { const email = document.getElementById('auth-email').value.trim(); let mensaje = "Hola, necesito ayuda para acceder a mi cuenta de SOLTECH."; if (email) { mensaje += ` Mi correo es: ${email}`; } const numeroSoporte = "573000000000"; const url = `https://wa.me/${numeroSoporte}?text=${encodeURIComponent(mensaje)}`; window.open(url, '_blank'); }
+    // ==========================================
+    // 2. WHATSAPP DE SOPORTE PERSONALIZADO
+    // ==========================================
+    function contactarSoporte() { 
+      const email = document.getElementById('auth-email').value.trim(); 
+      let mensaje = "Hola, necesito ayuda para acceder a mi cuenta de SOLTECH."; 
+      if (email) { mensaje += ` Mi correo es: ${email}`; } 
+      const numeroSoporte = "573012878516"; 
+      const url = `https://wa.me/${numeroSoporte}?text=${encodeURIComponent(mensaje)}`; 
+      window.open(url, '_blank'); 
+    }
 
     async function solicitarRecuperacionOTP() {
       const email = document.getElementById('auth-email').value.trim();
@@ -392,7 +428,27 @@
       document.getElementById('filtro-balance-dia').value = hoy; 
       cargarDropdowns(); cambiarVista('inicio'); 
     }
-    function cambiarVista(vista) { document.querySelectorAll('.vista-seccion').forEach(el => el.classList.add('hidden')); document.getElementById(`view-${vista}`).classList.remove('hidden'); document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-blue-400', 'text-slate-400')); if(document.getElementById(`nav-${vista}`)) document.getElementById(`nav-${vista}`).classList.replace('text-slate-400', 'text-blue-400'); if(vista === 'inicio') actualizarDashboard(); if(vista === 'balance') cargarBalance(); if(vista === 'deudas') { cargarDeudas(); cambiarPestanaDeudas('cobrar'); } if(vista === 'inventario') { cargarInventario(); document.getElementById('buscar-inv').value = ''; } if(vista === 'clientes') { cargarListaClientes(); document.getElementById('buscar-cli').value = ''; } if(vista === 'proveedores') { cargarListaProveedores(); document.getElementById('buscar-prov').value = ''; } }
+
+    // ==========================================
+    // 3. CAMBIAR VISTA DE GASTOS DIRECTO A "PAGAR"
+    // ==========================================
+    function cambiarVista(vista, subVista = null) { 
+      document.querySelectorAll('.vista-seccion').forEach(el => el.classList.add('hidden')); 
+      document.getElementById(`view-${vista}`).classList.remove('hidden'); 
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-blue-400', 'text-slate-400')); 
+      if(document.getElementById(`nav-${vista}`)) document.getElementById(`nav-${vista}`).classList.replace('text-slate-400', 'text-blue-400'); 
+      
+      if(vista === 'inicio') actualizarDashboard(); 
+      if(vista === 'balance') cargarBalance(); 
+      if(vista === 'deudas') { 
+        cargarDeudas(); 
+        cambiarPestanaDeudas(subVista || 'cobrar'); 
+      } 
+      if(vista === 'inventario') { cargarInventario(); document.getElementById('buscar-inv').value = ''; } 
+      if(vista === 'clientes') { cargarListaClientes(); document.getElementById('buscar-cli').value = ''; } 
+      if(vista === 'proveedores') { cargarListaProveedores(); document.getElementById('buscar-prov').value = ''; } 
+    }
+
     function toggleCredito(prefijo) { const isChecked = document.getElementById(`${prefijo}-es-deuda`).checked; const bg = document.getElementById(`bg-credito-${prefijo}`); const dot = document.getElementById(`dot-credito-${prefijo}`); const lbl = document.getElementById(`lbl-credito-${prefijo}`); const abono = document.getElementById(`${prefijo}-abono-container`); if(isChecked) { bg.classList.replace('bg-slate-600', 'bg-amber-500'); dot.classList.add('translate-x-5'); lbl.innerText = '🟠 A CRÉDITO (DEBE)'; lbl.classList.replace('text-emerald-400', 'text-amber-400'); abono.classList.remove('hidden'); } else { bg.classList.replace('bg-amber-500', 'bg-slate-600'); dot.classList.remove('translate-x-5'); lbl.innerText = '🟢 PAGO DE CONTADO'; lbl.classList.replace('text-amber-400', 'text-emerald-400'); abono.classList.add('hidden'); document.getElementById(`${prefijo}-abono`).value = ''; } }
 
     async function cargarDropdowns() { const { data: c } = await db.from('clientes').select('*').eq('empresa_id', currentEmpresaId).order('nombre').limit(1000); listasData.clientes = c || []; const { data: p } = await db.from('productos').select('*').eq('empresa_id', currentEmpresaId).order('nombre').limit(1000); listasData.productos = p || []; const { data: pr } = await db.from('proveedores').select('*').eq('empresa_id', currentEmpresaId).order('nombre').limit(1000); listasData.proveedores = pr || []; renderListaDropdown('vp-cliente-list', listasData.clientes, 'vp-cliente'); renderListaDropdown('vl-cliente-list', listasData.clientes, 'vl-cliente'); renderListaDropdown('vp-producto-list', listasData.productos, 'vp-producto', true); renderListaDropdown('g-producto-list', listasData.productos, 'g-producto', true); renderListaDropdown('g-proveedor-list', listasData.proveedores, 'g-proveedor'); }
@@ -524,14 +580,33 @@
              <div class="total">${totalHtml}</div>
              <div class="footer">¡Gracias por su confianza!</div>
           </div>
-          <script>window.onload = function() { window.print(); }<script>
+          <script>window.onload = function() { window.print(); }<\/script>
         </body>
         </html>
       `);
       printWindow.document.close();
     }
 
-    function cambiarPestanaDeudas(tipo) { document.getElementById('btn-cobrar').className = `flex-1 py-2 rounded-lg font-bold text-sm transition-all ${tipo==='cobrar'?'bg-amber-600 text-white shadow-lg':'bg-slate-800 border border-slate-600 text-slate-400'}`; document.getElementById('btn-pagar').className = `flex-1 py-2 rounded-lg font-bold text-sm transition-all ${tipo==='pagar'?'bg-purple-600 text-white shadow-lg':'bg-slate-800 border border-slate-600 text-slate-400'}`; document.getElementById('lista-deudas-cobrar').style.display = tipo==='cobrar'?'block':'none'; document.getElementById('lista-deudas-pagar').style.display = tipo==='pagar'?'block':'none'; document.getElementById('resumen-deudas-cobrar').style.display = tipo==='cobrar'?'block':'none'; document.getElementById('resumen-deudas-pagar').style.display = tipo==='pagar'?'block':'none'; }
+    // ==========================================
+    // 1. SOLUCIÓN BUG "POR PAGAR" (CHOQUE CON TAILWIND)
+    // ==========================================
+    function cambiarPestanaDeudas(tipo) { 
+      document.getElementById('btn-cobrar').className = `flex-1 py-2 rounded-lg font-bold text-sm transition-all ${tipo==='cobrar'?'bg-amber-600 text-white shadow-lg':'bg-slate-800 border border-slate-600 text-slate-400'}`; 
+      document.getElementById('btn-pagar').className = `flex-1 py-2 rounded-lg font-bold text-sm transition-all ${tipo==='pagar'?'bg-purple-600 text-white shadow-lg':'bg-slate-800 border border-slate-600 text-slate-400'}`; 
+      
+      if(tipo === 'cobrar') {
+        document.getElementById('lista-deudas-cobrar').classList.remove('hidden'); 
+        document.getElementById('resumen-deudas-cobrar').classList.remove('hidden'); 
+        document.getElementById('lista-deudas-pagar').classList.add('hidden'); 
+        document.getElementById('resumen-deudas-pagar').classList.add('hidden'); 
+      } else {
+        document.getElementById('lista-deudas-cobrar').classList.add('hidden'); 
+        document.getElementById('resumen-deudas-cobrar').classList.add('hidden'); 
+        document.getElementById('lista-deudas-pagar').classList.remove('hidden'); 
+        document.getElementById('resumen-deudas-pagar').classList.remove('hidden'); 
+      }
+    }
+
     async function cargarDeudas() {
       const fFecha = document.getElementById('filtro-deudas-fecha').value; const fOrden = document.getElementById('filtro-deudas-orden').value; const asc = fOrden === 'asc';
       const queryV = db.from('ventas').select('*, clientes(nombre)').eq('empresa_id', currentEmpresaId).gt('saldo_pendiente', 0).order('fecha', {ascending: asc}).limit(1000); const queryG = db.from('gastos').select('*, proveedores(nombre)').eq('empresa_id', currentEmpresaId).gt('saldo_pendiente', 0).order('fecha', {ascending: asc}).limit(1000);
@@ -557,9 +632,9 @@
     async function restaurarStock(tabla, recordId) { const {data: rec} = await db.from(tabla).select('*').eq('id', recordId).single(); if(!rec) return; if (rec.detalles && rec.detalles.startsWith('[')) { const items = JSON.parse(rec.detalles); for(let item of items) { const {data:p} = await db.from('productos').select('cantidad_disponible').eq('id', item.id).single(); if(p) { const nStock = tabla==='ventas' ? p.cantidad_disponible + item.cantidad : p.cantidad_disponible - item.cantidad; await db.from('productos').update({cantidad_disponible: nStock}).eq('id', item.id); } } } }
     async function deducirStock(tabla, payload) { if (payload.detalles && payload.detalles.startsWith('[')) { const items = JSON.parse(payload.detalles); for(let item of items) { const p = listasData.productos.find(x=>x.id===item.id); if(p) { const nStock = tabla==='ventas' ? p.cantidad_disponible - item.cantidad : p.cantidad_disponible + item.cantidad; await db.from('productos').update({cantidad_disponible: nStock}).eq('id', item.id); } } } }
 
-    async function guardarVentaProducto() { const editId = document.getElementById('vp-edit-id').value; const fInp = document.getElementById('vp-fecha').value; const cId = document.getElementById('vp-cliente-id').value; const es_deuda = document.getElementById('vp-es-deuda').checked; const abono = Number(document.getElementById('vp-abono').value||0); const desc = Number(document.getElementById('vp-descuento').value||0); if(carritoVP.length === 0) return alert('Carrito vacío.'); if(es_deuda && !cId) return alert('Para crédito, selecciona un cliente.'); const mBruto = carritoVP.reduce((a,b)=>a+b.subtotal, 0); const payload = { tipo_venta: 'PRODUCTO', cliente_id: cId || null, monto_bruto: mBruto, descuento: desc, es_deuda, abono: es_deuda?abono:0, detalles: JSON.stringify(carritoVP), empresa_id: currentEmpresaId }; if(fInp) payload.fecha = new Date(fInp).toISOString(); try { if(editId) { await restaurarStock('ventas', editId); await deducirStock('ventas', payload); await db.from('ventas').update(payload).eq('id', editId); } else { await deducirStock('ventas', payload); await db.from('ventas').insert([payload]); } cerrarActualizarForm('form-venta-prod'); cambiarVista(es_deuda ? 'deudas' : 'balance'); } catch (err) { alert('Error: ' + err.message); } }
-    async function guardarVentaLibre() { const editId = document.getElementById('vl-edit-id').value; const fInp = document.getElementById('vl-fecha').value; const cId = document.getElementById('vl-cliente-id').value; const valor = Number(document.getElementById('vl-valor').value||0); const es_deuda = document.getElementById('vl-es-deuda').checked; const abono = Number(document.getElementById('vl-abono').value||0); if(!valor) return alert('Valor obligatorio.'); const payload = { tipo_venta: 'LIBRE', cliente_id: cId || null, monto_bruto: valor, descuento: 0, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('vl-detalles').value, empresa_id: currentEmpresaId }; if(fInp) payload.fecha = new Date(fInp).toISOString(); try { if(editId) { await db.from('ventas').update(payload).eq('id', editId); } else { await db.from('ventas').insert([payload]); } cerrarActualizarForm('form-venta-libre'); cambiarVista(es_deuda ? 'deudas' : 'balance'); } catch (err) { alert('Error: ' + err.message); } }
-    async function guardarGasto() { const editId = document.getElementById('g-edit-id').value; const fInp = document.getElementById('g-fecha').value; const provId = document.getElementById('g-proveedor-id').value; const es_deuda = document.getElementById('g-es-deuda').checked; const abono = Number(document.getElementById('g-abono').value||0); let valorFinal = 0; let detallesFinal = document.getElementById('g-detalles').value; let valorLibre = Number(document.getElementById('g-valor-libre').value || 0); if (carritoG.length > 0) { valorFinal = carritoG.reduce((a,b)=>a+b.subtotal, 0); detallesFinal = JSON.stringify(carritoG); } else if (valorLibre > 0) { valorFinal = valorLibre; if (!detallesFinal) detallesFinal = 'Gasto / Servicio general'; } else { return alert('Debes agregar productos al carrito o ingresar el valor total.'); } const payload = { proveedor_id: provId||null, valor: valorFinal, es_deuda, abono: es_deuda?abono:0, detalles: detallesFinal, empresa_id: currentEmpresaId }; if(fInp) payload.fecha = new Date(fInp).toISOString(); try { if(editId) { await restaurarStock('gastos', editId); await deducirStock('gastos', payload); await db.from('gastos').update(payload).eq('id', editId); } else { await deducirStock('gastos', payload); await db.from('gastos').insert([payload]); } cerrarActualizarForm('form-gasto'); cambiarVista(es_deuda ? 'deudas' : 'balance'); } catch(err) { alert('Error: ' + err.message); } }
+    async function guardarVentaProducto() { const editId = document.getElementById('vp-edit-id').value; const fInp = document.getElementById('vp-fecha').value; const cId = document.getElementById('vp-cliente-id').value; const es_deuda = document.getElementById('vp-es-deuda').checked; const abono = Number(document.getElementById('vp-abono').value||0); const desc = Number(document.getElementById('vp-descuento').value||0); if(carritoVP.length === 0) return alert('Carrito vacío.'); if(es_deuda && !cId) return alert('Para crédito, selecciona un cliente.'); const mBruto = carritoVP.reduce((a,b)=>a+b.subtotal, 0); const payload = { tipo_venta: 'PRODUCTO', cliente_id: cId || null, monto_bruto: mBruto, descuento: desc, es_deuda, abono: es_deuda?abono:0, detalles: JSON.stringify(carritoVP), empresa_id: currentEmpresaId }; if(fInp) payload.fecha = new Date(fInp).toISOString(); try { if(editId) { await restaurarStock('ventas', editId); await deducirStock('ventas', payload); await db.from('ventas').update(payload).eq('id', editId); } else { await deducirStock('ventas', payload); await db.from('ventas').insert([payload]); } cerrarActualizarForm('form-venta-prod'); cambiarVista(es_deuda ? 'deudas' : 'balance', es_deuda ? 'cobrar' : null); } catch (err) { alert('Error: ' + err.message); } }
+    async function guardarVentaLibre() { const editId = document.getElementById('vl-edit-id').value; const fInp = document.getElementById('vl-fecha').value; const cId = document.getElementById('vl-cliente-id').value; const valor = Number(document.getElementById('vl-valor').value||0); const es_deuda = document.getElementById('vl-es-deuda').checked; const abono = Number(document.getElementById('vl-abono').value||0); if(!valor) return alert('Valor obligatorio.'); const payload = { tipo_venta: 'LIBRE', cliente_id: cId || null, monto_bruto: valor, descuento: 0, es_deuda, abono: es_deuda?abono:0, detalles: document.getElementById('vl-detalles').value, empresa_id: currentEmpresaId }; if(fInp) payload.fecha = new Date(fInp).toISOString(); try { if(editId) { await db.from('ventas').update(payload).eq('id', editId); } else { await db.from('ventas').insert([payload]); } cerrarActualizarForm('form-venta-libre'); cambiarVista(es_deuda ? 'deudas' : 'balance', es_deuda ? 'cobrar' : null); } catch (err) { alert('Error: ' + err.message); } }
+    async function guardarGasto() { const editId = document.getElementById('g-edit-id').value; const fInp = document.getElementById('g-fecha').value; const provId = document.getElementById('g-proveedor-id').value; const es_deuda = document.getElementById('g-es-deuda').checked; const abono = Number(document.getElementById('g-abono').value||0); let valorFinal = 0; let detallesFinal = document.getElementById('g-detalles').value; let valorLibre = Number(document.getElementById('g-valor-libre').value || 0); if (carritoG.length > 0) { valorFinal = carritoG.reduce((a,b)=>a+b.subtotal, 0); detallesFinal = JSON.stringify(carritoG); } else if (valorLibre > 0) { valorFinal = valorLibre; if (!detallesFinal) detallesFinal = 'Gasto / Servicio general'; } else { return alert('Debes agregar productos al carrito o ingresar el valor total.'); } const payload = { proveedor_id: provId||null, valor: valorFinal, es_deuda, abono: es_deuda?abono:0, detalles: detallesFinal, empresa_id: currentEmpresaId }; if(fInp) payload.fecha = new Date(fInp).toISOString(); try { if(editId) { await restaurarStock('gastos', editId); await deducirStock('gastos', payload); await db.from('gastos').update(payload).eq('id', editId); } else { await deducirStock('gastos', payload); await db.from('gastos').insert([payload]); } cerrarActualizarForm('form-gasto'); cambiarVista(es_deuda ? 'deudas' : 'balance', es_deuda ? 'pagar' : null); } catch(err) { alert('Error: ' + err.message); } }
     
     function cerrarActualizarForm(formId) { if(formId!=='null') document.getElementById(formId).reset(); ocultarForm(); cargarDropdowns(); actualizarDashboard(); cargarBalance(); cargarDeudas(); cargarInventario(); }
     
@@ -594,8 +669,8 @@
     async function guardarProveedor() { const id = document.getElementById('prov-id').value; const nom = document.getElementById('prov-nombre').value; const tel = document.getElementById('prov-telefono').value; if (!nom) return alert('Nombre obligatorio'); const payload = { nombre: nom, telefono: tel, empresa_id: currentEmpresaId }; if (id) await db.from('proveedores').update(payload).eq('id', id); else await db.from('proveedores').insert([payload]); ocultarForm(); cargarListaProveedores(); cargarDropdowns(); }
     async function guardarProducto() { const id = document.getElementById('p-id').value; const nom = document.getElementById('p-nombre').value; const cmp = Number(document.getElementById('p-compra').value||0); const vnt = Number(document.getElementById('p-venta').value||0); const stk = Number(document.getElementById('p-stock').value||0); if (!nom || !vnt) return alert('Nombre y precio obligatorios'); const fileInput = document.getElementById('p-imagen'); let imgBase64 = null; if (fileInput.files.length > 0) { imgBase64 = await new Promise(res => { const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.readAsDataURL(fileInput.files[0]); }); } const payload = { nombre: nom, precio_compra: cmp, precio_venta: vnt, cantidad_disponible: stk, empresa_id: currentEmpresaId }; if(imgBase64) payload.imagen_url = imgBase64; if (id) await db.from('productos').update(payload).eq('id', id); else await db.from('productos').insert([payload]); ocultarForm(); cargarInventario(); cargarDropdowns(); }
 
-    async function cargarListaClientes() { const {data} = await db.from('clientes').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}).limit(1000); document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 shadow-md flex flex-col"><div class="flex justify-between items-start mb-3"><div><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${c.telefono||'Sin teléfono'} ${c.identificacion ? ' | CC: '+c.identificacion : ''}</p></div><div class="flex gap-1"><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs shadow" onclick="editarCliente('${c.id}','${c.nombre.replace(/'/g, "\\'")}','${c.telefono||''}','${c.identificacion||''}','${c.direccion||''}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('clientes','${c.id}')">🗑️</button></div></div><button class="w-full text-amber-400 font-bold bg-amber-950/50 py-2 rounded-lg text-xs shadow border border-amber-900/30" onclick="verHistorialCliente('${c.id}','${c.nombre.replace(/'/g, "\\'")}')">📜 Ver Historial de Compras</button></div>`).join('') || '<div id="empty-msg-cli" class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin clientes.</p></div>'; }
-    async function cargarListaProveedores() { const {data} = await db.from('proveedores').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}).limit(1000); document.getElementById('lista-proveedores').innerHTML = data.map(p=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 shadow-md flex flex-col"><div class="flex justify-between items-start mb-3"><div><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${p.telefono||'Sin teléfono'}</p></div><div class="flex gap-1"><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs shadow" onclick="editarProveedor('${p.id}','${p.nombre.replace(/'/g, "\\'")}','${p.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('proveedores','${p.id}')">🗑️</button></div></div><button class="w-full text-amber-400 font-bold bg-amber-950/50 py-2 rounded-lg text-xs shadow border border-amber-900/30" onclick="verHistorialProveedor('${p.id}','${p.nombre.replace(/'/g, "\\'")}')">📜 Ver Historial de Gastos</button></div>`).join('') || '<div id="empty-msg-prov" class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin proveedores.</p></div>'; }
+    async function cargarListaClientes() { const {data} = await db.from('clientes').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}).limit(1000); document.getElementById('lista-clientes').innerHTML = data.map(c=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 shadow-md flex flex-col"><div class="flex justify-between items-start mb-3"><div><p class="font-bold text-white">${c.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${c.telefono||'Sin teléfono'} ${c.identificacion ? ' | CC: '+c.identificacion : ''}</p></div><div class="flex gap-1"><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs shadow" onclick="editarCliente('${c.id}','${c.nombre.replace(/'/g, "\\'") सरपंच}','${c.telefono||''}','${c.identificacion||''}','${c.direccion||''}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('clientes','${c.id}')">🗑️</button></div></div><button class="w-full text-amber-400 font-bold bg-amber-950/50 py-2 rounded-lg text-xs shadow border border-amber-900/30" onclick="verHistorialCliente('${c.id}','${c.nombre.replace(/'/g, "\\'")}')">📜 Ver Historial de Compras</button></div>`).join('') || '<div id="empty-msg-cli" class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin clientes.</p></div>'; }
+    async function cargarListaProveedores() { const {data} = await db.from('proveedores').select('*').eq('empresa_id', currentEmpresaId).order('nombre',{ascending:true}).limit(1000); document.getElementById('lista-proveedores').innerHTML = data.map(p=>`<div class="bg-slate-700/50 p-4 rounded-xl border border-slate-600 shadow-md flex flex-col"><div class="flex justify-between items-start mb-3"><div><p class="font-bold text-white">${p.nombre}</p><p class="text-xs text-slate-400 mt-1">📞 ${p.telefono||'Sin teléfono'}</p></div><div class="flex gap-1"><button class="text-blue-400 font-bold bg-blue-950/50 px-3 py-1.5 rounded-lg text-xs shadow" onclick="editarProveedor('${p.id}','${p.nombre.replace(/'/g, "\\'")}')','${p.telefono}')">Editar</button><button class="text-rose-400 font-bold bg-rose-950/50 px-2 py-1.5 rounded-lg text-xs shadow" onclick="eliminarRegistro('proveedores','${p.id}')">🗑️</button></div></div><button class="w-full text-amber-400 font-bold bg-amber-950/50 py-2 rounded-lg text-xs shadow border border-amber-900/30" onclick="verHistorialProveedor('${p.id}','${p.nombre.replace(/'/g, "\\'")}')">📜 Ver Historial de Gastos</button></div>`).join('') || '<div id="empty-msg-prov" class="text-center p-4 bg-slate-800 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Sin proveedores.</p></div>'; }
 
     async function verHistorialCliente(id, nombre) { document.getElementById('modal-historial').classList.remove('hidden'); document.getElementById('historial-titulo').innerText = 'Historial: ' + nombre; document.getElementById('historial-lista').innerHTML = '<p class="text-center text-slate-400 text-sm mt-4">Cargando...</p>'; const {data} = await db.from('ventas').select('*').eq('cliente_id', id).order('fecha', {ascending: false}); let html = ''; let total = 0; if(!data || data.length === 0) { html = '<p class="text-center text-slate-400 text-sm mt-4">No hay compras registradas.</p>'; } else { data.forEach(v => { total += Number(v.monto_final); const sub = (v.detalles && v.detalles.startsWith('[')) ? JSON.parse(v.detalles).map(x=>`${x.cantidad}x ${x.nombre}`).join(', ') : (v.detalles || 'Venta Libre'); html += `<div class="bg-slate-900/50 p-3 rounded-lg border border-slate-600"><div class="flex justify-between items-start"><p class="text-[10px] text-slate-400 font-mono">${formatearFechaHora(v.fecha)}</p><p class="text-xs font-bold text-emerald-400">$${fmtMoneda(v.monto_final)}</p></div><p class="text-xs text-slate-200 mt-1 break-words whitespace-normal">${sub}</p></div>`; }); } document.getElementById('historial-total').innerText = '$' + fmtMoneda(total); document.getElementById('historial-lista').innerHTML = html; }
     async function verHistorialProveedor(id, nombre) { document.getElementById('modal-historial').classList.remove('hidden'); document.getElementById('historial-titulo').innerText = 'Historial: ' + nombre; document.getElementById('historial-lista').innerHTML = '<p class="text-center text-slate-400 text-sm mt-4">Cargando...</p>'; const {data} = await db.from('gastos').select('*').eq('proveedor_id', id).order('fecha', {ascending: false}); let html = ''; let total = 0; if(!data || data.length === 0) { html = '<p class="text-center text-slate-400 text-sm mt-4">No hay gastos registrados.</p>'; } else { data.forEach(g => { total += Number(g.valor); const sub = (g.detalles && g.detalles.startsWith('[')) ? JSON.parse(g.detalles).map(x=>`${x.cantidad}x ${x.nombre}`).join(', ') : (g.detalles || 'Gasto General'); html += `<div class="bg-slate-900/50 p-3 rounded-lg border border-slate-600"><div class="flex justify-between items-start"><p class="text-[10px] text-slate-400 font-mono">${formatearFechaHora(g.fecha)}</p><p class="text-xs font-bold text-rose-400">$${fmtMoneda(g.valor)}</p></div><p class="text-xs text-slate-200 mt-1 break-words whitespace-normal">${sub}</p></div>`; }); } document.getElementById('historial-total').innerText = '$' + fmtMoneda(total); document.getElementById('historial-lista').innerHTML = html; }
