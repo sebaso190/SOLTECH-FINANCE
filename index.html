@@ -342,33 +342,47 @@
     document.addEventListener('click', (e) => { if(!e.target.closest('.relative')) document.querySelectorAll('ul[id$="-list"]').forEach(el => el.classList.add('hidden')); });
 
     // ==========================================
-    // 4. MEJORA DE SESIÓN: OCULTAR EL "FLASH" EN iPHONE
+    // NUEVO SISTEMA DE ARRANQUE Y SESIÓN BLINDADO
     // ==========================================
     async function checkSession() {
-      const splash = document.getElementById('splash-screen');
-      if (splash) splash.classList.add('hidden'); // Ocultar animación de carga
-      
-      const { data: { session } } = await db.auth.getSession();
-      if (session) {
-        let { data: perfil } = await db.from('perfiles').select('empresa_id').eq('id', session.user.id).single();
-        if (!perfil || !perfil.empresa_id) { 
-          document.getElementById('auth-screen').classList.add('hidden'); 
-          document.getElementById('modal-empresa').classList.remove('hidden'); 
-          return; 
+      try {
+        // Obtenemos la sesión actual de Supabase
+        const { data: { session }, error } = await db.auth.getSession();
+        
+        if (session) {
+          let { data: perfil } = await db.from('perfiles').select('empresa_id').eq('id', session.user.id).single();
+          
+          if (!perfil || !perfil.empresa_id) { 
+            document.getElementById('auth-screen').classList.add('hidden'); 
+            document.getElementById('modal-empresa').classList.remove('hidden'); 
+          } else { 
+            currentEmpresaId = perfil.empresa_id; 
+            const { data: empData } = await db.from('empresas').select('*').eq('id', currentEmpresaId).single(); 
+            currentEmpresaData = empData; 
+            
+            document.getElementById('auth-screen').classList.add('hidden'); 
+            document.getElementById('modal-empresa').classList.add('hidden'); 
+            document.getElementById('main-app').classList.remove('hidden'); 
+            document.getElementById('main-nav').classList.remove('hidden'); 
+            iniciarApp(); 
+          }
         } else { 
-          currentEmpresaId = perfil.empresa_id; 
-          const { data: empData } = await db.from('empresas').select('*').eq('id', currentEmpresaId).single(); 
-          currentEmpresaData = empData; 
+          // Si no hay sesión, mostramos el login
+          document.getElementById('auth-screen').classList.remove('hidden'); 
         }
-        document.getElementById('auth-screen').classList.add('hidden'); 
-        document.getElementById('modal-empresa').classList.add('hidden'); 
-        document.getElementById('main-app').classList.remove('hidden'); 
-        document.getElementById('main-nav').classList.remove('hidden'); 
-        iniciarApp(); 
-      } else { 
-        document.getElementById('auth-screen').classList.remove('hidden'); // Solo mostrar si no hay sesión
+      } catch (err) {
+        console.error("Error al validar la sesión:", err);
+        document.getElementById('auth-screen').classList.remove('hidden'); 
+      } finally {
+        // EL SEGURO: Pase lo que pase (éxito o error), siempre quitamos la pantalla de carga al final
+        const splash = document.getElementById('splash-screen');
+        if (splash) splash.classList.add('hidden');
       }
     }
+
+    // Reemplazamos el viejo "window.onload = checkSession;" por este:
+    // Arranca instantáneamente sin esperar recursos externos pesados
+    document.addEventListener('DOMContentLoaded', checkSession);
 
     async function login() { const e = document.getElementById('auth-email').value.trim(); const p = document.getElementById('auth-pass').value; if(!e || !p) return alert('Ingresa correo y contraseña'); document.getElementById('btn-login').innerText = "Cargando..."; try { const { error } = await db.auth.signInWithPassword({ email: e, password: p }); if(error) { alert('Error: ' + error.message); document.getElementById('btn-login').innerText = "Iniciar Sesión"; } else { checkSession(); } } catch (err) { alert('Error'); document.getElementById('btn-login').innerText = "Iniciar Sesión"; } }
     async function register() { const e = document.getElementById('auth-email').value.trim(); const p = document.getElementById('auth-pass').value; if(!e || !p) return alert('Ingresa datos.'); document.getElementById('btn-register').innerText = "Creando..."; const { error } = await db.auth.signUp({ email: e, password: p }); if(error) { alert('Error: ' + error.message); } else { alert('Registro exitoso. Inicia sesión.'); } document.getElementById('btn-register').innerText = "Crear Cuenta"; }
